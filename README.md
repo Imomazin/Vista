@@ -26,7 +26,18 @@ VISTA is an integrated marketing intelligence platform organised around five str
 8. Digital Analytics and Performance Intelligence
 9. AI Exposure and Generative Engine Optimisation
 
-## Initial application
+## Workspace release
+
+- Project portfolios with audience and commercial objectives
+- Saved HTML audits, repeat-scan comparisons and downloadable evidence
+- Prioritised actions with completion tracking
+- Editable content briefs and editorial stages
+- Manual AI response observations with timestamps and source links
+- Versioned JSON workspace backups with import validation
+
+Workspace records are stored in browser localStorage. They do not sync across devices or users. Export backups before clearing browser data. Audit history retains the latest 100 scans across the workspace. Cloud accounts, tenant access controls, Google connections and automated AI sampling are not implemented. No external metrics are fabricated.
+
+## Site intelligence
 
 The initial release includes a responsive dashboard, a nine-engine directory and a working HTTPS website audit. It measures nine HTML signals and provides actionable findings.
 

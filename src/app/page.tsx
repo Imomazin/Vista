@@ -1,5 +1,6 @@
 "use client";
 
+import WorkspacePanel from "./workspace";
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import {
@@ -30,7 +31,7 @@ export default function Home() {
   const [report, setReport] = useState<AuditReport | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<"overview" | "engines">("overview");
+  const [view, setView] = useState<"overview" | "engines" | "workspace">("workspace");
   const issues = useMemo(
     () => report?.signals.filter((signal) => signal.status !== "pass") || [],
     [report]
@@ -65,6 +66,7 @@ export default function Home() {
         <Mark />
         <p className="side-label">WORKSPACE</p>
         <nav className="side-nav" aria-label="Primary navigation">
+          <button className={view === "workspace" ? "nav-item selected" : "nav-item"} onClick={() => setView("workspace")}><Activity size={18} /> Command centre <ChevronRight size={15} className="nav-chevron" /></button>
           <button className={view === "overview" ? "nav-item selected" : "nav-item"} onClick={() => setView("overview")}><Compass size={18} /> Overview <ChevronRight size={15} className="nav-chevron" /></button>
           <button className={view === "engines" ? "nav-item selected" : "nav-item"} onClick={() => setView("engines")}><Layers3 size={18} /> Intelligence engines <ChevronRight size={15} className="nav-chevron" /></button>
         </nav>
@@ -81,17 +83,17 @@ export default function Home() {
           <div className="side-orb"><Sparkles size={18} /></div>
           <p className="side-bottom-head">Built for the next era</p>
           <p>Marketing intelligence that connects discovery with measurable impact.</p>
-          <div className="side-product-status"><span className="status-light" /> Foundation release</div>
+          <div className="side-product-status"><span className="status-light" /> Workspace release</div>
         </div>
       </aside>
 
       <main className="main">
         <header className="topbar">
-          <div className="breadcrumb">VISTA <span>/</span> {view === "overview" ? "Overview" : "Intelligence engines"}</div>
-          <div className="topbar-right"><span className="small-lock"><LockKeyhole size={13} /> Public beta foundation</span><span className="avatar">AX</span></div>
+          <div className="breadcrumb">VISTA <span>/</span> {view === "overview" ? "Overview" : view === "workspace" ? "Command centre" : "Intelligence engines"}</div>
+          <div className="topbar-right"><span className="small-lock"><LockKeyhole size={13} /> Workspace beta</span><span className="avatar">AX</span></div>
         </header>
 
-        {view === "overview" ? (
+        {view === "workspace" ? <WorkspacePanel /> : view === "overview" ? (
           <>
             <section className="hero">
               <div className="hero-grain" aria-hidden="true" />
