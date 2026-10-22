@@ -10,12 +10,12 @@ function download(name: string, content: string, type = 'application/json') {
   const url = URL.createObjectURL(new Blob([content], {type}));
   const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-export default function WorkspacePanel() {
+export default function WorkspacePanel({ initialTab = 'Projects' }: { initialTab?: Tab }) {
   const [data, setData] = useState<Workspace>(emptyWorkspace);
   const [ready, setReady] = useState(false);
   const [recovery, setRecovery] = useState(false);
   const [selected, setSelected] = useState('');
-  const [tab, setTab] = useState<Tab>('Projects');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState('');
@@ -47,7 +47,7 @@ export default function WorkspacePanel() {
   }
   const fields = (form: HTMLFormElement) => Object.fromEntries(new FormData(form)) as Record<string,string>;
   return <section className="section workspace-section">
-    <div className="section-heading"><div><span className="section-overline">VISTA COMMAND CENTRE</span><h1>Your marketing ecosystem.</h1><p>Connect evidence, decisions and execution across every project.</p></div><span className="section-pill">Browser workspace</span></div>
+    <div className="section-heading"><div><span className="section-overline">YOUR WORKSPACE</span><h1>Your work. <em>Connected.</em></h1><p>Projects, evidence and execution. All in one place.</p></div><span className="section-pill">Browser workspace</span></div>
     <div className="workspace-toolbar"><label>Active project<select value={selected} disabled={busy} onChange={e=>{setSelected(e.target.value);setExpanded('');}}><option value="">Select a project</option>{data.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><div className="workspace-tools"><button disabled={!ready} onClick={()=>download('Vista Workspace.json',recovery ? (localStorage.getItem(storageKey)||'{}') : JSON.stringify(data,null,2))}><Download size={15}/> Export backup</button><button disabled={busy || !ready} onClick={()=>file.current?.click()}><Upload size={15}/> Import backup</button><input ref={file} type="file" accept=".json" hidden onChange={async e=>{const f=e.target.files?.[0];if(!f)return;try { if(f.size>4_000_000)throw new Error('File exceeds 4 MB.');const next=parseWorkspace(await f.text());if(data.projects.length && !window.confirm('Replace this browser workspace with the imported backup? Export first if you want to keep your current work.'))return;if(persist(next,true)){setRecovery(false);setSelected(next.projects[0]?.id||'');setMessage('Workspace imported.');}}catch(err){setMessage(err instanceof Error?err.message:'Import failed.');}finally{e.target.value='';}}}/></div></div>
     <p className="workspace-note">Saved on this browser only. Export a backup to move your work or protect it before clearing browser data. No cloud account is connected.</p>
     <div className="workspace-tabs" aria-label="Workspace sections">{tabs.map(t=><button key={t.name} className={tab===t.name?'active':''} onClick={()=>setTab(t.name)}><t.icon size={16}/>{t.name}</button>)}</div>

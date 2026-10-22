@@ -26,6 +26,15 @@ VISTA is an integrated marketing intelligence platform organised around five str
 8. Digital Analytics and Performance Intelligence
 9. AI Exposure and Generative Engine Optimisation
 
+## Origin release
+
+- Obsidian, pearl and mint visual system with a dimensional animated V emblem
+- Pointer-responsive depth, orbit motion, animated transitions and reduced-motion support
+- Command palette, interactive engine map and responsive mobile navigation
+- Live comparison of up to three public webpages, with per-site error reporting and exports
+- Local draft analysis for structure, reading time, topic mentions and source URLs
+- Automatic browser-local draft saving
+
 ## Workspace release
 
 - Project portfolios with audience and commercial objectives

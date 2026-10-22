@@ -1,173 +1,60 @@
-"use client";
+'use client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, AudioLines, BarChart3, Check, ChevronDown, ChevronRight, Command, Compass, Crosshair, FileText, FolderOpen, Globe2, Layers3, Menu, Orbit, Pause, Play, Plus, Radar, ScanLine, Search, Settings2, ShieldCheck, Sparkles, Target, WandSparkles, X, Zap } from 'lucide-react';
+import Pearl from './pearl';
+import WorkspacePanel from './workspace';
+import { AuditLab, AuditResults, BenchmarkLab, ContentLab, fetchAudit } from './intelligence';
+import type { AuditReport } from '@/lib/audit';
+import { emptyWorkspace, parseWorkspace, storageKey } from '@/lib/workspace';
+import type { Workspace } from '@/lib/workspace';
+import { engines } from '@/lib/engines';
 
-import WorkspacePanel from "./workspace";
-import { useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import {
-  Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3,
-  Check, ChevronRight, CircleAlert, Clock3, Compass, FileCheck2,
-  Globe2, Layers3, LockKeyhole, Radar, ScanSearch, Search,
-  ShieldCheck, Sparkles, Target, WandSparkles
-} from "lucide-react";
-import { engines, pillars } from "@/lib/engines";
-import type { AuditReport } from "@/lib/audit";
+type View='command'|'audit'|'benchmark'|'content'|'workspace'|'engines';
+type WorkspaceTab='Projects'|'Audit history'|'Action board'|'Content studio'|'AI exposure'|'Connections';
+const nav=[{id:'command',label:'Command centre',icon:Compass},{id:'audit',label:'Site intelligence',icon:ScanLine},{id:'benchmark',label:'Competitive lens',icon:Crosshair},{id:'content',label:'Content intelligence',icon:FileText},{id:'workspace',label:'My workspace',icon:FolderOpen},{id:'engines',label:'The ecosystem',icon:Orbit}] as const;
+const glyphs=[Search,Target,ScanLine,WandSparkles,ShieldCheck,Radar,Layers3,BarChart3,Sparkles];
 
-const glyphs = [
-  Search, Target, ScanSearch, WandSparkles, ShieldCheck,
-  Radar, Layers3, BarChart3, Sparkles
-];
-
-function Mark() {
-  return (
-    <div className="mark" aria-label="VISTA">
-      <div className="mark-symbol" aria-hidden="true"><span>V</span></div>
-      <div><div className="mark-word">VISTA<span className="mark-dot">.</span></div><div className="mark-caption">BY AMBIDEXTERS</div></div>
-    </div>
-  );
-}
-
-export default function Home() {
-  const [address, setAddress] = useState("https://ambidexters.com");
-  const [report, setReport] = useState<AuditReport | null>(null);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<"overview" | "engines" | "workspace">("workspace");
-  const issues = useMemo(
-    () => report?.signals.filter((signal) => signal.status !== "pass") || [],
-    [report]
-  );
-
-  async function runAudit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    setReport(null);
-    try {
-      const response = await fetch("/api/audit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: address })
-      });
-      const payload: AuditReport | { error: string } = await response.json();
-      if (!response.ok || "error" in payload) {
-        throw new Error("error" in payload ? payload.error : "The scan could not be completed.");
-      }
-      setReport(payload);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The scan could not be completed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="shell">
-      <aside className="sidebar">
-        <Mark />
-        <p className="side-label">WORKSPACE</p>
-        <nav className="side-nav" aria-label="Primary navigation">
-          <button className={view === "workspace" ? "nav-item selected" : "nav-item"} onClick={() => setView("workspace")}><Activity size={18} /> Command centre <ChevronRight size={15} className="nav-chevron" /></button>
-          <button className={view === "overview" ? "nav-item selected" : "nav-item"} onClick={() => setView("overview")}><Compass size={18} /> Overview <ChevronRight size={15} className="nav-chevron" /></button>
-          <button className={view === "engines" ? "nav-item selected" : "nav-item"} onClick={() => setView("engines")}><Layers3 size={18} /> Intelligence engines <ChevronRight size={15} className="nav-chevron" /></button>
-        </nav>
-        <p className="side-label side-label-second">FIVE PILLARS</p>
-        <div className="pillar-list">
-          {pillars.map((pillar) => (
-            <div className="pillar-row" key={pillar.letter}>
-              <span className="pillar-letter">{pillar.letter}</span>
-              <span>{pillar.name}</span>
-            </div>
-          ))}
-        </div>
-        <div className="side-bottom">
-          <div className="side-orb"><Sparkles size={18} /></div>
-          <p className="side-bottom-head">Built for the next era</p>
-          <p>Marketing intelligence that connects discovery with measurable impact.</p>
-          <div className="side-product-status"><span className="status-light" /> Workspace release</div>
-        </div>
-      </aside>
-
-      <main className="main">
-        <header className="topbar">
-          <div className="breadcrumb">VISTA <span>/</span> {view === "overview" ? "Overview" : view === "workspace" ? "Command centre" : "Intelligence engines"}</div>
-          <div className="topbar-right"><span className="small-lock"><LockKeyhole size={13} /> Workspace beta</span><span className="avatar">AX</span></div>
-        </header>
-
-        {view === "workspace" ? <WorkspacePanel /> : view === "overview" ? (
-          <>
-            <section className="hero">
-              <div className="hero-grain" aria-hidden="true" />
-              <div className="hero-content">
-                <span className="hero-eyebrow"><span className="eyebrow-star">✳</span> INTRODUCING VISTA INTELLIGENCE</span>
-                <h1>Marketing Superior<br />Intelligence. <em>Reimagined.</em></h1>
-                <p>Visibility, authority and growth, connected by superior intelligence. One platform built around nine specialised engines.</p>
-                <a className="hero-link" href="#audit">Explore site intelligence <ArrowUpRight size={17} /></a>
-              </div>
-              <div className="hero-art" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" /><div className="hero-art-core">V</div><span className="orbit-point orbit-point-a" /><span className="orbit-point orbit-point-b" /><span className="orbit-point orbit-point-c" /></div>
-            </section>
-
-            <div className="summary-strip">
-              <div><p>INTELLIGENCE ENGINES</p><strong>09</strong><span>Across every marketing layer</span></div>
-              <div><p>STRATEGIC PILLARS</p><strong>05</strong><span>One connected ecosystem</span></div>
-              <div><p>LIVE CAPABILITIES</p><strong>01</strong><span>Website audit, first release</span></div>
-              <div className="summary-status"><span className="summary-status-icon"><Activity size={20} /></span><div><p>DEVELOPMENT STATUS</p><strong className="summary-status-text">Foundation</strong><span>Expanding in stages</span></div></div>
-            </div>
-
-            <section className="section" id="audit">
-              <div className="section-heading"><div><span className="section-overline">VISTA SITE INTELLIGENCE</span><h2>See beyond the surface.</h2><p>Inspect a public website and reveal structural signals that affect technical search readiness.</p></div><span className="section-pill"><span className="status-light" /> Engine 03 · Live</span></div>
-              <form className="audit-form" onSubmit={runAudit}>
-                <label htmlFor="website">Website address</label>
-                <div className="audit-input-row">
-                  <div className="input-wrap"><Globe2 size={20} /><input id="website" type="url" required value={address} onChange={(event) => setAddress(event.target.value)} placeholder="https://yourwebsite.com" autoComplete="url" /></div>
-                  <button type="submit" disabled={busy} className="primary-button">{busy ? "Analysing..." : "Run site audit"} {busy ? <span className="loading-dot" /> : <ArrowRight size={17} />}</button>
-                </div>
-                <p className="form-hint"><ShieldCheck size={14} /> Public HTTPS webpages only. No account or credentials needed.</p>
-              </form>
-
-              {error && <div className="message error-message" role="alert"><CircleAlert size={18} /><span>{error}</span></div>}
-              {report && (
-                <div className="results" aria-live="polite">
-                  <div className="result-top"><div><span className="section-overline">LATEST AUDIT</span><h3>{new URL(report.url).hostname}</h3><p><Clock3 size={14} /> {new Date(report.inspectedAt).toLocaleString("en-GB")} · HTML analysis</p></div><div className="score-card"><strong>{report.technicalScore}<small>/100</small></strong><span>HTML signal score</span></div></div>
-                  <div className="site-details"><div><span>PAGE TITLE</span><p>{report.title || "Not found"}</p></div><div><span>H1 HEADINGS</span><p>{report.headingOneCount}</p></div><div><span>SCHEMA BLOCKS</span><p>{report.structuredDataBlocks}</p></div><div><span>IMAGES WITHOUT ALT</span><p>{report.imagesMissingAlt}</p></div></div>
-                  <div className="result-columns">
-                    <div className="signal-column"><h4>Technical signals <span>{report.signals.length} checked</span></h4>{report.signals.map((signal) => <div className="signal-row" key={signal.id}><span className={"signal-mark " + signal.status}>{signal.status === "pass" ? <Check size={14} /> : <CircleAlert size={14} />}</span><div><strong>{signal.name}</strong><small>{signal.detail}</small></div></div>)}</div>
-                    <div className="action-column"><h4>Priority actions <span>{issues.length} identified</span></h4>{issues.length ? issues.map((signal, index) => <div className="action-row" key={signal.id}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{signal.name}</strong><p>{signal.recommendation}</p></div></div>) : <div className="clear-state"><FileCheck2 size={28} /><p>No issues flagged by this limited HTML check.</p></div>}</div>
-                  </div>
-                  <div className="limitations"><CircleAlert size={16}/><p>{report.limitations.join(" ")}</p></div>
-                </div>
-              )}
-              {!report && !busy && !error && <div className="empty-panel"><div className="empty-symbol"><ScanSearch size={28} /></div><div><h3>Your next insight starts here.</h3><p>Run a live audit to examine page titles, indexing directives, canonical links, headings, structured data and more.</p></div><span className="empty-tag">9 signals</span></div>}
-            </section>
-
-            <section className="section engines-section" id="engines">
-              <div className="section-heading"><div><span className="section-overline">THE INTELLIGENCE ECOSYSTEM</span><h2>Nine engines. One vision.</h2><p>Purpose-built capabilities working together across the marketing value chain.</p></div><button className="text-button" onClick={() => setView("engines")}>View all engines <ArrowUpRight size={17}/></button></div>
-              <EngineCards />
-            </section>
-          </>
-        ) : (
-          <section className="section engines-full">
-            <span className="section-overline">THE VISTA ARCHITECTURE</span>
-            <h1>Nine engines.<br /><span>One intelligence ecosystem.</span></h1>
-            <p>Each engine is designed to solve a distinct problem. Together, they connect digital discovery, authority, commercial performance and scalable execution.</p>
-            <EngineCards />
-            <div className="build-notice"><Sparkles size={19}/><span>The Site Intelligence audit is available now. The other eight engines are on the development roadmap.</span><button onClick={() => setView("overview")}>Return to audit <ArrowRight size={15}/></button></div>
-          </section>
-        )}
-
-        <footer><span>© 2026 AMBIDEXTERS · VISTA</span><span>MARKETING SUPERIOR INTELLIGENCE. REIMAGINED.</span></footer>
-      </main>
-    </div>
-  );
-}
-
-function EngineCards() {
-  return <div className="engine-grid">{engines.map((engine, index) => {
-    const Glyph = glyphs[index];
-    return <article className="engine-card" key={engine.id}>
-      <div className="engine-card-top"><div className="engine-icon"><Glyph size={20} strokeWidth={1.6}/></div><span className="engine-id">{String(engine.id).padStart(2, "0")}</span></div>
-      <h3>{engine.name}</h3>
-      <p>{engine.description}</p>
-      <div className="engine-card-bottom"><span className={"engine-status " + engine.status}><span className="status-light"/>{engine.status === "live" ? "Available now" : "On roadmap"}</span><span className="engine-pillar">PILLAR {engine.pillar}</span></div>
-    </article>;
-  })}</div>;
+export default function Home(){
+ const [view,setView]=useState<View>('command');const [workspaceTab,setWorkspaceTab]=useState<WorkspaceTab>('Projects');const [menu,setMenu]=useState(false);const [palette,setPalette]=useState(false);const [query,setQuery]=useState('');const [motion,setMotion]=useState(true);const [data,setData]=useState<Workspace>(emptyWorkspace);const [loadError,setLoadError]=useState('');const [address,setAddress]=useState('');const [report,setReport]=useState<AuditReport|null>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+ const searchRef=useRef<HTMLInputElement>(null);const paletteRef=useRef<HTMLDivElement>(null);const paletteTrigger=useRef<HTMLButtonElement>(null);
+ const refresh=useCallback(()=>{try{const raw=localStorage.getItem(storageKey);setData(raw?parseWorkspace(raw):emptyWorkspace());setLoadError('');}catch{setLoadError('Your saved workspace could not be read. Use My workspace to recover a backup.');}},[]);
+ useEffect(()=>{refresh();setMotion(!window.matchMedia('(prefers-reduced-motion: reduce)').matches);window.addEventListener('vista-update',refresh);window.addEventListener('storage',refresh);return()=>{window.removeEventListener('vista-update',refresh);window.removeEventListener('storage',refresh);};},[refresh]);
+ useEffect(()=>{function keys(e:KeyboardEvent){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setPalette(v=>!v);}if(e.key==='Escape'){setPalette(false);setMenu(false);}}window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);},[]);
+ useEffect(()=>{if(palette){const old=document.body.style.overflow;document.body.style.overflow='hidden';searchRef.current?.focus();return()=>{document.body.style.overflow=old;paletteTrigger.current?.focus();};}},[palette]);
+ function navigate(next:View,tab:WorkspaceTab='Projects'){setView(next);setWorkspaceTab(tab);setMenu(false);setPalette(false);setQuery('');refresh();window.scrollTo({top:0,behavior:'instant'});}
+ const latest=data.snapshots[0];const openFindings=latest?.report.signals.filter(s=>s.status!=='pass')||[];
+ const commandOptions=[...nav.map(n=>({label:n.label,description:n.id==='audit'?'Run a live website audit':n.id==='benchmark'?'Compare three websites':n.id==='content'?'Analyse a draft as you write':'Open '+n.label,action:()=>navigate(n.id)})),{label:'AI observation ledger',description:'Record prompt and citation evidence',action:()=>navigate('workspace','AI exposure')},{label:'Editorial pipeline',description:'Develop and export content briefs',action:()=>navigate('workspace','Content studio')},{label:'Integration status',description:'Inspect data connection requirements',action:()=>navigate('workspace','Connections')}];
+ return <div className={`vista-app ${motion?'motion-on':'motion-off'}`}>
+  <div className="ambient-light" aria-hidden="true"/>
+  {menu&&<button className="mobile-scrim" aria-label="Close navigation" onClick={()=>setMenu(false)}/>}
+  <aside className={`app-rail ${menu?'is-open':''}`}>
+   <button className="brand" onClick={()=>navigate('command')} aria-label="VISTA home"><Pearl compact/><div><span>VISTA<span className="brand-period">.</span></span><small>BY AMBIDEXTERS</small></div></button>
+   <div className="rail-workspace"><span className="workspace-avatar">AX</span><div><strong>Personal workspace</strong><small>Marketing ecosystem</small></div><ChevronDown size={14}/></div>
+   <p className="rail-caption">INTELLIGENCE</p><nav aria-label="Primary navigation">{nav.map(n=><button key={n.id} onClick={()=>navigate(n.id)} className={`rail-link ${view===n.id?'active':''}`} aria-current={view===n.id?'page':undefined}><n.icon size={18} strokeWidth={1.6}/><span>{n.label}</span>{view===n.id&&<span className="active-pin"/>}{n.id==='benchmark'&&<small>NEW</small>}</button>)}</nav>
+   <p className="rail-caption">EXECUTION</p><nav aria-label="Execution tools"><button className="rail-link" onClick={()=>navigate('workspace','Action board')}><Zap size={18}/><span>Action board</span></button><button className="rail-link" onClick={()=>navigate('workspace','Content studio')}><Layers3 size={18}/><span>Editorial pipeline</span></button><button className="rail-link" onClick={()=>navigate('workspace','AI exposure')}><Radar size={18}/><span>AI exposure</span></button></nav>
+   <div className="rail-bottom"><div className="rail-vision"><AudioLines size={21}/><span>Intelligence in motion.</span><p>See further. Think deeper.<br/>Move with purpose.</p><div className="tiny-spectrum">{Array.from({length:25},(_,i)=><i key={i} style={{'--bar':`${12+Math.sin(i*.7)*8}px`,'--delay':`${i*.07}s`} as CSSProperties}/>)}</div></div><button className="rail-link" onClick={()=>navigate('workspace','Connections')}><Settings2 size={17}/><span>Connections</span><ArrowUpRight size={14}/></button><div className="rail-footer"><span className="status-dot"/> VISTA / ORIGIN RELEASE</div></div>
+  </aside>
+  <div className="app-body"><header className="app-topbar"><div className="topbar-location"><button className="mobile-menu icon-button" onClick={()=>setMenu(!menu)} aria-label="Open navigation"><Menu size={19}/></button><span className="topbar-brand">VISTA</span><span className="topbar-divider">/</span><span>{nav.find(n=>n.id===view)?.label}</span></div><div className="topbar-actions"><button ref={paletteTrigger} className="command-trigger" onClick={()=>setPalette(true)}><Search size={15}/><span>Find anything</span><kbd>⌘ K</kbd></button><button className="icon-button motion-control" onClick={()=>setMotion(!motion)} aria-label={motion?'Pause animations':'Play animations'} title={motion?'Pause animations':'Play animations'}>{motion?<Pause size={15}/>:<Play size={15}/>}</button><span className="topbar-avatar">AX</span></div></header>
+  <main className="app-main" key={view+workspaceTab}>
+  {view==='command'&&<>
+   <div className="page-intro reveal"><div><span className="eyebrow">YOUR VANTAGE POINT</span><h2>A wider view. A sharper instinct.</h2></div><span className="live-tag"><i/>Your intelligence workspace</span></div>
+   <section className="command-hero reveal" onPointerMove={e=>{if(!motion||e.pointerType==='touch')return;const r=e.currentTarget.getBoundingClientRect();e.currentTarget.style.setProperty('--pointer-x',`${(e.clientX-r.left)/r.width*100}%`);e.currentTarget.style.setProperty('--tilt-x',`${((e.clientX-r.left)/r.width-.5)*12}deg`);e.currentTarget.style.setProperty('--tilt-y',`${-((e.clientY-r.top)/r.height-.5)*10}deg`);}} onPointerLeave={e=>{e.currentTarget.style.setProperty('--tilt-x','0deg');e.currentTarget.style.setProperty('--tilt-y','0deg');}}>
+    <div className="hero-grid" aria-hidden="true"/><div className="hero-sweep" aria-hidden="true"/>
+    <div className="command-hero-copy"><span className="hero-kicker"><span/>MARKETING SUPERIOR INTELLIGENCE</span><h1>See the unseen.<br/><em>Own the next move.</em></h1><p>Your visibility, authority and impact.<br/>One extraordinary field of intelligence.</p><div className="hero-buttons"><button className="mint-button" onClick={()=>navigate('audit')}>Explore your website<ArrowUpRight size={17}/></button><button className="hero-secondary" onClick={()=>navigate('engines')}>Enter the ecosystem<ArrowRight size={15}/></button></div><div className="hero-signature"><span>09 ENGINES</span><i/><span>05 PILLARS</span><i/><span>ONE VISTA</span></div></div>
+    <div className="hero-pearl"><Pearl/><div className="pearl-caption"><span className="status-dot"/> THE VISTA PEARL <span>/ 001</span></div></div>
+   </section>
+   <section className="launch-strip reveal"><div className="launch-icon"><ScanLine size={22}/></div><div><h3>What is your website telling the world?</h3><p>Run a live scan. Find your next opportunity.</p></div><form onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');setReport(null);try{setReport(await fetchAudit(address));}catch(e){setError(e instanceof Error?e.message:'Unable to scan.');}finally{setBusy(false);}}}><label className="sr-only" htmlFor="quick-audit">Website address</label><input id="quick-audit" value={address} onChange={e=>setAddress(e.target.value)} placeholder="yourwebsite.com" required/><button className="mint-button" disabled={busy}>{busy?'Scanning…':'Reveal insights'}<ArrowUpRight size={16}/></button></form></section>
+   {busy&&<div className="scan-progress" role="status"><div/><span>Reading your website’s HTML signals</span></div>}{error&&<div className="error-banner" role="alert">{error}</div>}{report&&<AuditResults report={report}/>}{loadError&&<div className="error-banner" role="alert">{loadError}</div>}
+   <section className="vital-grid reveal" aria-label="Your workspace activity">{[{label:'ACTIVE PROJECTS',value:data.projects.length,foot:'Your brands in focus',icon:FolderOpen,action:()=>navigate('workspace')},{label:'OBSERVED AUDITS',value:data.snapshots.length,foot:'Evidence, captured',icon:ScanLine,action:()=>navigate('workspace','Audit history')},{label:'EDITORIAL BRIEFS',value:data.briefs.length,foot:'Ideas moving forward',icon:FileText,action:()=>navigate('workspace','Content studio')},{label:'AI OBSERVATIONS',value:data.observations.length,foot:'Your recorded samples',icon:Radar,action:()=>navigate('workspace','AI exposure')}].map(m=><button className="vital-card" key={m.label} onClick={m.action}><div><span>{m.label}</span><m.icon size={17}/></div><strong>{String(m.value).padStart(2,'0')}</strong><footer><span>{m.foot}</span><ArrowUpRight size={15}/></footer></button>)}</section>
+   <section className="command-grid reveal"><article className="glass-panel ecosystem-map"><div className="panel-heading"><div><span className="eyebrow">CONNECTED BY DESIGN</span><h2>The intelligence constellation.</h2></div><button className="icon-button" aria-label="Explore all engines" onClick={()=>navigate('engines')}><ArrowUpRight size={20}/></button></div><div className="constellation"><div className="constellation-rings"/><svg viewBox="0 0 500 280" aria-hidden="true"><path d="M250 140L85 55M250 140L250 32M250 140L415 55M250 140L448 140M250 140L415 225M250 140L250 248M250 140L85 225M250 140L52 140"/></svg><button className="constellation-centre" aria-label="Open AI exposure" onClick={()=>navigate('workspace','AI exposure')}><Pearl compact/></button>{[{x:17,y:20,label:'Search',icon:Search,view:'engines'},{x:50,y:11,label:'Impact',icon:Target,view:'engines'},{x:83,y:20,label:'Site',icon:ScanLine,view:'audit'},{x:90,y:50,label:'Content',icon:FileText,view:'content'},{x:83,y:80,label:'Authority',icon:ShieldCheck,view:'engines'},{x:50,y:89,label:'Reputation',icon:Radar,view:'engines'},{x:17,y:80,label:'Agency',icon:Layers3,view:'workspace'},{x:10,y:50,label:'Analytics',icon:BarChart3,view:'engines'}].map((n,i)=><button key={n.label} onClick={()=>navigate(n.view as View)} className="constellation-node" style={{left:n.x+'%',top:n.y+'%','--delay':`${i*.3}s`} as CSSProperties}><span><n.icon size={15}/></span><small>{n.label}</small></button>)}</div><div className="panel-bottom"><span><span className="status-dot"/> Nine engines. Shared ambition.</span><button onClick={()=>navigate('engines')}>Explore architecture<ArrowRight size={14}/></button></div></article>
+   <article className="glass-panel opportunity-panel"><div className="panel-heading"><div><span className="eyebrow">YOUR NEXT MOVE</span><h2>{latest?'Evidence into action.':'Start with a signal.'}</h2></div><Zap size={21}/></div>{latest?<><p className="opportunity-host">{new URL(latest.report.url).hostname} · latest saved audit</p>{openFindings.slice(0,3).map((s,i)=><button className="opportunity-row" key={s.id} onClick={()=>navigate('workspace','Action board')}><span className="opportunity-number">0{i+1}</span><div><h3>{s.name}</h3><p>{s.recommendation}</p></div><ArrowUpRight size={16}/></button>)}{!openFindings.length&&<p className="empty-copy">No issues flagged by the latest HTML scan. Explore another page to widen your evidence.</p>}</>:<>{[{title:'Discover your blind spots',copy:'Read the signals behind your website.',icon:ScanLine,view:'audit'},{title:'Find your competitive edge',copy:'Compare the same signals across three sites.',icon:Crosshair,view:'benchmark'},{title:'Give your ideas structure',copy:'Analyse your draft as you write.',icon:FileText,view:'content'}].map(a=><button className="opportunity-row" key={a.title} onClick={()=>navigate(a.view as View)}><span className="opportunity-icon"><a.icon size={19}/></span><div><h3>{a.title}</h3><p>{a.copy}</p></div><ArrowUpRight size={16}/></button>)}</>}<div className="opportunity-footer"><span>Clarity before action.</span><span className="micro-wave">∿∿∿</span></div></article></section>
+   <section className="feature-ribbon reveal"><div><span className="eyebrow">THE COMPETITIVE LENS</span><h2>Your market.<br/><em>In perspective.</em></h2><p>One framework. Three websites.<br/>See where the HTML signals diverge.</p><button className="ghost-button" onClick={()=>navigate('benchmark')}>Compare websites<ArrowUpRight size={16}/></button></div><div className="abstract-bars" aria-hidden="true">{[42,72,55,88,64,95,76,58,82,66,92,74].map((h,i)=><i key={i} style={{'--height':h+'%','--delay':`${i*.09}s`} as CSSProperties}/>)}<span>EXPLORE THE COMPARISON TOOL</span></div></section>
+  </>}
+  {view==='audit'&&<AuditLab/>}{view==='benchmark'&&<BenchmarkLab/>}{view==='content'&&<ContentLab/>}{view==='workspace'&&<WorkspacePanel initialTab={workspaceTab}/>}
+  {view==='engines'&&<div className="tool-page engine-page"><div className="tool-heading"><span className="eyebrow"><Orbit size={15}/> THE VISTA ECOSYSTEM</span><h1>A wider universe.<br/><em>One intelligence.</em></h1><p>Nine connected capability families. Explore what works today and what comes next.</p></div><div className="engine-catalogue">{engines.map((e,i)=>{const Icon=glyphs[i];const available=[3,4,7,9].includes(e.id);const action=()=>e.id===3?navigate('audit'):e.id===4?navigate('content'):e.id===7?navigate('workspace'):e.id===9?navigate('workspace','AI exposure'):navigate('workspace','Connections');return <button key={e.id} className="catalogue-card" onClick={action}><div><span className="catalogue-icon"><Icon size={23}/></span><span className="catalogue-number">0{e.id}</span></div><span className="eyebrow">PILLAR {e.pillar}</span><h2>{e.name}</h2><p>{e.description}</p><footer><span className={available?'available':'planned'}><i/>{e.id===3?'Live audits':e.id===4?'Text analysis & briefs':e.id===7?'Local projects':e.id===9?'Manual observations':'Integration planned'}</span><ArrowUpRight size={17}/></footer></button>;})}</div><div className="ecosystem-principle"><Pearl compact/><p>Visibility. Impact intelligence. Search and site optimisation. Trust and authority. Agencies, analytics and AI exposure.</p></div></div>}
+  <footer className="app-footer"><span>VISTA<span>™</span> <i/> AN AMBIDEXTERS TECHNOLOGY</span><span>MARKETING SUPERIOR INTELLIGENCE. REIMAGINED.</span></footer>
+  </main></div>
+  {palette&&<div className="palette-backdrop" onClick={()=>setPalette(false)}><div className="command-palette" ref={paletteRef} role="dialog" aria-modal="true" aria-label="Find a Vista tool" onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key!=='Tab')return;const nodes=paletteRef.current?.querySelectorAll<HTMLElement>('button,input');if(!nodes?.length)return;const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}><div className="palette-search"><Search size={21}/><input ref={searchRef} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Where would you like to go?" aria-label="Search Vista tools"/><button className="icon-button" onClick={()=>setPalette(false)} aria-label="Close search"><X size={18}/></button></div><span className="eyebrow">EXPLORE YOUR VISTA</span><div className="palette-options">{commandOptions.filter(o=>(o.label+' '+o.description).toLowerCase().includes(query.toLowerCase())).map(o=><button key={o.label} onClick={o.action}><div><strong>{o.label}</strong><small>{o.description}</small></div><ArrowUpRight size={17}/></button>)}{!commandOptions.some(o=>(o.label+' '+o.description).toLowerCase().includes(query.toLowerCase()))&&<p>No tools match “{query}”.</p>}</div><footer><kbd>ESC</kbd> to close <span><Command size={12}/> K to open</span></footer></div></div>}
+ </div>;
 }
