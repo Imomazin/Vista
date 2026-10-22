@@ -81,3 +81,7 @@ Never commit environment secrets, unpublished research, customer data or proprie
 Copyright 2026 Ambidexters. All rights reserved.
 
 This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VISTA is a working product name pending appropriate trademark clearance.
+
+## Evidence and execution
+
+The action board groups current findings by project and exact page URL. Owners, due dates, notes and delivery stages persist across scans and workspace backup exports. A passing HTML check marks tracked work verified; a newer failing scan flags work previously marked ready for verification. Filters and Markdown register exports support review. Each finding can create an editable evidence brief in the editorial pipeline. Owners are local labels, with no notification delivery. Existing version-one backups remain compatible.

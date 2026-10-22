@@ -3,7 +3,8 @@ export type Project = { id: string; name: string; url: string; audience: string;
 export type Snapshot = { id: string; projectId: string; report: AuditReport };
 export type Brief = { id: string; projectId: string; topic: string; intent: string; audience: string; outline: string; status: 'Draft' | 'Ready' | 'Published' };
 export type Observation = { id: string; projectId: string; provider: string; prompt: string; response: string; source: string; mentioned: boolean; observedAt: string };
-export type Workspace = { version: 1; projects: Project[]; snapshots: Snapshot[]; briefs: Brief[]; observations: Observation[]; completed: string[] };
+export type ActionPlan = { key: string; projectId: string; url: string; signalId: string; owner: string; due: string; notes: string; stage: 'Planned' | 'In progress' | 'Ready for verification'; evidenceAt: string };
+export type Workspace = { version: 1; projects: Project[]; snapshots: Snapshot[]; briefs: Brief[]; observations: Observation[]; completed: string[]; actionPlans?: ActionPlan[] };
 export const emptyWorkspace = (): Workspace => ({ version: 1, projects: [], snapshots: [], briefs: [], observations: [], completed: [] });
 export const storageKey = 'vista-workspace';
 const record = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -28,8 +29,14 @@ export function parseWorkspace(raw: string): Workspace {
   if (!w.observations.every(o => record(o) && strings(o,['id','projectId','provider','prompt','response','source','observedAt']) && ids.has(o.projectId) && typeof o.mentioned === 'boolean' && Number.isFinite(Date.parse(o.observedAt)))) throw new Error('Invalid observations.');
   w.observations.forEach(o => { if (o.source) publicUrl(o.source); });
   if (!w.completed.every(x => typeof x === 'string')) throw new Error('Invalid action states.');
+  if (w.actionPlans !== undefined) {
+    if (!Array.isArray(w.actionPlans) || w.actionPlans.length > 1000 || !w.actionPlans.every(a => record(a) && strings(a,['key','projectId','url','signalId','owner','due','notes','stage','evidenceAt']) && ids.has(a.projectId) && ['Planned','In progress','Ready for verification'].includes(a.stage) && Number.isFinite(Date.parse(a.evidenceAt)) && (a.due === '' || (/^\d{4}-\d{2}-\d{2}$/.test(a.due) && new Date(a.due).toISOString().slice(0,10) === a.due)))) throw new Error('Invalid action plans.');
+    w.actionPlans.forEach(a => { publicUrl(a.url); if (a.key !== actionKey(a.projectId,a.url,a.signalId)) throw new Error('Invalid action key.'); });
+    if (new Set(w.actionPlans.map(a=>a.key)).size !== w.actionPlans.length) throw new Error('Duplicate action plans.');
+  }
   return w;
 }
+export function actionKey(projectId: string, url: string, signalId: string) { return JSON.stringify([projectId,url,signalId]); }
 function validReport(r: Record<string, unknown>): boolean {
   try { publicUrl(String(r.url)); } catch { return false; }
   return typeof r.inspectedAt === 'string' && Number.isFinite(Date.parse(r.inspectedAt)) && typeof r.technicalScore === 'number' && r.technicalScore >= 0 && r.technicalScore <= 100 &&
