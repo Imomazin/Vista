@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/lib/audit.test.ts"
   },
   "dependencies": {
     "next": "16.4.2",
@@ -19,7 +20,8 @@
     "typescript": "^5.9.3",
     "@types/node": "^22.19.0",
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0"
+    "@types/react-dom": "^19.2.0",
+    "tsx": "^4.20.6"
   },
   "engines": {
     "node": ">=22.0.0"

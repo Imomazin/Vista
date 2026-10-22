@@ -97,7 +97,7 @@ export default function Home() {
               <div className="hero-grain" aria-hidden="true" />
               <div className="hero-content">
                 <span className="hero-eyebrow"><span className="eyebrow-star">✳</span> INTRODUCING VISTA INTELLIGENCE</span>
-                <h1>Marketing intelligence.<br /><em>Reimagined.</em></h1>
+                <h1>Marketing Superior<br />Intelligence. <em>Reimagined.</em></h1>
                 <p>Visibility, authority and growth, connected by superior intelligence. One platform built around nine specialised engines.</p>
                 <a className="hero-link" href="#audit">Explore site intelligence <ArrowUpRight size={17} /></a>
               </div>
