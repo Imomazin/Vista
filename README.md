@@ -1,1 +1,63 @@
-# Vista
+# VISTA
+
+Marketing Superior Intelligence. Reimagined.
+
+An Ambidexters technology.
+
+VISTA is an integrated marketing intelligence platform organised around five strategic pillars and nine interconnected engines. The product combines search visibility, commercial impact, technical optimisation, content strategy, brand authority, digital reputation, agency operations, analytics and AI exposure.
+
+## Five pillars
+
+- V: Visibility
+- I: Impact Intelligence
+- S: Search and Site Optimisation
+- T: Trust and Authority
+- A: Agencies, Analytics and AI Exposure
+
+## Nine intelligence engines
+
+1. SEO and Search Visibility Intelligence
+2. Conversion and Revenue Intelligence
+3. Technical SEO and Website Audits
+4. Strategic Content Studio
+5. Brand Authority and Entity Intelligence
+6. Digital PR and Reputation Intelligence
+7. Agency and White-Label Intelligence
+8. Digital Analytics and Performance Intelligence
+9. AI Exposure and Generative Engine Optimisation
+
+## Initial application
+
+The initial release includes a responsive dashboard, a nine-engine directory and a working HTTPS website audit. It measures nine HTML signals and provides actionable findings.
+
+The audit score is limited to observable HTML signals. It is not a Google ranking, an AI visibility measurement, a traffic estimate or a commercial forecast. The other engines are labelled as planned.
+
+## Local development
+
+Requires Node.js 22 or later.
+
+- Install packages: npm install
+- Start locally: npm run dev
+- Open http://localhost:3000
+- Type checking: npm run typecheck
+- Production build: npm run build
+
+## Architecture
+
+- src/app: Next.js application and audit endpoint
+- src/lib: nine-engine catalogue, HTML analysis and secured outbound retrieval
+- docs: product development roadmap
+
+## Security
+
+The beta audit only fetches publicly resolvable HTTPS webpages on standard port 443. Private and reserved IPv4 destinations, redirects to private hosts, IP-literal URLs, large pages and lengthy requests are blocked. JavaScript rendering and IPv6-only websites are not currently supported.
+
+Basic in-process throttling is a development measure only. Before exposing the audit API to broad public traffic, add production-grade edge rate limits, request quotas, observability and authentication.
+
+Never commit environment secrets, unpublished research, customer data or proprietary datasets.
+
+## Intellectual property
+
+Copyright 2026 Ambidexters. All rights reserved.
+
+This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VISTA is a working product name pending appropriate trademark clearance.
