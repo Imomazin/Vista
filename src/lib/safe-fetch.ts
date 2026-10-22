@@ -40,7 +40,16 @@ async function responseFor(url: URL): Promise<{ status: number; body: string; lo
         "Accept": "text/html,application/xhtml+xml",
         "Accept-Encoding": "identity"
       },
-      lookup: (_hostname, _options, callback) => callback(null, ip, 4),
+      lookup: (_hostname, options, callback) => {
+        // Node 24 may request all address records for family auto-selection.
+        // Return the validated pinned address in the requested callback shape.
+        const deliver = callback as unknown as (...args: unknown[]) => void;
+        if (typeof options === "object" && options.all) {
+          deliver(null, [{ address: ip, family: 4 }]);
+        } else {
+          deliver(null, ip, 4);
+        }
+      },
       timeout: 9000,
       maxHeaderSize: 16384
     }, (res) => {
