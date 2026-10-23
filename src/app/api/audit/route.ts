@@ -1,3 +1,5 @@
+import * as cheerio from "cheerio";
+import { eligiblePages } from "@/lib/investigation";
 import { NextResponse } from "next/server";
 import { analyseHtml } from "@/lib/audit";
 import { fetchPublicHtml } from "@/lib/safe-fetch";
@@ -33,7 +35,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter a valid HTTPS website URL." }, { status: 400 });
     }
     const page = await fetchPublicHtml(url);
-    return NextResponse.json(analyseHtml(page.url, page.html, page.robots), {
+    const report = analyseHtml(page.url, page.html, page.robots);
+    const discover = typeof data === "object" && data !== null && "discover" in data && data.discover === true;
+    const $ = discover ? cheerio.load(page.html) : null;
+    const result = $ ? { report, links: eligiblePages(page.url, $("a[href]").map((_,el)=>$(el).attr("href") || "").get()) } : report;
+    return NextResponse.json(result, {
       headers: { "Cache-Control": "no-store" }
     });
   } catch (error) {
