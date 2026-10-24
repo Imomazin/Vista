@@ -1,10 +1,10 @@
-# VISTA
+# VisTa
 
 Marketing Superior Intelligence. Reimagined.
 
 An Ambidexters technology.
 
-VISTA is an integrated marketing intelligence platform organised around five strategic pillars and nine interconnected engines. The product combines search visibility, commercial impact, technical optimisation, content strategy, brand authority, digital reputation, agency operations, analytics and AI exposure.
+VisTa is an integrated marketing intelligence platform organised around five strategic pillars and nine interconnected engines. The product combines search visibility, commercial impact, technical optimisation, content strategy, brand authority, digital reputation, agency operations, analytics and AI exposure.
 
 ## Five pillars
 
@@ -80,7 +80,7 @@ Never commit environment secrets, unpublished research, customer data or proprie
 
 Copyright 2026 Ambidexters. All rights reserved.
 
-This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VISTA is a working product name pending appropriate trademark clearance.
+This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VisTa is a working product name pending appropriate trademark clearance.
 
 ## Evidence and execution
 
