@@ -60,7 +60,7 @@ export default function VistaPulse({data, onNavigate}:Props) {
   ].sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,9);
   const geometry=shown.slice(0,14).map((o,i)=>{
     const angle=-Math.PI/2+i*2.399963229728653;
-    const radius=32+(i%4)*13;
+    const radius=26+(i%4)*7;
     return {opportunity:o,x:50+Math.cos(angle)*radius*.81,y:50+Math.sin(angle)*radius*.81};
   });
 
