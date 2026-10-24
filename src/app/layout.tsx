@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VISTA | Marketing Superior Intelligence",
-  description: "An Ambidexters technology for visibility, optimisation and intelligent marketing impact.",
+  title: "VisTa | Marketing Superior Intelligence",
+  description: "VisTa by Ambidexters. Nine interconnected elements spanning search visibility, impact, technical intelligence, content, authority, reputation, agency operations, analytics and AI exposure.",
   icons: { icon: "/vista.svg", apple: "/vista.svg" },
   robots: { index: false, follow: false },
 };
