@@ -8,6 +8,7 @@ import {preferredProject,rememberProject} from "@/lib/workspace";
 import {buildOpportunities} from "@/lib/opportunities";
 import {engineMethods,engineSummary,type EngineId,engineById} from "@/lib/engine-methods";
 import {emptyEngineLedger,parseEngineLedger,saveEngineEvidence,removeEngineEvidence,engineLedgerKey,countEngineEvidence,type EngineEvidence,type EngineLedger,type EvidenceKind,type EvidenceStage} from "@/lib/engine-evidence";
+import EngineDiagnostic from "./engine-diagnostic";
 import "./ecosystem.css";
 
 const icons=[Search,Target,ScanLine,BookOpen,ShieldCheck,RadioTower,Layers3,Activity,Sparkles] as const;
@@ -40,7 +41,7 @@ export function VisTaMorph({motion,onContinue}:{motion:boolean,onContinue:()=>vo
  </div>;
 }
 export default function VisTaEcosystem({data,selected,onSelect,onNavigate}:{data:Workspace,selected:EngineId,onSelect:(id:EngineId)=>void,onNavigate:Nav}){
- const [tab,setTab]=useState<"overview"|"evidence"|"playbook">("overview");
+ const [tab,setTab]=useState<"overview"|"evidence"|"playbook"|"diagnostic">("overview");
  const [projectId,setProjectId]=useState("all");
  const [ledger,setLedger]=useState<EngineLedger>(emptyEngineLedger);
  const [recovery,setRecovery]=useState(false);
@@ -104,13 +105,14 @@ export default function VisTaEcosystem({data,selected,onSelect,onNavigate}:{data
   <div className="vte-control"><div className="vte-control-selector"><label htmlFor="vte-project">Evidence scope</label><select id="vte-project" value={currentProject?.id||"all"} onChange={e=>{setProjectId(e.target.value);setEditing(false);}}><option value="all">All projects</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div className="vte-control-count"><span>9 ELEMENTS</span><span>{counts.reduce((sum,n)=>sum+n,0)} MANUAL EVIDENCE RECORDS</span></div></div>
   <div className="vte-focus" key={current.id}>
    <div className="vte-focus-top"><div className="vte-focus-number">{String(current.id).padStart(2,"0")}</div><div><span className="eyebrow">PILLAR {current.pillar} / {current.short.toUpperCase()}</span><h2>{current.name}</h2><p>{current.promise}</p></div><span className="vte-capability-label">{current.id===3?"LIVE HTML AUDITS":current.id===4||current.id===7||current.id===9||current.id===8?"PARTIAL WORKSPACE":"SOURCE INTEGRATION PLANNED"}</span></div>
-   <div className="vte-focus-tabs">{(["overview","evidence","playbook"] as const).map(t=><button key={t} onClick={()=>{setTab(t);setEditing(false);setMessage("");}} aria-pressed={tab===t} className={tab===t?"selected":""}>{t==="overview"?"Intelligence & value":t==="evidence"?"Evidence ledger":"Decision playbook"}</button>)}</div>
+   <div className="vte-focus-tabs">{(["overview","diagnostic","evidence","playbook"] as const).map(t=><button key={t} onClick={()=>{setTab(t);setEditing(false);setMessage("");}} aria-pressed={tab===t} className={tab===t?"selected":""}>{t==="overview"?"Intelligence & value":t==="diagnostic"?"Deep diagnostic":t==="evidence"?"Evidence ledger":"Decision playbook"}</button>)}</div>
    {tab==="overview"&&<div className="vte-overview">
     <div className="vte-value-lead"><div><span className="eyebrow">STRATEGIC DECISION</span><h3>{current.decision}</h3><p>{current.available}</p><button onClick={openAction} className="vte-primary">{current.action}<ArrowUpRight size={16}/></button></div><div className="vte-measured"><span>RECORDED EVIDENCE</span><strong>{detail.value===null?"—":detail.value}</strong><small>{detail.label}</small><p>{detail.note}</p></div></div>
     <div className="vte-overview-grid"><div><span className="eyebrow">WHAT THIS ELEMENT MUST DELIVER</span>{current.outcomes.map(o=><p key={o}><Check size={15}/>{o}</p>)}</div><div><span className="eyebrow">MEASUREMENTS</span>{current.metrics.map(m=><p key={m}><Activity size={14}/>{m}</p>)}<small>Only sourced measurements will be populated when integrations are available.</small></div></div>
     <div className="vte-evidence-kick"><div><span>TRACEABLE INTELLIGENCE</span><h3>{countEngineEvidence(ledger,current.id,currentProject?.id)} manual records for this element</h3><p>Capture what happened, the source, why it matters and the next action. This ledger lives only in your browser.</p></div><button onClick={()=>setTab("evidence")}>Inspect evidence <ArrowRight size={16}/></button></div>
     {current.id===3&&opportunities.length>0&&<div className="vte-recent-findings"><h3>Recent observed technical issues</h3>{opportunities.slice(0,4).map(o=><div key={o.key}><span>{o.priority}</span><strong>{o.name}</strong><small>{cleanHost(o.url)}</small></div>)}</div>}
    </div>}
+   {tab==="diagnostic"&&<EngineDiagnostic key={current.id} engine={current} projects={projects} onRecord={records=>{let next=ledger;for(const record of records)next=saveEngineEvidence(next,record);return persist(next);}}/>}
    {tab==="playbook"&&<div className="vte-playbook"><div><span className="eyebrow">FOUR DECISION QUESTIONS</span><ol>{current.diagnostic.map(q=><li key={q}>{q}</li>)}</ol></div><div><span className="eyebrow">REQUIRED EVIDENCE INPUTS</span>{current.inputs.map(input=><p key={input}><ChevronRight size={14}/>{input}</p>)}<div className="vte-playbook-steps">OBSERVE <ArrowRight size={12}/> EXPLAIN <ArrowRight size={12}/> PRIORITISE <ArrowRight size={12}/> ACT <ArrowRight size={12}/> VERIFY</div></div><button onClick={()=>setTab("evidence")} className="vte-primary">Record an observation <Plus size={15}/></button></div>}
    {tab==="evidence"&&<div className="vte-ledger">
     <div className="vte-ledger-head"><div><span className="eyebrow">SOURCE-CENTRED INTELLIGENCE</span><h3>Evidence ledger <small>{allRecords.length} records</small></h3></div><div className="vte-ledger-actions"><button onClick={()=>exportRecords(ledger)} disabled={!ledger.records.length&&!recovery}><Download size={14}/> Export</button><button onClick={()=>file.current?.click()}><Upload size={14}/> Import</button><button className="vte-primary" disabled={!available||recovery} onClick={()=>setEditing(v=>!v)}><Plus size={14}/>{editing?"Close form":"Add evidence"}</button></div></div>
