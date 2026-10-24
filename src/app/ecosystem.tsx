@@ -8,6 +8,7 @@ import {preferredProject,rememberProject} from "@/lib/workspace";
 import {buildOpportunities} from "@/lib/opportunities";
 import {engineMethods,engineSummary,type EngineId,engineById} from "@/lib/engine-methods";
 import {emptyEngineLedger,parseEngineLedger,saveEngineEvidence,removeEngineEvidence,engineLedgerKey,countEngineEvidence,type EngineEvidence,type EngineLedger,type EvidenceKind,type EvidenceStage} from "@/lib/engine-evidence";
+import {decisionKey,parseDecisions} from "@/lib/decisions";
 import EngineDiagnostic from "./engine-diagnostic";
 import "./ecosystem.css";
 
@@ -67,7 +68,7 @@ export default function VisTaEcosystem({data,selected,onSelect,onNavigate}:{data
  },[]);
  function persist(next:EngineLedger,overwrite=false){
   if(recovery&&!overwrite){setMessage("Export the damaged backup before saving new records.");return false;}
-  try{const latest=window.localStorage.getItem(engineLedgerKey);if(!overwrite&&latest!==storedLedger.current){storedLedger.current=latest;setLedger(latest?parseEngineLedger(latest):emptyEngineLedger());throw Error("Evidence changed in another tab. Review the latest records and retry.");}const safe=parseEngineLedger(JSON.stringify(next));const raw=JSON.stringify(safe);window.localStorage.setItem(engineLedgerKey,raw);storedLedger.current=raw;setLedger(safe);setRecovery(false);window.dispatchEvent(new Event("vista-engine-update"));return true;}
+  try{const latest=window.localStorage.getItem(engineLedgerKey);if(!overwrite&&latest!==storedLedger.current){storedLedger.current=latest;setLedger(latest?parseEngineLedger(latest):emptyEngineLedger());throw Error("Evidence changed in another tab. Review the latest records and retry.");}const safe=parseEngineLedger(JSON.stringify(next));const decisions=window.localStorage.getItem(decisionKey);if(decisions)parseDecisions(decisions,safe);const raw=JSON.stringify(safe);window.localStorage.setItem(engineLedgerKey,raw);storedLedger.current=raw;setLedger(safe);setRecovery(false);window.dispatchEvent(new Event("vista-engine-update"));return true;}
   catch(e){setMessage(e instanceof Error?e.message:"Unable to save evidence.");return false;}
  }
  function choose(id:EngineId){onSelect(id);setTab("overview");setEditing(false);setQuery("");setMessage("");}

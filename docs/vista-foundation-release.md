@@ -68,6 +68,8 @@ Automated tests execute the actual SQL migration in embedded Postgres (PGlite) w
 
 Additional tests cover decision checkpoints, missing evidence, project-scoped retrieval, migration preservation, unsafe origins, body limits and engine routes. Type checking and production compilation are required alongside the existing regression suite.
 
-Open release gates: live cloud-provider tests, real desktop/mobile browser QA evidence for the final commit, accessibility audit, representative device performance, p75 Core Web Vitals, durable API throttling, recovery drills, provider integrations and production authorization. No WCAG or enterprise-readiness certification is claimed.
+Preview QA completed: full decision lifecycle through Learned, reload persistence, scoped evidence retrieval and no-match abstention, complete backup download parsed successfully, visible metallic entrance and responsive layouts at 320/390 CSS pixels without horizontal overflow. The viewport harness is not a physical-device test. Automated suite: 39 passing tests; type checking and production build passed. Follow-up hardening routes all Command Centre constellation nodes to their matching studios and rejects evidence replacement that would orphan decisions.
+
+Open release gates: live cloud-provider tests, accessibility audit, representative device performance, p75 Core Web Vitals, durable API throttling, recovery drills, provider integrations and production authorization. No WCAG or enterprise-readiness certification is claimed.
 
 Rollback: keep main unchanged. Previous branch preview remains available. Revert the incremental code commits if needed. The database migration is additive; keep checkpoint/history tables and exported data during rollback. Do not drop tenant data to roll back application code.
