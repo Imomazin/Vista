@@ -1,13 +1,13 @@
-# Vista Transformation Blueprint
+# VisTa Transformation Blueprint
 
 ## Product identity
 
-**Vista | Marketing Superior Intelligence. Reimagined.**
+**VisTa | Marketing Superior Intelligence. Reimagined.**
 An Ambidexters technology.
 
-Vista connects visibility, influence, technical health, audience behaviour, commercial results, and decisions in one evidence-based intelligence ecosystem. The five pillars remain V — Visibility, I — Impact Intelligence, S — Search and Site Optimisation, T — Trust and Authority, A — Agencies, Analytics and AI Exposure. Preserve all nine intelligence engines and their identities.
+VisTa connects visibility, influence, technical health, audience behaviour, commercial results, and decisions in one evidence-based intelligence ecosystem. The five pillars remain V — Visibility, I — Impact Intelligence, S — Search and Site Optimisation, T — Trust and Authority, A — Agencies, Analytics and AI Exposure. Preserve all nine intelligence engines and their identities.
 
-Vista's distinctive workflow is **Observe → Explain → Prioritise → Act → Verify → Learn**. Each dashboard, engine and recommendation must contribute to this chain. Every important metric requires a source, period, scope and freshness timestamp. Every recommendation needs an evidence link, impact hypothesis, confidence, effort, owner and verification method.
+VisTa's distinctive workflow is **Observe → Explain → Prioritise → Act → Verify → Learn**. Each dashboard, engine and recommendation must contribute to this chain. Every important metric requires a source, period, scope and freshness timestamp. Every recommendation needs an evidence link, impact hypothesis, confidence, effort, owner and verification method.
 
 ## Existing foundation as of 24 October 2026
 
@@ -87,13 +87,13 @@ Versioned prompt libraries organised by theme, buyer persona, purchase stage, lo
 
 ## Signature differentiators
 
-1. **Vista Opportunity Radar:** detect and rank cross-engine opportunities with a transparent scoring model combining expected commercial relevance, severity, confidence, effort, freshness and dependencies.
-2. **Vista Evidence Graph:** connect pages, queries, prompts, entities, citations, campaigns, conversions, source snapshots and actions. Clicking a conclusion reveals its inputs.
-3. **Vista Decision Room:** compare strategic scenarios using labelled assumptions, sensitivities and actual baselines; provide actions and measurement plans, not unsupported forecasts.
-4. **Vista Signal Timeline:** unified chronological view of site changes, query shifts, AI citation changes and outcomes.
-5. **Vista Ask:** evidence-grounded conversational querying over connected organisation data, returning source-linked answers; enforce tenancy and redaction.
-6. **Vista Execution Loop:** assign owners, create briefs, record approvals, execute approved changes through scoped integrations, verify technical changes and measure results.
-7. **Vista Agency Command:** roll up multiple clients without cross-client leakage, and produce branded, source-verified executive reports.
+1. **VisTa Opportunity Radar:** detect and rank cross-engine opportunities with a transparent scoring model combining expected commercial relevance, severity, confidence, effort, freshness and dependencies.
+2. **VisTa Evidence Graph:** connect pages, queries, prompts, entities, citations, campaigns, conversions, source snapshots and actions. Clicking a conclusion reveals its inputs.
+3. **VisTa Decision Room:** compare strategic scenarios using labelled assumptions, sensitivities and actual baselines; provide actions and measurement plans, not unsupported forecasts.
+4. **VisTa Signal Timeline:** unified chronological view of site changes, query shifts, AI citation changes and outcomes.
+5. **VisTa Ask:** evidence-grounded conversational querying over connected organisation data, returning source-linked answers; enforce tenancy and redaction.
+6. **VisTa Execution Loop:** assign owners, create briefs, record approvals, execute approved changes through scoped integrations, verify technical changes and measure results.
+7. **VisTa Agency Command:** roll up multiple clients without cross-client leakage, and produce branded, source-verified executive reports.
 
 ## Foundational architecture
 
@@ -114,7 +114,7 @@ Serve enterprise marketing teams, agencies and scaling businesses with packages 
 
 ## Delivery constraints
 
-- Preserve Vista naming, Ambidexters credit, existing domain and nine-engine/five-pillar logic.
+- Preserve VisTa naming, Ambidexters credit, existing domain and nine-engine/five-pillar logic.
 - Preserve existing tests and build; implement incremental migrations and avoid destructive rewrites of working features.
 - Every shipped interactive control must have an actual function; never fake live metrics, connections, audiences, revenue or AI citations.
 - Separate production capabilities, preview capabilities and planned features clearly.

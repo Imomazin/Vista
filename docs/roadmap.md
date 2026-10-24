@@ -1,4 +1,4 @@
-# VISTA product roadmap
+# VisTa product roadmap
 
 ## Foundation
 - Responsive intelligence dashboard, five pillars and nine-engine catalogue

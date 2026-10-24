@@ -1,10 +1,10 @@
-# VISTA
+# VisTa
 
 Marketing Superior Intelligence. Reimagined.
 
 An Ambidexters technology.
 
-VISTA is an integrated marketing intelligence platform organised around five strategic pillars and nine interconnected engines. The product combines search visibility, commercial impact, technical optimisation, content strategy, brand authority, digital reputation, agency operations, analytics and AI exposure.
+VisTa is an integrated marketing intelligence platform organised around five strategic pillars and nine interconnected engines. The product combines search visibility, commercial impact, technical optimisation, content strategy, brand authority, digital reputation, agency operations, analytics and AI exposure.
 
 ## Five pillars
 
@@ -25,6 +25,16 @@ VISTA is an integrated marketing intelligence platform organised around five str
 7. Agency and White-Label Intelligence
 8. Digital Analytics and Performance Intelligence
 9. AI Exposure and Generative Engine Optimisation
+
+## VisTa nine-element evolution
+
+The development branch adds a cinematic transition from the VisTa wordmark into nine labelled, orbiting intelligence elements. The constellation is interactive and the nine-element navigation dock remains available inside the application. Users can open each engine's value dashboard, review practical decision criteria, complete four diagnostic questions and log evidence against a saved project.
+
+Each engine has a source-aware local evidence ledger with observation date, manual categorisation, HTTPS source URL, implications, actions, review stage, filters, exports and version-validated imports. Self-assessment results are explicitly labelled hypotheses and are not automatically verified by the platform. The Command Centre includes a cross-engine matrix with truthful per-engine source status and counts. These capabilities extend existing audit, content, comparison, project and action workflows.
+
+The nine-element UI does not imply that nine external data sources are connected. Only public HTTPS HTML audit measurement currently runs as a live retrieval. Search Console, GA4, automated AI provider sampling, CRM and media intelligence require authenticated, authorised integrations. Browser-local data does not synchronize across users or devices. Do not store sensitive client records in this local-only beta.
+
+Development and Work continuation instructions are in docs/vista-master-work-brief.md. The main production branch is kept separate while preview, accessibility and end-to-end testing remain open.
 
 ## Origin release
 
@@ -80,7 +90,7 @@ Never commit environment secrets, unpublished research, customer data or proprie
 
 Copyright 2026 Ambidexters. All rights reserved.
 
-This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VISTA is a working product name pending appropriate trademark clearance.
+This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VisTa is a working product name pending appropriate trademark clearance.
 
 ## Evidence and execution
 

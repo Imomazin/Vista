@@ -15,7 +15,7 @@ export const engines: Engine[] = [
   { id: 6, pillar: "T", name: "Reputation Intelligence", description: "Earned coverage, digital PR and brand reputation.", status: "planned" },
   { id: 7, pillar: "A", name: "Agency Operations", description: "Multi-client workspaces and white-label reporting.", status: "planned" },
   { id: 8, pillar: "A", name: "Analytics Intelligence", description: "First-party search, traffic and performance measurement.", status: "planned" },
-  { id: 9, pillar: "A", name: "AI Exposure", description: "Sampled AI citations, recommendations and GEO monitoring.", status: "planned" },
+  { id: 9, pillar: "A", name: "AI Exposure / GEO", description: "Sampled AI citations, recommendations and GEO monitoring.", status: "planned" },
 ];
 
 export const pillars = [
