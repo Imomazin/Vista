@@ -65,15 +65,15 @@ export default function VistaPulse({data, onNavigate}:Props) {
   });
 
   function exportEvidence() {
-    const payload={title:'Vista Evidence Register',method:'Technical priority is based only on the severity and recurrence of observed HTML findings. It is not a forecast of ranking, traffic, sales or AI visibility.',exportedAt:new Date().toISOString(),project:selection,scannedPages:latest.map(s=>({projectId:s.projectId,url:s.report.url,inspectedAt:s.report.inspectedAt,htmlScore:s.report.technicalScore})),opportunities,observations:observations.map(o=>({provider:o.provider,observedAt:o.observedAt,prompt:o.prompt,mentioned:o.mentioned,source:o.source}))};
+    const payload={title:'VisTa Evidence Register',method:'Technical priority is based only on the severity and recurrence of observed HTML findings. It is not a forecast of ranking, traffic, sales or AI visibility.',exportedAt:new Date().toISOString(),project:selection,scannedPages:latest.map(s=>({projectId:s.projectId,url:s.report.url,inspectedAt:s.report.inspectedAt,htmlScore:s.report.technicalScore})),opportunities,observations:observations.map(o=>({provider:o.provider,observedAt:o.observedAt,prompt:o.prompt,mentioned:o.mentioned,source:o.source}))};
     const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
-    const link=document.createElement('a');link.href=url;link.download='Vista Evidence Register.json';link.click();
+    const link=document.createElement('a');link.href=url;link.download='VisTa Evidence Register.json';link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
   return <section className="vista-pulse" aria-labelledby="vista-pulse-title">
     <div className="pulse-top">
-      <div><span className="pulse-overline"><Activity size={13}/> VISTA / LIVE WORKSPACE EVIDENCE</span><h2 id="vista-pulse-title">The intelligence <em>pulse.</em></h2><p>One view of your observed signals, priorities and next moves.</p></div>
+      <div><span className="pulse-overline"><Activity size={13}/> VisTa / LIVE WORKSPACE EVIDENCE</span><h2 id="vista-pulse-title">The intelligence <em>pulse.</em></h2><p>One view of your observed signals, priorities and next moves.</p></div>
       <div className="pulse-tools">
         <label htmlFor="pulse-project">Scope</label>
         <select id="pulse-project" value={selection} onChange={e=>{setProjectId(e.target.value);setFocused(null);}} aria-label="Choose a project for intelligence overview">
@@ -98,7 +98,7 @@ export default function VistaPulse({data, onNavigate}:Props) {
           <div className="pulse-radar-visual">
             <div className="pulse-orbit orbit-one"/><div className="pulse-orbit orbit-two"/><div className="pulse-orbit orbit-three"/><div className="pulse-orbit orbit-four"/>
             <div className="pulse-axis horizontal"/><div className="pulse-axis vertical"/>
-            <div className="pulse-radar-centre"><Sparkles size={19}/><strong>VISTA</strong><small>OBSERVED</small></div>
+            <div className="pulse-radar-centre"><Sparkles size={19}/><strong>VisTa</strong><small>OBSERVED</small></div>
             {geometry.map((node,i)=><button key={node.opportunity.key} className={'pulse-radar-node '+(node.opportunity.key===chosen?.key?'focused ':'')+(node.opportunity.status==='issue'?'critical':'review')} style={{left:node.x+'%',top:node.y+'%'}} aria-label={node.opportunity.name+' on '+host(node.opportunity.url)} onClick={()=>setFocused(node.opportunity.key)} title={node.opportunity.name}><span/></button>)}
             {!geometry.length&&<span className="pulse-radar-wait">AWAITING OBSERVED SIGNALS</span>}
             <div className="pulse-orbit-caption">TECHNICAL SIGNAL SPACE / NOT A REVENUE FORECAST</div>
@@ -106,7 +106,7 @@ export default function VistaPulse({data, onNavigate}:Props) {
           <div className="pulse-radar-insight">
             <span className="pulse-overline">SELECTED SIGNAL</span>
             {chosen?<><div className={'pulse-priority '+(chosen.status==='issue'?'urgent':'review')}><span/>{chosen.priority} · HTML evidence</div><h4>{chosen.name}</h4><p>{chosen.recommendation}</p><div className="pulse-meta"><span>{host(chosen.url)}</span><span>{niceDate(chosen.inspectedAt)}</span></div><button className="pulse-text-link" onClick={()=>onNavigate('workspace','Action board')}>Manage this finding <ArrowUpRight size={15}/></button></>
-            :<><h4>Clarity begins with evidence.</h4><p>Run an investigation, save the findings and Vista will surface the recurring technical opportunities here.</p><button className="pulse-text-link" onClick={()=>onNavigate('investigation')}>Investigate a website <ArrowUpRight size={15}/></button></>}
+            :<><h4>Clarity begins with evidence.</h4><p>Run an investigation, save the findings and VisTa will surface the recurring technical opportunities here.</p><button className="pulse-text-link" onClick={()=>onNavigate('investigation')}>Investigate a website <ArrowUpRight size={15}/></button></>}
           </div>
         </div>}
         {tab==='timeline'&&<div className="pulse-timeline">
