@@ -2,21 +2,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowRight, Pause, Play, Radar, ScanLine, X, Crosshair, Layers3 } from 'lucide-react';
 import CinematicPearl from './cinematic-pearl';
+import {VisTaMorph,VisTaMark} from './ecosystem';
 import './experience-premium.css';
 
-type Destination='command'|'investigation'|'benchmark'|'content'|'workspace';
+type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines';
 export default function Experience({navigate,motion,toggleMotion}:{navigate:(view:Destination)=>void;motion:boolean;toggleMotion:()=>void}) {
- const [entering,setEntering]=useState(false);
+ const [entering,setEntering]=useState(false);const [revealing,setRevealing]=useState(false);
  const [preview,setPreview]=useState(false);
  const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
  useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
  useEffect(()=>{const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setPreview(false);};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close);},[]);
  function enter(){
   if(entering)return;
-  if(!motion){navigate('command');return;}
-  setPreview(false);setEntering(true);
-  timer.current=setTimeout(()=>navigate('command'),900);
+  if(!motion){navigate('engines');return;}
+  setPreview(false);setEntering(true);setRevealing(true);
+  timer.current=setTimeout(()=>navigate('engines'),3450);
  }
+ useEffect(()=>{if(!revealing)return;const exit=(event:KeyboardEvent)=>{if(event.key==='Escape'){if(timer.current)clearTimeout(timer.current);navigate('engines');}};window.addEventListener('keydown',exit);return()=>window.removeEventListener('keydown',exit);},[revealing,navigate]);
  function go(to:Destination){setPreview(false);navigate(to);}
  return <section className={'vista-experience question-entrance premium-entrance '+(entering?'is-entering':'')}
   onPointerMove={event=>{if(!motion||event.pointerType==='touch')return;const r=event.currentTarget.getBoundingClientRect();event.currentTarget.style.setProperty('--scene-x',((event.clientX-r.left)/r.width*100)+'%');event.currentTarget.style.setProperty('--scene-y',((event.clientY-r.top)/r.height*100)+'%');}}
@@ -25,16 +27,16 @@ export default function Experience({navigate,motion,toggleMotion}:{navigate:(vie
   <div className="entrance-stage-grid" aria-hidden="true"/><div className="entrance-stage-beam" aria-hidden="true"/>
   <div className="entrance-reticle reticle-left" aria-hidden="true"/><div className="entrance-reticle reticle-right" aria-hidden="true"/>
   <header className="experience-header">
-   <button className="experience-brand" onClick={()=>go('command')}>VISTA<span>®</span></button>
+   <button className="experience-brand" onClick={()=>go('command')}><VisTaMark/><span>™</span></button>
    <span>AN AMBIDEXTERS TECHNOLOGY</span>
    <button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button>
   </header>
   <div className="experience-editorial">
    <span className="eyebrow">MARKETING SUPERIOR INTELLIGENCE</span>
    <h1>What if your next<br/><em>advantage</em><br/>is hiding in plain sight?</h1>
-   <p>See the signals. Connect the dots.<br/>Make your next move with Vista.</p>
+   <p>See the signals. Connect the dots.<br/>Make your next move with VisTa.</p>
    <div className="entrance-actions">
-    <button className="experience-enter" onClick={enter} disabled={entering}>{entering?'Opening your Vista…':'Reveal your Vista'}<ArrowRight size={23}/></button>
+    <button className="experience-enter" onClick={enter} disabled={entering}>{entering?'Opening your VisTa…':'Reveal your VisTa'}<ArrowRight size={23}/></button>
     <button className="entrance-preview-trigger" onClick={()=>setPreview(v=>!v)} aria-expanded={preview} aria-controls="vista-entrance-preview">{preview?'Close preview':'Explore the intelligence'}<ArrowUpRight size={15}/></button>
    </div>
    <span className="entrance-footnote"><span/> OBSERVE / INTERPRET / ACT / VERIFY</span>
@@ -50,6 +52,7 @@ export default function Experience({navigate,motion,toggleMotion}:{navigate:(vie
    <button onClick={()=>go('workspace')}><span><Layers3 size={18}/></span><div><strong>Make intelligence actionable</strong><small>Save evidence, organise tasks and verify work.</small></div><ArrowUpRight size={15}/></button>
    <p>Available tools use observed website data and your saved workspace.</p>
   </div>}
-  <footer className="experience-footer"><span>YOUR NEXT MOVE STARTS HERE.</span><button onClick={toggleMotion}>{motion?<Pause size={13}/>:<Play size={13}/>} {motion?'Pause motion':'Play motion'}</button><span>VISTA BY AMBIDEXTERS</span></footer>
+  {revealing&&<VisTaMorph motion={motion} onContinue={()=>{if(timer.current)clearTimeout(timer.current);navigate("engines");}}/>}
+  <footer className="experience-footer"><span>YOUR NEXT MOVE STARTS HERE.</span><button onClick={toggleMotion}>{motion?<Pause size={13}/>:<Play size={13}/>} {motion?'Pause motion':'Play motion'}</button><span>VisTa BY AMBIDEXTERS</span></footer>
  </section>;
 }
