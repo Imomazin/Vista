@@ -53,3 +53,11 @@
 
 .premium-entrance .experience-brand .vista-wordmark{font-size:36px;font-weight:760;letter-spacing:-.06em}.premium-entrance .experience-brand .vista-wordmark>span{font-weight:900}.premium-entrance .experience-brand>span:last-child{font-size:9px;letter-spacing:0;vertical-align:super;color:#b9d7c3}
 @media(max-width:650px){.premium-entrance .experience-brand .vista-wordmark{font-size:29px}}
+
+/* Keep the brand T on the wordmark baseline. Trademark styling is sibling-only. */
+.premium-entrance .experience-brand .vista-wordmark>span{font-size:inherit;vertical-align:baseline;letter-spacing:inherit;margin:0 .035em}
+.pearl-resilience{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.solid-v-canvas{position:absolute;inset:0}
+.motion-on .pearl-relief{transform-origin:50% 48%;animation:relief-light 12s ease-in-out infinite}
+@keyframes relief-light{0%,100%{transform:perspective(900px) rotateY(-14deg) rotateZ(-5deg)}50%{transform:perspective(900px) rotateY(15deg) rotateZ(3deg)}}
+@media(prefers-reduced-motion:reduce){.pearl-relief{animation:none!important}}

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useId } from 'react';
 
 type Point = {x:number;y:number;z:number};
 type Face = {points:Point[];kind:'face'|'bevel'|'side'};
@@ -20,15 +20,16 @@ for(let i=0;i<outline.length;i++){
 }
 
 export default function CinematicPearl({motion}:{motion:boolean}){
+ const gradientId=useId().replaceAll(":", "");
  const canvas=useRef<HTMLCanvasElement>(null);const moving=useRef(motion);
  useEffect(()=>{moving.current=motion;},[motion]);
  useEffect(()=>{
   const target=canvas.current;if(!target)return;const el=target;const ctx=el.getContext('2d');if(!ctx)return;
   let width=1,height=1,frame=0,last=0,elapsed=0,dirty=true;let pointerYaw=0,pointerPitch=0,targetYaw=0,targetPitch=0;const ratio=Math.min(window.devicePixelRatio||1,2);
-  const resize=()=>{const box=el.getBoundingClientRect();width=box.width;height=box.height;el.width=width*ratio;el.height=height*ratio;dirty=true;};
+  const resize=()=>{const box=el.getBoundingClientRect();width=box.width;height=box.height;if(width<1||height<1)return;const w=Math.round(width*ratio),h=Math.round(height*ratio);if(el.width!==w)el.width=w;if(el.height!==h)el.height=h;dirty=true;};
   const observer=new ResizeObserver(resize);observer.observe(el);resize();
   function draw(time:number){
-   if(!ctx)return;
+   if(!ctx||width<1||height<1)return;
    ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height);
    const unit=Math.min(width,height)*.255,cx=width*.5,cy=height*.48+Math.sin(time*.9)*unit*.035,r=unit*1.52;
    const glow=ctx.createRadialGradient(cx,cy,r*.5,cx,cy,r*1.5);glow.addColorStop(0,'#b6ffe91a');glow.addColorStop(.7,'#939bdf10');glow.addColorStop(1,'#00000000');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
@@ -65,5 +66,10 @@ export default function CinematicPearl({motion}:{motion:boolean}){
   function tick(now:number){const delta=last?Math.min((now-last)/1000,.06):0;last=now;if(moving.current&&!document.hidden){elapsed+=delta;pointerYaw+=(targetYaw-pointerYaw)*Math.min(1,delta*4);pointerPitch+=(targetPitch-pointerPitch)*Math.min(1,delta*4);dirty=true;}if(dirty){draw(elapsed);dirty=false;}frame=requestAnimationFrame(tick);}
   frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();scene?.removeEventListener('pointermove',pointerMove);scene?.removeEventListener('pointerleave',pointerLeave);};
  },[]);
- return <div className="cinematic-pearl is-ready solid-core"><canvas ref={canvas} className="solid-v-canvas" role="img" aria-label="Solid titanium Vista V with deep sidewalls and polished bevels, turning through 360 degrees inside an iridescent pearl"/></div>;
+ return <div className="cinematic-pearl is-ready solid-core"><svg className="pearl-resilience" viewBox="0 0 640 760" aria-hidden="true"><defs>
+  <radialGradient id={gradientId+'shell'} cx="30%" cy="20%"><stop stopColor="#819b95"/><stop offset=".38" stopColor="#253d3f"/><stop offset=".8" stopColor="#131e27"/><stop offset="1" stopColor="#9ca7bf"/></radialGradient>
+  <linearGradient id={gradientId+'metal'} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#f3fffb"/><stop offset=".3" stopColor="#a3babd"/><stop offset=".48" stopColor="#435d68"/><stop offset=".51" stopColor="#f4ffff"/><stop offset=".76" stopColor="#99aab8"/><stop offset="1" stopColor="#ecfff5"/></linearGradient>
+  <linearGradient id={gradientId+'edge'}><stop stopColor="#263d48"/><stop offset=".5" stopColor="#b1ceca"/><stop offset="1" stopColor="#344652"/></linearGradient>
+ </defs><circle cx="320" cy="365" r="247" fill={'url(#'+gradientId+'shell)'} stroke="#afc7c8" strokeWidth="1"/><ellipse cx="320" cy="365" rx="292" ry="89" transform="rotate(-22 320 365)" fill="none" stroke="#a4d4c5" opacity=".3"/>
+ <g className="pearl-relief"><path d="M139 224 L217 224 L313 422 L389 224 L469 224 L352 527 L275 527 Z" transform="translate(24 22)" fill={'url(#'+gradientId+'edge)'} stroke="#b0c2c9"/><path d="M139 224 L217 224 L313 422 L389 224 L469 224 L352 527 L275 527 Z" fill={'url(#'+gradientId+'metal)'} stroke="#e1f7ed" strokeWidth="4"/><path d="M151 235 L207 235 L313 450 L398 235 L454 235 L344 515 L283 515 Z" fill="none" stroke="#e9fff4" opacity=".45" strokeWidth="2"/></g></svg><canvas ref={canvas} className="solid-v-canvas" role="img" aria-label="Solid titanium VisTa V with deep sidewalls and polished bevels, turning through 360 degrees inside an iridescent pearl"/></div>;
 }

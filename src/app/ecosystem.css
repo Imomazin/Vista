@@ -172,3 +172,11 @@
 .vte-diagnostic-note svg{flex:none;margin-top:1px}
 @media(max-width:860px){.vte-diagnostic-save{grid-template-columns:1fr 1fr}.vte-diagnostic-save .vte-primary{justify-self:start}.vte-diagnostic-heading{flex-wrap:wrap}}
 @media(max-width:570px){.vte-diagnostic{padding:20px}.vte-diagnostic-heading h3{font-size:20px}.vte-diagnostic-progress{width:100%}.vte-diagnostic-save{grid-template-columns:1fr}.vte-diagnostic-question{padding:17px}.vte-diagnostic-question fieldset label{flex:1;font-size:9px;padding:7px}}
+
+/* Durable keyboard and touch navigation, including small-screen studio forms. */
+.vista-engine-dock button{min-height:44px;width:44px}
+.vista-engine-dock{grid-template-columns:repeat(3,44px)}
+.vte :focus-visible,.vista-engine-dock :focus-visible{outline:2px solid #d5ffeb;outline-offset:4px}
+.vte-focus{scroll-margin-top:90px}
+.morph-still *{animation-play-state:paused!important}
+@media(max-width:760px){.vista-engine-dock{grid-template-columns:repeat(9,minmax(0,1fr));padding-bottom:max(7px,env(safe-area-inset-bottom))}.vista-engine-dock button{width:100%;min-width:0}.app-main{padding-bottom:90px}.vte input,.vte select,.vte textarea{font-size:16px}}
