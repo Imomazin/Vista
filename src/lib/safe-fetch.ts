@@ -26,8 +26,10 @@ function validateUrl(input: string): URL {
   return url;
 }
 
-async function responseFor(url: URL): Promise<{ status: number; body: string; location?: string; robots: string }> {
-  const addresses = await dns.lookup(url.hostname, { family: 4, all: true });
+async function responseFor(url: URL, deadline: number): Promise<{ status: number; body: string; location?: string; robots: string }> {
+  let dnsTimer:ReturnType<typeof setTimeout>|undefined;
+  const remaining=deadline-Date.now();if(remaining<=0)throw new Error('The website request timed out.');
+  const addresses = await Promise.race([dns.lookup(url.hostname, { family: 4, all: true }),new Promise<never>((_,reject)=>{dnsTimer=setTimeout(()=>reject(new Error('The hostname lookup timed out.')),Math.min(3000,remaining));})]).finally(()=>clearTimeout(dnsTimer));
   if (!addresses.length || addresses.some(({ address }) => blocked.check(address, "ipv4"))) {
     throw new Error("The hostname did not resolve to a permitted public address.");
   }
@@ -85,6 +87,8 @@ async function responseFor(url: URL): Promise<{ status: number; body: string; lo
       res.on("end", () => resolve({ status, body: Buffer.concat(chunks).toString("utf8"), robots }));
       res.on("error", reject);
     });
+    const totalTimer=setTimeout(()=>req.destroy(new Error('The website request timed out.')),Math.max(1,deadline-Date.now()));
+    req.on('close',()=>clearTimeout(totalTimer));
     req.on("error", reject);
     req.on("timeout", () => req.destroy(new Error("The website request timed out.")));
     req.end();
@@ -98,8 +102,9 @@ export async function fetchPublicHtml(rawInput: string): Promise<{ url: string; 
   } catch {
     throw new Error("Use a valid public HTTPS address such as https://example.com.");
   }
+  const deadline=Date.now()+12000;
   for (let hop = 0; hop < 4; hop += 1) {
-    const response = await responseFor(url);
+    const response = await responseFor(url,deadline);
     if (response.status >= 300 && response.status < 400 && response.location) {
       url = validateUrl(new URL(response.location, url).href);
       continue;

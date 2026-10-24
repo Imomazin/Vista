@@ -32,3 +32,5 @@ test('audit history keeps a bounded newest-first set and validates project owner
   assert.equal(w.snapshots.length,100);assert.equal(w.snapshots[0].report.title,'104');
   assert.throws(()=>addSnapshot(w,'missing',report),/Select a project/);
 });
+test('duplicate evidence identifiers cannot enter the workspace',()=>{const w=addSnapshot(fixture(),project.id,analyseHtml(project.url,'<h1>Example</h1>'));w.snapshots.push(w.snapshots[0]);assert.throws(()=>parseWorkspace(JSON.stringify(w)),/Duplicate record/);});
+test('late saves cannot displace newer observed evidence',()=>{let w=addSnapshot(fixture(),project.id,{...analyseHtml(project.url,'<h1>Newer</h1>'),inspectedAt:'2026-10-24T12:00:00Z'});w=addSnapshot(w,project.id,{...analyseHtml(project.url,'<h1>Older</h1>'),inspectedAt:'2026-10-23T12:00:00Z'});assert.equal(w.snapshots[0].report.inspectedAt,'2026-10-24T12:00:00Z');assert.equal(publicUrl('https://example.com/#section'),'https://example.com/');});

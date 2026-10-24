@@ -26,3 +26,7 @@ test("honours X-Robots-Tag response headers", () => {
   const result = analyseHtml("https://example.com", "<html><head><title>Example</title></head><body></body></html>", "noindex, nofollow");
   assert.equal(result.signals[0].status, "issue");
 });
+
+test('distinguishes decorative alt text from missing attributes',()=>{const report=analyseHtml('https://example.com','<img alt=""><img alt="Illustration"><img src="missing.jpg">');assert.equal(report.imagesMissingAlt,1);});
+test('invalid structured data, canonical schemes and fixed viewports need review',()=>{const report=analyseHtml('https://example.com','<script type="application/ld+json">{broken}</script><link rel="canonical" href="javascript:alert(1)"><meta name="viewport" content="width=1200">');for(const id of ['structured','canonical','mobile'])assert.equal(report.signals.find(s=>s.id===id)?.status,'warning');});
+test('robots none restricts indexing and external canonical needs review',()=>{const report=analyseHtml('https://example.com','<meta name="robots" content="none"><link rel="canonical" href="https://other.example.com">');assert.equal(report.signals.find(s=>s.id==='index')?.status,'issue');assert.equal(report.signals.find(s=>s.id==='canonical')?.status,'warning');});
