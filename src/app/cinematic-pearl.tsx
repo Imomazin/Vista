@@ -24,7 +24,7 @@ export default function CinematicPearl({motion}:{motion:boolean}){
  useEffect(()=>{moving.current=motion;},[motion]);
  useEffect(()=>{
   const target=canvas.current;if(!target)return;const el=target;const ctx=el.getContext('2d');if(!ctx)return;
-  let width=1,height=1,frame=0,last=0,elapsed=0,dirty=true;const ratio=Math.min(window.devicePixelRatio||1,2);
+  let width=1,height=1,frame=0,last=0,elapsed=0,dirty=true;let pointerYaw=0,pointerPitch=0,targetYaw=0,targetPitch=0;const ratio=Math.min(window.devicePixelRatio||1,2);
   const resize=()=>{const box=el.getBoundingClientRect();width=box.width;height=box.height;el.width=width*ratio;el.height=height*ratio;dirty=true;};
   const observer=new ResizeObserver(resize);observer.observe(el);resize();
   function draw(time:number){
@@ -37,7 +37,7 @@ export default function CinematicPearl({motion}:{motion:boolean}){
    const ring=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);ring.addColorStop(0,'#e5fffabf');ring.addColorStop(.35,'#a2c2c622');ring.addColorStop(.7,'#baaeff88');ring.addColorStop(1,'#e5fffabf');ctx.strokeStyle=ring;ctx.lineWidth=1.3;ctx.stroke();
    ctx.save();ctx.translate(cx,cy);ctx.rotate(-.4);ctx.scale(1,.34);ctx.beginPath();ctx.arc(0,0,r*1.2,0,Math.PI*2);ctx.strokeStyle='#b8e6d84a';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
    // One complete turn per twelve seconds, with a smooth frontal pause.
-   const phase=(time%12)/12;const yaw=-.42+Math.PI*2*(phase-Math.sin(phase*Math.PI*2)*.11);const pitch=.17+Math.sin(time*.65)*.07;const roll=-.10;
+   const phase=(time%12)/12;const yaw=-.42+Math.PI*2*(phase-Math.sin(phase*Math.PI*2)*.11)+pointerYaw;const pitch=.17+Math.sin(time*.65)*.07+pointerPitch;const roll=-.10;
    const transform=(p:Point)=>{const x=p.x*Math.cos(yaw)+p.z*Math.sin(yaw),z=-p.x*Math.sin(yaw)+p.z*Math.cos(yaw),y=p.y*Math.cos(pitch)-z*Math.sin(pitch),depth=p.y*Math.sin(pitch)+z*Math.cos(pitch);return{x:x*Math.cos(roll)-y*Math.sin(roll),y:x*Math.sin(roll)+y*Math.cos(roll),z:depth};};
    const project=(p:Point)=>{const scale=5/(5-p.z);return{x:cx+p.x*unit*scale,y:cy-p.y*unit*scale};};
    const surfaces=mesh.map(f=>{const points=f.points.map(transform);const a=points[0],b=points[1],c=points[2];const u={x:b.x-a.x,y:b.y-a.y,z:b.z-a.z},v={x:c.x-b.x,y:c.y-b.y,z:c.z-b.z};let normal={x:u.y*v.z-u.z*v.y,y:u.z*v.x-u.x*v.z,z:u.x*v.y-u.y*v.x};const length=Math.hypot(normal.x,normal.y,normal.z);normal={x:normal.x/length,y:normal.y/length,z:normal.z/length};return{...f,points,normal,depth:points.reduce((n,p)=>n+p.z,0)/points.length};}).sort((a,b)=>a.depth-b.depth);
@@ -58,8 +58,12 @@ export default function CinematicPearl({motion}:{motion:boolean}){
    const floor=ctx.createRadialGradient(cx,cy+r*1.27,0,cx,cy+r*1.27,r*.7);floor.addColorStop(0,'#9bd7c32e');floor.addColorStop(1,'#9bd7c300');ctx.save();ctx.translate(0,(cy+r*1.27)*.88);ctx.scale(1,.12);ctx.fillStyle=floor;ctx.fillRect(cx-r,0,r*2,height*10);ctx.restore();
    el.dataset.rotation=String(Math.round(phase*360));
   }
-  function tick(now:number){const delta=last?Math.min((now-last)/1000,.06):0;last=now;if(moving.current&&!document.hidden){elapsed+=delta;dirty=true;}if(dirty){draw(elapsed);dirty=false;}frame=requestAnimationFrame(tick);}
-  frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();};
+  const scene=el.closest<HTMLElement>('.premium-entrance');
+  const pointerMove=(event:PointerEvent)=>{if(!moving.current||event.pointerType==='touch')return;const bounds=el.getBoundingClientRect();if(!bounds.width||!bounds.height)return;targetYaw=Math.max(-.25,Math.min(.25,((event.clientX-bounds.left)/bounds.width-.5)*.35));targetPitch=Math.max(-.11,Math.min(.11,-((event.clientY-bounds.top)/bounds.height-.5)*.22));};
+  const pointerLeave=()=>{targetYaw=0;targetPitch=0;};
+  scene?.addEventListener('pointermove',pointerMove);scene?.addEventListener('pointerleave',pointerLeave);
+  function tick(now:number){const delta=last?Math.min((now-last)/1000,.06):0;last=now;if(moving.current&&!document.hidden){elapsed+=delta;pointerYaw+=(targetYaw-pointerYaw)*Math.min(1,delta*4);pointerPitch+=(targetPitch-pointerPitch)*Math.min(1,delta*4);dirty=true;}if(dirty){draw(elapsed);dirty=false;}frame=requestAnimationFrame(tick);}
+  frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();scene?.removeEventListener('pointermove',pointerMove);scene?.removeEventListener('pointerleave',pointerLeave);};
  },[]);
  return <div className="cinematic-pearl is-ready solid-core"><canvas ref={canvas} className="solid-v-canvas" role="img" aria-label="Solid titanium Vista V with deep sidewalls and polished bevels, turning through 360 degrees inside an iridescent pearl"/></div>;
 }
