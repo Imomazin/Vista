@@ -1,8 +1,8 @@
-# Vista Work Execution Instructions
+# VisTa Work Execution Instructions
 
 ## Objective
 
-Transform the existing Vista repository into a striking, functional marketing superior intelligence platform, retaining the work already present. The product must look premium and cinematic, and its intelligence features must deliver verifiable outcomes.
+Transform the existing VisTa repository into a striking, functional marketing superior intelligence platform, retaining the work already present. The product must look premium and cinematic, and its intelligence features must deliver verifiable outcomes.
 
 ## Starting point
 
