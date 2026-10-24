@@ -1,43 +1,65 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import Pearl from './pearl';
+import { useEffect, useRef } from 'react';
 
-export default function CinematicPearl({motion}:{motion:boolean}) {
- const host=useRef<HTMLDivElement>(null);const moving=useRef(motion);const [ready,setReady]=useState(false);
+type Point = {x:number;y:number;z:number};
+type Face = {points:Point[];kind:'face'|'bevel'|'side'};
+const outline=[[-1.04,.91],[-.43,.91],[0,-.25],[.43,.91],[1.04,.91],[.28,-1.02],[-.28,-1.02]];
+// Inset each edge, then intersect neighbours to form a continuous machined bevel.
+function insetPolygon(points:number[][],distance:number){
+ const lines=points.map((p,i)=>{const q=points[(i+1)%points.length],dx=q[0]-p[0],dy=q[1]-p[1],length=Math.hypot(dx,dy);return{x:p[0]+dy/length*distance,y:p[1]-dx/length*distance,dx,dy};});
+ return lines.map((b,i)=>{const a=lines[(i+lines.length-1)%lines.length],cross=a.dx*b.dy-a.dy*b.dx;const t=((b.x-a.x)*b.dy-(b.y-a.y)*b.dx)/cross;return[a.x+t*a.dx,a.y+t*a.dy];});
+}
+const inset=insetPolygon(outline,.065);
+const vertex=(p:number[],z:number):Point=>({x:p[0],y:p[1],z});
+const mesh:Face[]=[{points:inset.map(p=>vertex(p,.43)),kind:'face'},{points:inset.map(p=>vertex(p,-.43)).reverse(),kind:'face'}];
+for(let i=0;i<outline.length;i++){
+ const j=(i+1)%outline.length;
+ mesh.push({points:[vertex(outline[i],-.34),vertex(outline[j],-.34),vertex(outline[j],.34),vertex(outline[i],.34)],kind:'side'});
+ mesh.push({points:[vertex(outline[i],.34),vertex(outline[j],.34),vertex(inset[j],.43),vertex(inset[i],.43)],kind:'bevel'});
+ mesh.push({points:[vertex(outline[j],-.34),vertex(outline[i],-.34),vertex(inset[i],-.43),vertex(inset[j],-.43)],kind:'bevel'});
+}
+
+export default function CinematicPearl({motion}:{motion:boolean}){
+ const canvas=useRef<HTMLCanvasElement>(null);const moving=useRef(motion);
  useEffect(()=>{moving.current=motion;},[motion]);
  useEffect(()=>{
-  let disposed=false;let release=()=>{};
-  async function initialise(){
-   const [THREE,{RoomEnvironment}]=await Promise.all([import('three'),import('three/examples/jsm/environments/RoomEnvironment.js')]);
-   if(disposed||!host.current)return;
-   const element=host.current;
-   let renderer:InstanceType<typeof THREE.WebGLRenderer>;
-   try{renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});}catch{return;}
-   renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.7));renderer.setClearColor(0x000000,0);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
-   element.appendChild(renderer.domElement);
-   const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(34,1,.1,100);camera.position.set(0,.15,7.8);
-   const pmrem=new THREE.PMREMGenerator(renderer);const room=new RoomEnvironment();const environment=pmrem.fromScene(room,.04);scene.environment=environment.texture;room.dispose();pmrem.dispose();
-   const sculpture=new THREE.Group();scene.add(sculpture);
-   const pearlMaterial=new THREE.MeshPhysicalMaterial({color:0xa5b9bd,metalness:.65,roughness:.2,clearcoat:1,clearcoatRoughness:.1,iridescence:1,iridescenceIOR:1.4,iridescenceThicknessRange:[180,420]});
-   const sphere=new THREE.Mesh(new THREE.SphereGeometry(1.42,64,48),pearlMaterial);sculpture.add(sphere);
-   // A closed, bevelled solid with thick shoulders and a sharp lower point.
-   const shape=new THREE.Shape();shape.moveTo(-.93,.83);shape.lineTo(-.48,.83);shape.lineTo(0,-.35);shape.lineTo(.48,.83);shape.lineTo(.93,.83);shape.lineTo(.23,-.92);shape.lineTo(-.23,-.92);shape.closePath();
-   const geometry=new THREE.ExtrudeGeometry(shape,{depth:.28,bevelEnabled:true,bevelThickness:.065,bevelSize:.055,bevelSegments:4,steps:1,curveSegments:1});
-   const face=new THREE.MeshPhysicalMaterial({color:0xe2f0ee,metalness:1,roughness:.21,clearcoat:1});const sides=new THREE.MeshPhysicalMaterial({color:0x526a73,metalness:1,roughness:.26});
-   const emblem=new THREE.Mesh(geometry,[face,sides]);emblem.position.z=1.17;sculpture.add(emblem);
-   const inset=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:0x0b2029,metalness:.85,roughness:.3}));inset.scale.set(1.06,1.06,.55);inset.position.z=1.1;sculpture.add(inset);
-   const ringMaterial=new THREE.MeshStandardMaterial({color:0x91a9ac,metalness:.9,roughness:.26});
-   const rim=new THREE.Mesh(new THREE.TorusGeometry(1.44,.019,12,120),ringMaterial);rim.position.z=.06;sculpture.add(rim);
-   const orbit=new THREE.Mesh(new THREE.TorusGeometry(1.9,.008,8,160),new THREE.MeshBasicMaterial({color:0x8ca9a5,transparent:true,opacity:.4}));orbit.rotation.set(1.08,.35,-.45);scene.add(orbit);
-   scene.add(new THREE.HemisphereLight(0xd7f9ff,0x19213a,2));
-   const key=new THREE.DirectionalLight(0xf3ffed,5);key.position.set(-3,4,4);scene.add(key);
-   const edge=new THREE.DirectionalLight(0x9b93ff,4);edge.position.set(4,1,-2);scene.add(edge);
-   const strip=new THREE.PointLight(0xc8ffec,35,15);strip.position.set(2,2,4);scene.add(strip);
-   const resize=()=>{const w=element.clientWidth,h=element.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(element);resize();
-   let frame=0,last=0,elapsed=0;const render=(now:number)=>{if(disposed)return;if(last&&moving.current&&!document.hidden)elapsed+=Math.min((now-last)/1000,.05);last=now;sculpture.rotation.set(.08+Math.sin(elapsed*.32)*.09,Math.sin(elapsed*.36)*.65-.12,-.08+Math.sin(elapsed*.21)*.06);sculpture.position.y=Math.sin(elapsed*.5)*.06;strip.position.x=2+Math.sin(elapsed*.5)*3;renderer.render(scene,camera);frame=requestAnimationFrame(render);};frame=requestAnimationFrame(render);setReady(true);
-   release=()=>{cancelAnimationFrame(frame);observer.disconnect();scene.traverse(obj=>{if(obj instanceof THREE.Mesh){obj.geometry.dispose();const materials=Array.isArray(obj.material)?obj.material:[obj.material];materials.forEach(m=>m.dispose());}});environment.dispose();renderer.dispose();renderer.domElement.remove();};
+  const target=canvas.current;if(!target)return;const el=target;const ctx=el.getContext('2d');if(!ctx)return;
+  let width=1,height=1,frame=0,last=0,elapsed=0,dirty=true;const ratio=Math.min(window.devicePixelRatio||1,2);
+  const resize=()=>{const box=el.getBoundingClientRect();width=box.width;height=box.height;el.width=width*ratio;el.height=height*ratio;dirty=true;};
+  const observer=new ResizeObserver(resize);observer.observe(el);resize();
+  function draw(time:number){
+   if(!ctx)return;
+   ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height);
+   const unit=Math.min(width,height)*.255,cx=width*.5,cy=height*.48+Math.sin(time*.9)*unit*.035,r=unit*1.52;
+   const glow=ctx.createRadialGradient(cx,cy,r*.5,cx,cy,r*1.5);glow.addColorStop(0,'#b6ffe91a');glow.addColorStop(.7,'#939bdf10');glow.addColorStop(1,'#00000000');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
+   // Iridescent pearl shell. The V is the solid, fully closed metal core.
+   const pearl=ctx.createRadialGradient(cx-r*.45,cy-r*.6,r*.02,cx,cy,r);pearl.addColorStop(0,'#d9fff147');pearl.addColorStop(.24,'#648b864a');pearl.addColorStop(.55,'#172c32d9');pearl.addColorStop(.82,'#3c4258e8');pearl.addColorStop(.94,'#b6b5da99');pearl.addColorStop(1,'#d7f6e5b3');ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=pearl;ctx.fill();
+   const ring=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);ring.addColorStop(0,'#e5fffabf');ring.addColorStop(.35,'#a2c2c622');ring.addColorStop(.7,'#baaeff88');ring.addColorStop(1,'#e5fffabf');ctx.strokeStyle=ring;ctx.lineWidth=1.3;ctx.stroke();
+   ctx.save();ctx.translate(cx,cy);ctx.rotate(-.4);ctx.scale(1,.34);ctx.beginPath();ctx.arc(0,0,r*1.2,0,Math.PI*2);ctx.strokeStyle='#b8e6d84a';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
+   // One complete turn per twelve seconds, with a smooth frontal pause.
+   const phase=(time%12)/12;const yaw=-.42+Math.PI*2*(phase-Math.sin(phase*Math.PI*2)*.11);const pitch=.17+Math.sin(time*.65)*.07;const roll=-.10;
+   const transform=(p:Point)=>{const x=p.x*Math.cos(yaw)+p.z*Math.sin(yaw),z=-p.x*Math.sin(yaw)+p.z*Math.cos(yaw),y=p.y*Math.cos(pitch)-z*Math.sin(pitch),depth=p.y*Math.sin(pitch)+z*Math.cos(pitch);return{x:x*Math.cos(roll)-y*Math.sin(roll),y:x*Math.sin(roll)+y*Math.cos(roll),z:depth};};
+   const project=(p:Point)=>{const scale=5/(5-p.z);return{x:cx+p.x*unit*scale,y:cy-p.y*unit*scale};};
+   const surfaces=mesh.map(f=>{const points=f.points.map(transform);const a=points[0],b=points[1],c=points[2];const u={x:b.x-a.x,y:b.y-a.y,z:b.z-a.z},v={x:c.x-b.x,y:c.y-b.y,z:c.z-b.z};let normal={x:u.y*v.z-u.z*v.y,y:u.z*v.x-u.x*v.z,z:u.x*v.y-u.y*v.x};const length=Math.hypot(normal.x,normal.y,normal.z);normal={x:normal.x/length,y:normal.y/length,z:normal.z/length};return{...f,points,normal,depth:points.reduce((n,p)=>n+p.z,0)/points.length};}).sort((a,b)=>a.depth-b.depth);
+   // Painter ordering retains the closed back, sidewalls, and bevels through a full turn.
+   for(const surface of surfaces){
+    const p=surface.points.map(project);ctx.beginPath();p.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();
+    const n=surface.normal;const light=Math.abs(n.x*-.42+n.y*.64+n.z*.66);const brightness=.4+.6*light;
+    const colour=(v:number,tint=0)=>`rgb(${Math.round(v*brightness)} ${Math.round((v+8)*brightness)} ${Math.round((v+12+tint)*brightness)})`;
+    const gradient=ctx.createLinearGradient(cx-unit*1.1,cy-unit*1.2,cx+unit,cy+unit);
+    if(surface.kind==='face'){gradient.addColorStop(0,'#f3ffff');gradient.addColorStop(.24,colour(211));gradient.addColorStop(.44,colour(116));gradient.addColorStop(.48,'#f7ffff');gradient.addColorStop(.56,colour(218));gradient.addColorStop(.82,colour(143,10));gradient.addColorStop(1,'#e2fffa');}
+    else if(surface.kind==='bevel'){gradient.addColorStop(0,colour(250));gradient.addColorStop(.42,colour(157));gradient.addColorStop(.7,colour(237));gradient.addColorStop(1,colour(93));}
+    else{gradient.addColorStop(0,colour(106));gradient.addColorStop(.4,colour(42));gradient.addColorStop(.72,colour(132,8));gradient.addColorStop(1,colour(61));}
+    ctx.fillStyle=gradient;ctx.fill();ctx.lineWidth=.65;ctx.strokeStyle=surface.kind==='side'?'#859ca366':'#efffff66';ctx.stroke();
+   }
+   // Moving specular edge around the pearl, independent of the core rotation.
+   ctx.beginPath();ctx.arc(cx,cy,r-2,-2.8+time*.38,-2.1+time*.38);ctx.strokeStyle='#d9fff8';ctx.shadowColor='#b4ffe7';ctx.shadowBlur=14;ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;
+   for(let i=0;i<3;i++){const angle=time*.45+i*2.1;const x=cx+Math.cos(angle)*r*1.2,y=cy+Math.sin(angle)*r*.4;ctx.beginPath();ctx.arc(x,y,i===0?3:1.5,0,Math.PI*2);ctx.fillStyle=i===0?'#d6ffed':'#a5bbdb';ctx.fill();}
+   const floor=ctx.createRadialGradient(cx,cy+r*1.27,0,cx,cy+r*1.27,r*.7);floor.addColorStop(0,'#9bd7c32e');floor.addColorStop(1,'#9bd7c300');ctx.save();ctx.translate(0,(cy+r*1.27)*.88);ctx.scale(1,.12);ctx.fillStyle=floor;ctx.fillRect(cx-r,0,r*2,height*10);ctx.restore();
+   el.dataset.rotation=String(Math.round(phase*360));
   }
-  void initialise().catch(()=>{});return()=>{disposed=true;release();};
+  function tick(now:number){const delta=last?Math.min((now-last)/1000,.06):0;last=now;if(moving.current&&!document.hidden){elapsed+=delta;dirty=true;}if(dirty){draw(elapsed);dirty=false;}frame=requestAnimationFrame(tick);}
+  frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();};
  },[]);
- return <div className={`cinematic-pearl ${ready?'is-ready':''}`} role="img" aria-label="Solid bevelled titanium Vista V embossed on a rotating iridescent pearl"><div ref={host} className="cinematic-canvas"/>{!ready&&<Pearl/>}</div>;
+ return <div className="cinematic-pearl is-ready solid-core"><canvas ref={canvas} className="solid-v-canvas" role="img" aria-label="Solid titanium Vista V with deep sidewalls and polished bevels, turning through 360 degrees inside an iridescent pearl"/></div>;
 }

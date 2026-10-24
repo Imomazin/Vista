@@ -1,9 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowRight, Pause, Play } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import Pearl from './pearl';
-const CinematicPearl=dynamic(()=>import('./cinematic-pearl'),{ssr:false,loading:()=> <Pearl/>});
+import CinematicPearl from './cinematic-pearl';
 export default function Experience({navigate,motion,toggleMotion}:{navigate:(view:'command'|'investigation'|'benchmark'|'content'|'workspace')=>void;motion:boolean;toggleMotion:()=>void}) {
  const [entering,setEntering]=useState(false);const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
  useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
