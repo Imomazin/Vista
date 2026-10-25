@@ -8,7 +8,10 @@ export const metadata: Metadata = {
   title: "VisTa | Marketing Superior Intelligence",
   description: "VisTa by Ambidexters. Nine interconnected elements spanning search visibility, impact, technical intelligence, content, authority, reputation, agency operations, analytics and AI exposure.",
   icons: { icon: "/vista.svg", apple: "/vista.svg" },
-  robots: { index: false, follow: false },
+  metadataBase: new URL("https://vista.ambidexters.com"),
+  alternates: { canonical: "/" },
+  openGraph: { title: "VisTa | Marketing Superior Intelligence", description: "Nine connected elements. Explore real site intelligence, technical evidence and marketing decisions. An Ambidexters technology.", url: "https://vista.ambidexters.com", siteName: "VisTa by Ambidexters", type: "website" },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
