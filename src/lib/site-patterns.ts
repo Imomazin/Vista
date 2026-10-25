@@ -1,0 +1,6 @@
+import type {AuditReport} from './audit';
+export function sitePatterns(reports:AuditReport[]){
+ const unique=[...new Map(reports.map(r=>[r.url,r])).values()];const titleGroups=new Map<string,string[]>(),entityGroups=new Map<string,{page:string;name:string}[]>();const inspected=new Set(unique.map(r=>r.url));
+ for(const r of unique){if(r.title){const key=r.title.trim().toLowerCase();titleGroups.set(key,[...(titleGroups.get(key)||[]),r.url]);}for(const e of r.inspection?.entities||[])if(e.name){entityGroups.set(e.id,[...(entityGroups.get(e.id)||[]),{page:r.url,name:e.name}]);}}
+ return {duplicates:[...titleGroups].filter(([,pages])=>pages.length>1).map(([title,pages])=>({title,pages})),conflicts:[...entityGroups].filter(([,claims])=>new Set(claims.map(c=>c.name.trim().toLowerCase())).size>1).map(([id,claims])=>({id,claims})),edges:unique.flatMap(r=>(r.inspection?.links||[]).filter(l=>{const u=new URL(l.url);u.hash='';return l.internal&&inspected.has(u.href);}).map(l=>({from:r.url,to:l.url,label:l.text}))),canonicalOutside:unique.flatMap(r=>{if(!r.canonical)return [];try{const target=new URL(r.canonical,r.url);target.hash='';return inspected.has(target.href)?[]:[{page:r.url,target:target.href}];}catch{return [];}})};
+}

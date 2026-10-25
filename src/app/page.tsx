@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, AudioLines, BarChart3, Check, ChevronDown, ChevronRight, Command, Compass, Crosshair, FileText, FolderOpen, Globe2, Layers3, Menu, Orbit, Pause, Play, Plus, Radar, ScanLine, Search, Settings2, ShieldCheck, Sparkles, Target, WandSparkles, X, Zap } from 'lucide-react';
 import Pearl from './pearl';
 import dynamic from 'next/dynamic';
+const MeasurementRoom=dynamic(()=>import('./measurement-room'),{loading:()=> <p role="status">Loading measurements…</p>});
 const DecisionRoom=dynamic(()=>import('./decision-room'),{loading:()=> <p role="status">Loading decision workspace…</p>});
 import Experience from './experience';
 import Investigation from './investigation';
@@ -19,7 +20,7 @@ import { buildOpportunities } from '@/lib/opportunities';
 import type { Workspace } from '@/lib/workspace';
 
 import { readRoute, routeHash, type View, type WorkspaceTab } from '@/lib/navigation';
-const nav=[{id:'decisions',label:'Decision room',icon:Target},{id:'investigation',label:'Deep investigation',icon:Radar},{id:'command',label:'Command centre',icon:Compass},{id:'audit',label:'Site intelligence',icon:ScanLine},{id:'benchmark',label:'Competitive lens',icon:Crosshair},{id:'content',label:'Content intelligence',icon:FileText},{id:'workspace',label:'My workspace',icon:FolderOpen},{id:'engines',label:'The ecosystem',icon:Orbit}] as const;
+const nav=[{id:'measurements',label:'Measurements',icon:BarChart3},{id:'decisions',label:'Decision room',icon:Target},{id:'investigation',label:'Deep investigation',icon:Radar},{id:'command',label:'Command centre',icon:Compass},{id:'audit',label:'Site intelligence',icon:ScanLine},{id:'benchmark',label:'Competitive lens',icon:Crosshair},{id:'content',label:'Content intelligence',icon:FileText},{id:'workspace',label:'My workspace',icon:FolderOpen},{id:'engines',label:'The ecosystem',icon:Orbit}] as const;
 
 export default function Home(){
  const [view,setView]=useState<View>('experience');const [activeEngine,setActiveEngine]=useState<EngineId>(3);const [workspaceTab,setWorkspaceTab]=useState<WorkspaceTab>('Projects');const [menu,setMenu]=useState(false);const [palette,setPalette]=useState(false);const [query,setQuery]=useState('');const [motion,setMotion]=useState(true);const [data,setData]=useState<Workspace>(emptyWorkspace);const [loadError,setLoadError]=useState('');const [address,setAddress]=useState('');const [report,setReport]=useState<AuditReport|null>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
@@ -66,6 +67,7 @@ export default function Home(){
    <section className="feature-ribbon reveal"><div><span className="eyebrow">THE COMPETITIVE LENS</span><h2>Your market.<br/><em>In perspective.</em></h2><p>One framework. Three websites.<br/>See where the HTML signals diverge.</p><button className="ghost-button" onClick={()=>navigate('benchmark')}>Compare websites<ArrowUpRight size={16}/></button></div><div className="abstract-bars" aria-hidden="true">{[42,72,55,88,64,95,76,58,82,66,92,74].map((h,i)=><i key={i} style={{'--height':h+'%','--delay':`${i*.09}s`} as CSSProperties}/>)}<span>EXPLORE THE COMPARISON TOOL</span></div></section>
   </>}
   {view==='audit'&&<AuditLab/>}{view==='benchmark'&&<BenchmarkLab/>}{view==='content'&&<ContentLab/>}{view==='workspace'&&<WorkspacePanel initialTab={workspaceTab} onSectionChange={sectionChange}/>}
+  {view==='measurements'&&<MeasurementRoom data={data} onNavigate={navigate}/>}
   {view==='decisions'&&<DecisionRoom workspace={data}/>}
   {view==='engines'&&<VisTaEcosystem data={data} selected={activeEngine} onSelect={id=>{setActiveEngine(id);window.history.pushState(null,"",routeHash("engines","Projects",id));}} onNavigate={navigate}/>}
   <footer className="app-footer"><span>VisTa<span>™</span> <i/> AN AMBIDEXTERS TECHNOLOGY</span><span>MARKETING SUPERIOR INTELLIGENCE. REIMAGINED.</span></footer>

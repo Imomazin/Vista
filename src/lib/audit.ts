@@ -1,3 +1,5 @@
+import {inspectSite} from "./site-inspection";
+import type {SiteInspection} from "./inspection-schema";
 import { load } from "cheerio";
 
 export type SignalStatus = "pass" | "warning" | "issue";
@@ -11,6 +13,7 @@ export type AuditSignal = {
 };
 
 export type AuditReport = {
+  inspection?: SiteInspection;
   url: string;
   inspectedAt: string;
   title: string | null;
@@ -67,6 +70,7 @@ export function analyseHtml(url: string, html: string, xRobotsTag = ""): AuditRe
   const technicalScore = Math.round(signals.reduce((sum, signal) => sum + weights[signal.status], 0) / signals.length * 100);
   return {
     url,
+    inspection:inspectSite(url,html),
     inspectedAt: new Date().toISOString(),
     title,
     description,
