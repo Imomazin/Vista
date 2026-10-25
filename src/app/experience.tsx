@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowRight, Pause, Play, Radar, ScanLine, X, Crosshair, Layers3 } from 'lucide-react';
 import CinematicPearl from './cinematic-pearl';
 import TitaniumSignalField from './titanium-signal-field';
-import {AmbidextersLogo} from './visual-stories';
+import {AmbidextersLogo,CinematicPhotoReel} from './visual-stories';
 import AppearanceSwitch from './appearance-switch';
 import type {Appearance} from '@/lib/appearance';
 import {VisTaMorph,VisTaMark} from './ecosystem';
@@ -27,7 +27,7 @@ export default function Experience({navigate,motion,toggleMotion,appearance,onAp
  return <section className={'vista-experience question-entrance premium-entrance '+(entering?'is-entering':'')}
   onPointerMove={event=>{if(!motion||event.pointerType==='touch')return;const r=event.currentTarget.getBoundingClientRect();event.currentTarget.style.setProperty('--scene-x',((event.clientX-r.left)/r.width*100)+'%');event.currentTarget.style.setProperty('--scene-y',((event.clientY-r.top)/r.height*100)+'%');}}
   onPointerLeave={event=>{event.currentTarget.style.setProperty('--scene-x','72%');event.currentTarget.style.setProperty('--scene-y','52%');}}>
-  <div className="experience-noise" aria-hidden="true"/><div className="experience-aurora" aria-hidden="true"/><TitaniumSignalField/>
+  <div className="experience-noise" aria-hidden="true"/><div className="experience-aurora" aria-hidden="true"/><CinematicPhotoReel/><TitaniumSignalField/>
   <div className="entrance-stage-grid" aria-hidden="true"/><div className="entrance-stage-beam" aria-hidden="true"/>
   <div className="entrance-reticle reticle-left" aria-hidden="true"/><div className="entrance-reticle reticle-right" aria-hidden="true"/>
   <header className="experience-header">
