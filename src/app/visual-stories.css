@@ -1,0 +1,105 @@
+/* VisTa visual storytelling — user-selected imagery, editorial not synthetic metrics. */
+:root{--vista-violet:#a88bff;--vista-violet-soft:#a88bff1e}
+html[data-appearance="light"]{--vista-violet:#7456b6;--vista-violet-soft:#7456b612}
+.ax-transparent-logo{width:57px;height:57px;display:inline-flex;position:relative;align-items:center;justify-content:center;flex:none;isolation:isolate}
+.ax-transparent-logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.ax-transparent-logo .ax-for-light{display:none}
+html[data-appearance="light"] .ax-transparent-logo .ax-for-light{display:block}
+html[data-appearance="light"] .ax-transparent-logo .ax-for-dark{display:none}
+.ax-logo-compact{width:39px;height:39px}
+.ax-transparent-logo:after{content:"";position:absolute;inset:12%;border-radius:50%;z-index:-1;box-shadow:0 0 29px var(--vista-violet-soft);pointer-events:none}
+.ax-attribution{display:flex;align-items:center;gap:11px;min-width:0}
+.ax-attribution>span:last-child{font-size:8px;letter-spacing:2px;line-height:1.4;color:var(--ti-subtext)}
+.experience-header>.ax-attribution{position:relative;z-index:8}
+.experience-header>.ax-attribution .ax-transparent-logo{width:43px;height:43px}
+.app-footer .ax-attribution{gap:8px}
+.app-footer .ax-attribution>span:last-child{font-size:8px;letter-spacing:.8px}
+.vista-editorial{margin:36px 0 47px}
+.vista-editorial-heading{max-width:800px;margin:0 0 22px}
+.vista-editorial-heading h2{font-size:clamp(28px,3.2vw,43px);line-height:1.18;letter-spacing:-.055em;font-weight:530;margin:13px 0 12px;color:var(--ti-text)}
+.vista-editorial-heading h2 em{color:var(--vista-violet)}
+.vista-editorial-heading>p{max-width:670px;font-size:12px;line-height:1.75;color:var(--ti-subtext)}
+.vista-editorial-grid{display:grid;grid-template-columns:1.27fr 1fr 1fr;grid-auto-rows:minmax(190px,220px);gap:12px}
+.vista-editorial-tile{display:block;position:relative;overflow:hidden;border:1px solid var(--ti-glass-edge);border-radius:17px;text-align:left;background:var(--ti-surface-raised);color:#fff;min-height:0;isolation:isolate}
+.vista-editorial-tile:first-child{grid-column:1;grid-row:span 2}
+.vista-editorial-tile:last-child{grid-column:2 / span 2}
+.vista-editorial-tile img,.engine-story-photo img,.engine-story-mini img,.atlas-photo img{
+ object-fit:cover;transition:transform .75s cubic-bezier(.18,.75,.25,1),filter .5s ease
+}
+.vista-editorial-tile:hover img{transform:scale(1.075)}
+.editorial-shade{position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,#050C13EB,#070E174D 65%,#070C1518),linear-gradient(110deg,#27114236,#03634B20);pointer-events:none}
+.editorial-caption{position:absolute;left:22px;bottom:22px;right:42px;display:flex;flex-direction:column;gap:7px;z-index:2;color:#F6FAF7}
+.editorial-caption small{font-size:8px;letter-spacing:1.5px;color:#D2DAE5}
+.editorial-caption strong{font-size:clamp(17px,1.7vw,25px);font-family:'Manrope',sans-serif;font-weight:580;letter-spacing:-.6px;line-height:1.23}
+.editorial-caption>span{font-size:10px;color:#D4E6E0;line-height:1.5}
+.editorial-arrow{position:absolute;right:19px;bottom:25px;z-index:2;color:#D8FDEA}
+.vista-editorial-tile:hover{border-color:var(--ti-emerald);box-shadow:0 17px 32px #0003}
+.vista-editorial-disclaimer{font-size:9px;letter-spacing:.15px;color:var(--ti-subtext);margin:13px 0 0;line-height:1.7}
+/* Individual studio photos are introduced without crowding diagnostics. */
+.vista-engine-story{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);border:1px solid var(--ti-line);border-radius:17px;background:var(--ti-raised);overflow:hidden;min-height:270px;margin:4px 0 25px;box-shadow:0 12px 35px #02050810}
+.engine-story-photo{position:relative;min-height:265px;isolation:isolate}
+.engine-story-photo-scrim{position:absolute;inset:0;background:linear-gradient(0deg,#09131ABA,transparent 46%),linear-gradient(120deg,#0D23432C,#672BAB23);pointer-events:none;z-index:1}
+.engine-story-photo>span{position:absolute;left:20px;bottom:20px;z-index:2;color:#F4FFF7;letter-spacing:1.4px;font-size:9px;text-shadow:0 2px 9px #000B}
+.engine-story-copy{padding:24px;display:flex;align-items:start;justify-content:center;flex-direction:column}
+.engine-story-copy>small{font-size:8px;letter-spacing:1.15px;color:var(--ti-subtext)}
+.engine-story-copy h3{font-size:clamp(23px,2.6vw,34px);letter-spacing:-.05em;line-height:1.2;font-weight:530;margin:14px 0 11px;color:var(--ti-text)}
+.engine-story-copy h3 em{color:var(--ti-emerald)}
+.engine-story-copy>p{color:var(--ti-subtext);font-size:11px;line-height:1.65;max-width:440px}
+.engine-story-cta{display:flex;align-items:center;gap:10px;margin:9px 0 17px;color:var(--ti-emerald);border:0;background:transparent;padding:5px 0;font-size:11px;font-weight:650;text-align:left}
+.engine-story-cta:hover{gap:14px}
+.engine-story-thumbnails{display:flex;align-items:center;gap:8px;max-width:100%;overflow-x:auto;padding:5px 1px 8px;scrollbar-width:thin}
+.engine-story-mini{width:70px;height:49px;flex-shrink:0;position:relative;overflow:hidden;border:1px solid var(--ti-glass-edge);border-radius:7px;background:var(--ti-surface)}
+.engine-story-mini:hover img{transform:scale(1.1)}
+.engine-story-ai-exposure{border-color:color-mix(in srgb,var(--vista-violet),transparent 72%)}
+.engine-story-content{border-color:color-mix(in srgb,var(--vista-violet),transparent 77%)}
+.engine-story-ai-exposure .engine-story-copy{background:radial-gradient(ellipse at 100% 10%,var(--vista-violet-soft),transparent 63%)}
+/* The atlas is an optional expanded gallery for the complete user-curated collection. */
+.vista-visual-atlas{border:1px solid var(--ti-line);border-radius:18px;background:var(--ti-raised);margin:32px 0 0;overflow:hidden}
+.vista-visual-atlas>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:20px;padding:24px;min-height:102px;color:var(--ti-text)}
+.vista-visual-atlas>summary::-webkit-details-marker{display:none}
+.vista-visual-atlas>summary>span:nth-child(2){flex:1;display:flex;gap:6px;flex-direction:column}
+.vista-visual-atlas>summary small{font-size:8px;color:var(--ti-emerald);letter-spacing:1.45px}
+.vista-visual-atlas>summary strong{font-family:'Manrope',sans-serif;font-weight:600;font-size:clamp(17px,2.3vw,27px)}
+.vista-visual-atlas>summary em{font-style:normal;color:var(--ti-subtext);font-size:10px;line-height:1.6}
+.atlas-summary-icon{display:grid;place-items:center;width:50px;height:50px;flex:none;border-radius:14px;color:var(--ti-emerald);border:1px solid var(--ti-glass-edge);background:var(--ti-surface)}
+.vista-visual-atlas>summary>svg:last-child{color:var(--ti-metal);transition:transform .3s}
+.vista-visual-atlas[open]>summary>svg:last-child{transform:rotate(90deg)}
+.atlas-body{padding:3px 23px 24px}
+.atlas-body>p{font-size:11px;color:var(--ti-subtext);line-height:1.65;margin:0 0 18px}
+.atlas-group{border-top:1px solid var(--ti-hairline);padding:23px 0 5px}
+.atlas-group h3{font-size:18px;font-weight:580;color:var(--ti-text);margin:0 0 16px;display:flex;align-items:baseline;gap:12px}
+.atlas-group h3 span{font-size:10px;color:var(--ti-subtext);font-weight:450}
+.atlas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;margin-bottom:20px}
+.atlas-card{min-width:0;background:var(--ti-surface);border:1px solid var(--ti-line);border-radius:12px;overflow:hidden}
+.atlas-photo{position:relative;aspect-ratio:1.55;background:var(--ti-surface-raised)}
+.atlas-card>p{font-size:11px;line-height:1.45;color:var(--ti-text);text-transform:capitalize;margin:11px 12px 7px;min-height:32px}
+.atlas-card>button{display:flex;align-items:center;gap:6px;background:transparent;border:0;color:var(--ti-emerald);font-size:10px;margin:0 12px 12px;padding:3px 0}
+.atlas-card:hover .atlas-photo img{transform:scale(1.05)}
+@media(max-width:1000px){
+ .vista-editorial-grid{grid-template-columns:1fr 1fr;grid-auto-rows:215px}
+ .vista-editorial-tile:first-child{grid-column:span 2;grid-row:span 1}
+ .vista-editorial-tile:last-child{grid-column:span 2}
+ .vista-engine-story{grid-template-columns:1fr}
+ .engine-story-photo{height:220px;min-height:220px}
+ .engine-story-copy{padding:22px}
+}
+@media(max-width:650px){
+ .ax-attribution>span:last-child{font-size:7px;letter-spacing:.4px;max-width:108px}
+ .experience-header>.ax-attribution .ax-transparent-logo{width:36px;height:36px}
+ .vista-editorial-grid{gap:8px;grid-auto-rows:205px}
+ .vista-editorial-tile{border-radius:11px}
+ .vista-editorial-tile:nth-child(2),.vista-editorial-tile:nth-child(3){grid-column:span 1}
+ .editorial-caption{left:13px;bottom:14px;right:24px}
+ .editorial-caption strong{font-size:15px}
+ .editorial-caption>span{display:none}
+ .editorial-arrow{right:10px;bottom:15px;width:14px}
+ .engine-story-photo{height:175px;min-height:175px}
+ .engine-story-copy{padding:19px}
+ .vista-visual-atlas>summary{gap:12px;padding:16px}
+ .atlas-summary-icon{width:38px;height:38px}
+ .atlas-body{padding:3px 15px 20px}
+ .atlas-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .vista-editorial-tile img,.engine-story-photo img,.engine-story-mini img,.atlas-photo img,.vista-visual-atlas>summary>svg:last-child{transition:none!important}
+}
