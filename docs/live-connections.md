@@ -1,13 +1,21 @@
 # VisTa Live Source Integration Runbook
 
 ## Current status
-Adapters and test UI are implemented on the development branch, but the project cannot return live provider data until it has credentials and authorised data access. At verification on 25 October 2026 Vercel had zero project environment variables. Configured does not mean a live connection; an actual source request must succeed.
+Adapters and test UI are implemented on the development branch. The dedicated VisTa Supabase London project and its verified Ambidexters application Owner are operational, and Supabase URL/publishable key are configured on the Vercel development **preview branch only**. The application now supports magic-link redirect to `/auth/callback` and an optional six-digit email code. The authentication and cloud-save journey needs a final real-user browser check. Google Search Console, GA4, HubSpot and OpenAI provider credentials have not been authorised, so those external-data integrations remain inactive. Configured does not mean a live provider connection; an authenticated source response must succeed.
 
 ## Minimum shared infrastructure
 - Configure VISTA_SUPABASE_URL and VISTA_SUPABASE_ANON_KEY for verified member sign-in and organisation membership.
 - Apply database/foundation.sql and relevant existing migrations to the authorised Supabase database.
 - Use the Connections tab in VisTa. It displays Not connected, Credentials configured or Live test passed. Read requests require session, organisation membership and rate limits. Credentials stay on the server, not in public Github.
 - Current Google/CRM server credentials are project-scoped, not per-customer. Do not onboard multiple customer tenants until per-org token vault and OAuth authorisation is implemented.
+
+## Development login verification
+1. Open the latest Vercel preview build at the Workspace > Connections route in a browser with preview access.
+2. Enter the verified VisTa Owner email and choose Send sign-in code; Supabase may send an email **magic link** by default, not a numeric code.
+3. Open the newly generated email link in the **same browser**. The server requests a Supabase redirect to the current preview host at /auth/callback, avoiding the old localhost-only setting.
+4. The callback removes the authentication fragment, validates Supabase user identity and organisation membership server-side, sets an HttpOnly secure cookie and redirects to the cloud workspace.
+5. Inspect the Ambidexters cloud checkpoint. Test a deliberate empty/known backup preview and confirmed cloud save. Do not infer successful end-to-end login from unit tests alone.
+6. A missing authentication token or a cross-origin write must be rejected. Keep Vercel preview protection enabled. Production is unchanged.
 
 ## GSC
 - Enable Search Console API in an authorised Google Cloud project.
