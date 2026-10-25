@@ -140,3 +140,10 @@ html[data-appearance="light"] .cinematic-reel-frame:after{
  .cinematic-reel-frame{animation:none!important;opacity:0!important}
  .reel-frame-0{opacity:1!important;transform:none!important}
 }
+
+
+.vte-intro-buttons{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.vte-atlas-link{display:inline-flex;gap:9px;align-items:center;justify-content:center;white-space:nowrap;padding:11px 15px;border:1px solid var(--ti-glass-edge);background:var(--ti-surface);color:var(--ti-text);border-radius:9px;font-size:11px}
+.vte-atlas-link:hover{border-color:var(--vista-violet);color:var(--ti-emerald);background:var(--ti-surface-raised)}
+@media(max-width:760px){.vte-intro-buttons{width:100%;justify-content:flex-start}.vte-intro-buttons button{min-height:42px}}
+@media(max-width:570px){.experience-header>.ax-attribution>span:last-child{display:none}.experience-header>.ax-attribution .ax-transparent-logo{width:33px;height:33px}}
