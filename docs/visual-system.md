@@ -10,6 +10,12 @@ VisTa Porcelain is a fully art-directed light environment: warm ivory, alabaster
 
 These are two compositions of one working product, not a generic colour-inversion filter. Source statuses, analytical measurements and existing records remain unchanged when appearance changes.
 
+## Implementation update: Titanium + Emerald
+
+The definitive creative direction is no longer an all-green interface. Titanium is the architecture and emerald the signal. On the development branch, `src/app/titanium-emerald.css` is imported after the earlier appearance layers to apply reusable semantic tokens for both environments, neutral materials for the main cockpit and nine engines, functional chart colours and working-room legibility. `src/lib/visual-identity.ts` specifies paired brand colours; its accompanying tests check reference colour contrast. The cockpit and entrance share a nine-ray signature effect from `src/app/titanium-signal-field.tsx`, explicitly decorative, never represented as observed intelligence. The Canvas V has been tuned for satin titanium, platinum and one travelling emerald charge.
+
+The detailed specification is in `docs/titanium-emerald-master-brief.md`. Screenshots and human review of the protected preview remain outstanding and are not implied by automated tests.
+
 ## Implemented architecture
 
 - src/lib/appearance.ts defines the stored theme, type and system preference resolver.
