@@ -9,7 +9,7 @@ import type {Appearance} from '@/lib/appearance';
 import {VisTaMorph,VisTaMark} from './ecosystem';
 import './experience-premium.css';
 
-type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines';
+type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines'|'pricing';
 export default function Experience({navigate,motion,toggleMotion,appearance,onAppearanceChange}:{navigate:(view:Destination)=>void;motion:boolean;toggleMotion:()=>void;appearance:Appearance;onAppearanceChange:(next:Appearance)=>void}) {
  const [entering,setEntering]=useState(false);const [revealing,setRevealing]=useState(false);
  const [preview,setPreview]=useState(false);
@@ -33,7 +33,7 @@ export default function Experience({navigate,motion,toggleMotion,appearance,onAp
   <header className="experience-header">
    <button className="experience-brand" onClick={()=>go('command')}><VisTaMark/><span>™</span></button>
    <div className="ax-attribution"><AmbidextersLogo compact/><span>AN AMBIDEXTERS TECHNOLOGY</span></div>
-   <div className="experience-header-actions"><AppearanceSwitch appearance={appearance} onChange={onAppearanceChange}/><button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button></div>
+   <div className="experience-header-actions"><button type="button" className="entrance-pricing-link" onClick={()=>go("pricing")}>Plans & pricing</button><AppearanceSwitch appearance={appearance} onChange={onAppearanceChange}/><button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button></div>
   </header>
   <div className="experience-editorial">
    <span className="eyebrow">MARKETING SUPERIOR INTELLIGENCE</span>
