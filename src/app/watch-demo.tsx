@@ -36,6 +36,7 @@ export default function WatchDemo(){
    <div className="demo-primary">
     <div className="demo-player-frame">
      <video ref={video} controls playsInline preload="metadata" poster="/web-images/cinematic/immersive-executive-command-centre.jpg" aria-label="VisTa ten-minute narrated guided walkthrough" onTimeUpdate={e=>{const t=e.currentTarget.currentTime;const index=Math.min(chapters.length-1,Math.floor(t/50));if(index!==active)setActive(index);}} onError={()=>setVideoError(true)}>
+      <source src="/api/demo/video?format=webm" type="video/webm"/>
       <source src={film} type="video/mp4"/>
       <track kind="captions" src="/vista-demo-captions.vtt" srcLang="en" label="English" default/>
       Your browser does not support video playback.
