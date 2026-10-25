@@ -1,0 +1,253 @@
+{
+  "version": "web imagery selection",
+  "owner": "Ambidexters / VisTa",
+  "uploads": 41,
+  "distinctUploadedImages": 38,
+  "exactRepeatSelections": 3,
+  "provenance": "User-supplied conversation imagery",
+  "sourceRights": "User confirmation of public web and redistribution rights needed before publishing",
+  "binaryStatus": "Prepared offline; binary files not yet transferred to GitHub",
+  "description": "Paths align with the prepared VisTa Web Images archive. Each selected photo is included once with additional transparent logo variants.",
+  "assets": [
+    {
+      "path": "/web-images/brand/ambidexters-logo-original.jpeg",
+      "title": "ambidexters logo original",
+      "placement": "Brand attribution",
+      "folder": "brand"
+    },
+    {
+      "path": "/web-images/brand/ambidexters-logo-transparent.png",
+      "title": "ambidexters logo transparent",
+      "placement": "Light theme brand",
+      "folder": "brand"
+    },
+    {
+      "path": "/web-images/brand/ambidexters-logo-platinum.png",
+      "title": "ambidexters logo platinum",
+      "placement": "Dark theme brand",
+      "folder": "brand"
+    },
+    {
+      "path": "/web-images/cinematic/ai-laptop-holographic-dashboard.jpg",
+      "title": "ai laptop holographic dashboard",
+      "placement": "Entrance and Command Centre",
+      "folder": "cinematic"
+    },
+    {
+      "path": "/web-images/cinematic/violet-cyan-digital-orbit.jpg",
+      "title": "violet cyan digital orbit",
+      "placement": "Violet cinematic reveal",
+      "folder": "cinematic"
+    },
+    {
+      "path": "/web-images/cinematic/chromatic-data-spiral.jpg",
+      "title": "chromatic data spiral",
+      "placement": "Transitions",
+      "folder": "cinematic"
+    },
+    {
+      "path": "/web-images/cinematic/holographic-future-workplace.jpg",
+      "title": "holographic future workplace",
+      "placement": "Future of intelligence",
+      "folder": "cinematic"
+    },
+    {
+      "path": "/web-images/cinematic/immersive-executive-command-centre.jpg",
+      "title": "immersive executive command centre",
+      "placement": "Command Centre story",
+      "folder": "cinematic"
+    },
+    {
+      "path": "/web-images/cinematic/artificial-intelligence-fire.jpg",
+      "title": "artificial intelligence fire",
+      "placement": "Editorial AI future",
+      "folder": "cinematic"
+    },
+    {
+      "path": "/web-images/analytics/analyst-presenting-dashboard.jpg",
+      "title": "analyst presenting dashboard",
+      "placement": "Analytics Intelligence",
+      "folder": "analytics"
+    },
+    {
+      "path": "/web-images/analytics/performance-analytics-presenter.jpg",
+      "title": "performance analytics presenter",
+      "placement": "Analytics and agency",
+      "folder": "analytics"
+    },
+    {
+      "path": "/web-images/analytics/closeup-tablet-reporting.jpg",
+      "title": "closeup tablet reporting",
+      "placement": "Analytics",
+      "folder": "analytics"
+    },
+    {
+      "path": "/web-images/analytics/stylus-performance-dashboard.jpg",
+      "title": "stylus performance dashboard",
+      "placement": "Measurement studio",
+      "folder": "analytics"
+    },
+    {
+      "path": "/web-images/analytics/tablet-analytics-executive.jpg",
+      "title": "tablet analytics executive",
+      "placement": "Measurement",
+      "folder": "analytics"
+    },
+    {
+      "path": "/web-images/analytics/blue-executive-analytics-board.jpg",
+      "title": "blue executive analytics board",
+      "placement": "Executive analytics",
+      "folder": "analytics"
+    },
+    {
+      "path": "/web-images/analytics/holographic-analytics-computer.jpg",
+      "title": "holographic analytics computer",
+      "placement": "Analytics Intelligence",
+      "folder": "analytics"
+    },
+    {
+      "path": "/web-images/impact/holographic-growth-dashboard.jpg",
+      "title": "holographic growth dashboard",
+      "placement": "Impact Intelligence",
+      "folder": "impact"
+    },
+    {
+      "path": "/web-images/impact/business-growth-collaboration-cartoon.jpg",
+      "title": "business growth collaboration cartoon",
+      "placement": "Growth methodology explainer",
+      "folder": "impact"
+    },
+    {
+      "path": "/web-images/authority/artificial-intelligence-cyan-brain.jpg",
+      "title": "artificial intelligence cyan brain",
+      "placement": "Trust and authority graph",
+      "folder": "authority"
+    },
+    {
+      "path": "/web-images/authority/emerald-neural-sculpture.jpg",
+      "title": "emerald neural sculpture",
+      "placement": "Porcelain authority visual",
+      "folder": "authority"
+    },
+    {
+      "path": "/web-images/agency/data-wall-collaboration.jpg",
+      "title": "data wall collaboration",
+      "placement": "Agency operations",
+      "folder": "agency"
+    },
+    {
+      "path": "/web-images/agency/digital-marketing-automation-workflow.jpg",
+      "title": "digital marketing automation workflow",
+      "placement": "Agency execution",
+      "folder": "agency"
+    },
+    {
+      "path": "/web-images/ai-exposure/artificial-intelligence-radiant-network.jpg",
+      "title": "artificial intelligence radiant network",
+      "placement": "AI Exposure",
+      "folder": "ai-exposure"
+    },
+    {
+      "path": "/web-images/ai-exposure/synthetic-executive-agents.jpg",
+      "title": "synthetic executive agents",
+      "placement": "AI agentic intelligence",
+      "folder": "ai-exposure"
+    },
+    {
+      "path": "/web-images/ai-exposure/agentic-workforce-dashboard.jpg",
+      "title": "agentic workforce dashboard",
+      "placement": "Agent diagnostics",
+      "folder": "ai-exposure"
+    },
+    {
+      "path": "/web-images/ai-exposure/intelligent-assistant-laptop.jpg",
+      "title": "intelligent assistant laptop",
+      "placement": "AI assistants",
+      "folder": "ai-exposure"
+    },
+    {
+      "path": "/web-images/ai-exposure/artificial-intelligence-ecosystem-isometric.jpg",
+      "title": "artificial intelligence ecosystem isometric",
+      "placement": "AI ecosystem",
+      "folder": "ai-exposure"
+    },
+    {
+      "path": "/web-images/ai-exposure/generative-search-workstation.jpg",
+      "title": "generative search workstation",
+      "placement": "GEO workbench",
+      "folder": "ai-exposure"
+    },
+    {
+      "path": "/web-images/ai-exposure/generative-engine-woodblocks.jpg",
+      "title": "generative engine woodblocks",
+      "placement": "GEO education",
+      "folder": "ai-exposure"
+    },
+    {
+      "path": "/web-images/reputation/digital-customer-intelligence-network.jpg",
+      "title": "digital customer intelligence network",
+      "placement": "Reputation network",
+      "folder": "reputation"
+    },
+    {
+      "path": "/web-images/reputation/social-emotion-reactions.jpg",
+      "title": "social emotion reactions",
+      "placement": "Audience and sentiment",
+      "folder": "reputation"
+    },
+    {
+      "path": "/web-images/reputation/livestream-brand-retail-creator.jpg",
+      "title": "livestream brand retail creator",
+      "placement": "Audience reputation",
+      "folder": "reputation"
+    },
+    {
+      "path": "/web-images/content/brand-lightbulbs-concept.jpg",
+      "title": "brand lightbulbs concept",
+      "placement": "Brand ideation",
+      "folder": "content"
+    },
+    {
+      "path": "/web-images/content/purple-production-studio.jpg",
+      "title": "purple production studio",
+      "placement": "Editorial production",
+      "folder": "content"
+    },
+    {
+      "path": "/web-images/content/editorial-content-strategy-map.jpg",
+      "title": "editorial content strategy map",
+      "placement": "Content strategy workflow",
+      "folder": "content"
+    },
+    {
+      "path": "/web-images/content/broadcast-control-studio.jpg",
+      "title": "broadcast control studio",
+      "placement": "Content operations",
+      "folder": "content"
+    },
+    {
+      "path": "/web-images/search/search-engine-touchscreen.jpg",
+      "title": "search engine touchscreen",
+      "placement": "Search visibility",
+      "folder": "search"
+    },
+    {
+      "path": "/web-images/search/digital-search-field.jpg",
+      "title": "digital search field",
+      "placement": "Search discovery",
+      "folder": "search"
+    },
+    {
+      "path": "/web-images/search/colourful-search-optimisation.jpg",
+      "title": "colourful search optimisation",
+      "placement": "SEO explainer",
+      "folder": "search"
+    },
+    {
+      "path": "/web-images/site/search-intelligence-audit.jpg",
+      "title": "search intelligence audit",
+      "placement": "Site intelligence",
+      "folder": "site"
+    }
+  ]
+}
