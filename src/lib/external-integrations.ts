@@ -1,7 +1,7 @@
 import {createSign} from "node:crypto";
 import {CloudError} from "./cloud";
 export type Source="gsc"|"ga4"|"hubspot"|"openai";
-export function externalStatus(env:NodeJS.ProcessEnv=process.env){
+export function externalStatus(env:Record<string,string|undefined>=process.env){
  const google=Boolean(env.GOOGLE_SERVICE_ACCOUNT_EMAIL&&env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY);
  return {
   gsc:{configured:google&&Boolean(env.GOOGLE_SEARCH_CONSOLE_SITE_URL),method:"Google service account with Search Console property access"},
