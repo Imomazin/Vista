@@ -3,7 +3,7 @@ import {useRef,useState} from "react";
 import {ArrowRight,BookOpen,CheckCircle2,Clock3,ExternalLink,FileText,Film,Play,ShieldCheck} from "lucide-react";
 import "./watch-demo.css";
 
-const film="https://vista-demo-media.vercel.app/vista-walkthrough.mp4";
+const film="https://pusbuucyprqbblfginbl.supabase.co/storage/v1/object/public/vista-media/vista-walkthrough.mp4";
 const chapters=[
  {time:0,title:"The VisTa vision",detail:"Nine intelligence disciplines. One connected decision-making journey.",route:"engines",label:"Explore nine engines"},
  {time:50,title:"Search and discoverability",detail:"Why technical evidence is different from verified Search Console metrics.",route:"engines/1",label:"Open Search Visibility"},
