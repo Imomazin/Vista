@@ -9,7 +9,7 @@ import type {Appearance} from '@/lib/appearance';
 import {VisTaMorph,VisTaMark} from './ecosystem';
 import './experience-premium.css';
 
-type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines'|'pricing';
+type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines'|'pricing'|'audit';
 export default function Experience({navigate,motion,toggleMotion,appearance,onAppearanceChange}:{navigate:(view:Destination)=>void;motion:boolean;toggleMotion:()=>void;appearance:Appearance;onAppearanceChange:(next:Appearance)=>void}) {
  const [entering,setEntering]=useState(false);const [revealing,setRevealing]=useState(false);
  const [preview,setPreview]=useState(false);
@@ -41,7 +41,7 @@ export default function Experience({navigate,motion,toggleMotion,appearance,onAp
    <p>See the signals. Connect the dots.<br/>Make your next move with VisTa.</p>
    <div className="entrance-actions">
     <button className="experience-enter" onClick={enter} disabled={entering}>{entering?'Opening your VisTa…':'Reveal your VisTa'}<ArrowRight size={23}/></button>
-    <button className="entrance-preview-trigger" onClick={()=>setPreview(v=>!v)} aria-expanded={preview} aria-controls="vista-entrance-preview">{preview?'Close preview':'Explore the intelligence'}<ArrowUpRight size={15}/></button>
+    <button className="entrance-preview-trigger" onClick={()=>setPreview(v=>!v)} aria-expanded={preview} aria-controls="vista-entrance-preview">{preview?'Close preview':'Explore the intelligence'}<ArrowUpRight size={15}/></button><button className="entrance-preview-trigger" onClick={()=>go("audit")}>Try a live website audit <ScanLine size={15}/></button>
    </div>
    <span className="entrance-footnote"><span/> OBSERVE / INTERPRET / ACT / VERIFY</span>
   </div>
