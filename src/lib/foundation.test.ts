@@ -27,3 +27,12 @@ test('actual Postgres policies block foreign tenants, viewer writes and role esc
  await asUser('');assert.equal((await db.query('select * from vista_workspaces')).rows.length,0);
  }finally{await db.close();}
 });
+
+
+test('same-origin protection accepts trusted public Host behind an internal reverse-proxy bind address',()=>{
+ const internal='http://0.0.0.0:3000/api/cloud/session';
+ requireSameOrigin(new Request(internal,{headers:{host:'127.0.0.1:3000',origin:'http://127.0.0.1:3000', 'sec-fetch-site':'same-origin'}}));
+ requireSameOrigin(new Request(internal,{headers:{host:'vista-preview.vercel.app',origin:'https://vista-preview.vercel.app','x-forwarded-proto':'https','sec-fetch-site':'same-origin'}}));
+ assert.throws(()=>requireSameOrigin(new Request(internal,{headers:{host:'vista-preview.vercel.app',origin:'https://evil.example','x-forwarded-proto':'https','sec-fetch-site':'cross-site'}})));
+ assert.throws(()=>requireSameOrigin(new Request(internal,{headers:{host:'vista-preview.vercel.app',origin:'https://evil.example','x-forwarded-proto':'https'}})));
+});
