@@ -46,6 +46,16 @@ Theme contract and contrast tests: `src/lib/visual-identity.ts` and `src/lib/vis
 
 The protected development preview is automatically built by Vercel and GitHub workflow runs compile/tests/build. Browser-based screenshot and accessibility/performance validation remain necessary before production promotion.
 
+## Curated VisTa imagery — installed
+
+Every user-selected asset is now stored in GitHub at `public/web-images`. The library contains **37 unique photographs, the original Ambidexters logo, and two transparent logo PNGs**, corresponding to 41 total upload selections with three exact duplicates consolidated.
+
+The brand variants use the original purple/navy logo for Porcelain and a platinum-adapted transparent version for Obsidian. The real, user-provided photos feature in the cinematic entrance, Command Centre editorial cards, the nine selected intelligence studios and an expandable, grouped **VisTa Visual Atlas**. The atlas makes all 37 unique photographs discoverable without overcrowding live decision screens.
+
+Implementation: `src/lib/visual-assets.ts`, `src/app/visual-stories.tsx` and `src/app/visual-stories.css`. `src/lib/visual-assets.test.ts` checks filenames, actual on-disk presence, engine coverage and upload selection counts. The exact folder allocation and image-placement design are in `docs/image-placement-blueprint.md`.
+
+The final visual direction combines Titanium structure, Emerald evidence/action signals, and controlled **Violet** atmosphere around cinematic and AI/content storytelling. Illustrative photography is never used as live evidence or marketing performance measurements. Public redistribution rights should be confirmed by the asset owner before production promotion. The Vercel preview remains protected until release approval.
+
 ## Origin release
 
 - Obsidian, pearl and mint visual system with a dimensional animated V emblem
