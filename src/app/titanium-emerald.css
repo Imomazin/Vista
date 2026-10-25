@@ -295,3 +295,165 @@ html[data-appearance] .vista-engine-dock button:hover,
 html[data-appearance] .vista-engine-dock button[aria-current="page"]{
  color:var(--ti-emerald);border-color:var(--ti-emerald);background:var(--ti-surface-raised)
 }
+
+
+/* Working analytics should be neutral first, with emerald reserved for selected signals. */
+html[data-appearance] .pulse-indicator,
+html[data-appearance] :is(.pulse-observatory,.pulse-priorities,.pulse-trend-panel,.pulse-connection-panel,.pulse-studio-panel){
+ background:var(--ti-raised);border:1px solid var(--ti-line);box-shadow:0 10px 32px #0205080D
+}
+html[data-appearance] .pulse-indicator:after{
+ background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ti-metal),transparent 60%),transparent)
+}
+html[data-appearance] :is(.pulse-indicator strong,.pulse-card-title h3,.pulse-studio-panel>strong){color:var(--ti-text)}
+html[data-appearance] :is(.pulse-indicator>span,.pulse-indicator small,.pulse-top p,.pulse-overline,.pulse-radar-wait,.pulse-footer-note,.pulse-trend-labels,.pulse-trend-panel>p){color:var(--ti-subtext)}
+html[data-appearance] .pulse-top h2 em{color:var(--ti-emerald)}
+html[data-appearance] .pulse-observatory{
+ background:radial-gradient(ellipse at 18% 30%,color-mix(in srgb,var(--ti-metal),transparent 90%),transparent 62%),var(--ti-raised)
+}
+html[data-appearance] .pulse-tools select,html[data-appearance] .pulse-export{
+ background:var(--ti-surface);border:1px solid var(--ti-line);color:var(--ti-text)
+}
+html[data-appearance] .pulse-tabs{background:var(--ti-surface);border:1px solid var(--ti-line)}
+html[data-appearance] .pulse-tabs button{color:var(--ti-subtext)}
+html[data-appearance] .pulse-tabs button.selected{background:var(--ti-surface-raised);color:var(--ti-emerald)}
+html[data-appearance] .pulse-radar-visual{
+ background:radial-gradient(circle at center,color-mix(in srgb,var(--ti-metal),transparent 91%),transparent 70%)
+}
+html[data-appearance] .pulse-orbit{border-color:color-mix(in srgb,var(--ti-metal),transparent 80%)}
+html[data-appearance] .pulse-axis{background:var(--ti-hairline)}
+html[data-appearance] .pulse-radar-centre{
+ background:var(--ti-raised);border:1px solid var(--ti-glass-edge);
+ box-shadow:0 0 0 7px color-mix(in srgb,var(--ti-metal),transparent 92%),0 14px 38px #02080C17
+}
+html[data-appearance] .pulse-radar-centre :is(strong,small,svg){color:var(--ti-text)}
+html[data-appearance] .pulse-radar-node span{
+ background:var(--ti-metal);box-shadow:0 0 0 4px color-mix(in srgb,var(--ti-metal),transparent 88%),0 0 20px color-mix(in srgb,var(--ti-metal),transparent 58%)
+}
+html[data-appearance] .pulse-radar-node.focused span{
+ background:var(--ti-emerald);box-shadow:0 0 0 5px color-mix(in srgb,var(--ti-emerald),transparent 84%),0 0 22px color-mix(in srgb,var(--ti-emerald),transparent 54%)
+}
+html[data-appearance] :is(.pulse-radar-insight h4,.priority-copy strong,.pulse-timeline-event h4,.pulse-pathways strong,.pulse-empty h4){color:var(--ti-text)}
+html[data-appearance] :is(.pulse-radar-insight p,.priority-copy small,.pulse-timeline-event p,.pulse-pathways p,.pulse-empty p){color:var(--ti-subtext)}
+html[data-appearance] .pulse-filter button{
+ color:var(--ti-subtext);background:var(--ti-surface);border-color:var(--ti-line)
+}
+html[data-appearance] .pulse-filter button.active{
+ color:var(--ti-emerald);background:var(--ti-surface-raised);border-color:var(--ti-emerald)
+}
+html[data-appearance] :is(.pulse-priority-row,.pulse-pathways>div){
+ background:var(--ti-surface);border:1px solid var(--ti-line);color:var(--ti-text)
+}
+html[data-appearance] .pulse-priority-row.is-selected{
+ border-color:var(--ti-emerald);background:var(--ti-surface-raised)
+}
+html[data-appearance] .pulse-primary-action{
+ background:var(--ti-emerald);border-color:var(--ti-emerald);color:var(--ti-on-emerald)
+}
+html[data-appearance] .pulse-primary-action:hover{background:color-mix(in srgb,var(--ti-emerald),var(--ti-platinum) 12%);color:var(--ti-on-emerald)}
+html[data-appearance] .pulse-text-link{color:var(--ti-emerald)}
+html[data-appearance] .pulse-source span{color:var(--ti-text)}
+html[data-appearance] .pulse-source svg{color:var(--ti-metal)}
+html[data-appearance] .pulse-source :is(.not-connected,.has-data){color:var(--ti-subtext)}
+html[data-appearance] .pulse-trend-chart svg{
+ --line-primary:var(--ti-emerald);--line-secondary:var(--ti-metal)
+}
+html[data-appearance] .pulse-trend-chart polyline{stroke:var(--ti-emerald)}
+html[data-appearance] .pulse-trend-chart circle{fill:var(--ti-emerald);stroke:var(--ti-surface)}
+html[data-appearance] .pulse-trend-chart line{stroke:var(--ti-hairline)}
+/* The observation/decision room retains sharp, sober enterprise-density information. */
+html[data-appearance] .decision-room,html[data-appearance] .measurement-room{color:var(--ti-text)}
+html[data-appearance] :is(.decision-heading h1 em,.measurement-dictionary dt){color:var(--ti-emerald)}
+html[data-appearance] :is(.decision-heading p,.decision-limits,.decision-card p,.decision-card small,.measurement-dictionary dd){color:var(--ti-subtext)}
+html[data-appearance] .decision-metrics{
+ background:var(--ti-hairline);border:1px solid var(--ti-line)
+}
+html[data-appearance] .decision-metrics>div{background:var(--ti-surface)}
+html[data-appearance] .decision-metrics strong{color:var(--ti-text)}
+html[data-appearance] .decision-metrics :is(span,small){color:var(--ti-subtext)}
+html[data-appearance] .decision-card{
+ background:var(--ti-raised);border:1px solid var(--ti-line);color:var(--ti-text)
+}
+html[data-appearance] .decision-tabs{border-color:var(--ti-line)}
+html[data-appearance] .decision-tabs button{color:var(--ti-subtext)}
+html[data-appearance] .decision-tabs button[aria-pressed="true"]{color:var(--ti-emerald);border-color:var(--ti-emerald)}
+html[data-appearance] .decision-card a,html[data-appearance] .decision-card summary{color:var(--ti-emerald)}
+html[data-appearance] .decision-room :is(input,select,textarea),html[data-appearance] .measurement-room :is(input,select,textarea){
+ background:var(--ti-surface);color:var(--ti-text);border:1px solid var(--ti-line)
+}
+html[data-appearance] .decision-learning,html[data-appearance] .decision-citation,
+html[data-appearance] :is(.evidence-cluster section,.decision-empty,.cloud-transfer){
+ background:var(--ti-surface);color:var(--ti-text);border-color:var(--ti-line)
+}
+html[data-appearance] .decision-advance,html[data-appearance] .decision-toolbar button{
+ background:var(--ti-surface-raised);color:var(--ti-text);border:1px solid var(--ti-line)
+}
+html[data-appearance] .decision-checkpoints li{color:var(--ti-subtext);border-color:var(--ti-line)}
+html[data-appearance] .decision-checkpoints li.complete{color:var(--ti-emerald);border-color:var(--ti-emerald)}
+html[data-appearance] .measurement-schema{
+ color:var(--ti-emerald);background:var(--ti-surface);border:1px solid var(--ti-line)
+}
+html[data-appearance] .measurement-table th{
+ color:var(--ti-text);background:var(--ti-surface-raised);border-color:var(--ti-line)
+}
+html[data-appearance] .measurement-table td{color:var(--ti-text);border-color:var(--ti-hairline)}
+html[data-appearance] .measurement-chart>div{
+ background:linear-gradient(to bottom,var(--ti-emerald),color-mix(in srgb,var(--ti-metal),var(--ti-surface) 45%))
+}
+/* General forms, source evidence and working cards */
+html[data-appearance] .workspace-card,html[data-appearance] .workspace-metrics>div{
+ background:var(--ti-raised);border:1px solid var(--ti-line);color:var(--ti-text)
+}
+html[data-appearance] .workspace-metrics strong{color:var(--ti-text)}
+html[data-appearance] .workspace-tabs button.active{
+ color:var(--ti-emerald)!important;border-color:var(--ti-emerald)!important;
+ background:var(--ti-surface-raised)!important
+}
+html[data-appearance] .workspace-message{
+ color:var(--ti-text);border:1px solid var(--ti-line);background:var(--ti-surface-raised)
+}
+html[data-appearance] .workspace-section :is(h1,h2,h3,strong){color:var(--ti-text)}
+html[data-appearance] .workspace-section :is(p,label,small){color:var(--ti-subtext)}
+html[data-appearance] .workspace-section :is(input,select,textarea),
+html[data-appearance] .tool-page :is(input,select,textarea){
+ background:var(--ti-surface);border:1px solid var(--ti-line);color:var(--ti-text)
+}
+html[data-appearance] .workspace-section :is(input,select,textarea)::placeholder,
+html[data-appearance] .tool-page :is(input,select,textarea)::placeholder{color:var(--ti-subtext)}
+html[data-appearance] .scan-bar{background:var(--ti-surface);border:1px solid var(--ti-line)}
+html[data-appearance] .scan-bar input{background:transparent;border:0;color:var(--ti-text)}
+html[data-appearance] .tool-heading>p,html[data-appearance] .section-heading p{color:var(--ti-subtext)}
+html[data-appearance] .tool-heading h1{color:var(--ti-text)}
+html[data-appearance] .scan-progress{color:var(--ti-subtext);border-color:var(--ti-line);background:var(--ti-surface-raised)}
+html[data-appearance] .command-palette{
+ background:var(--ti-surface);color:var(--ti-text);border:1px solid var(--ti-glass-edge);
+ box-shadow:var(--ti-card-shadow)
+}
+html[data-appearance] .command-palette :is(input,button){color:var(--ti-text)}
+html[data-appearance] .command-palette :is(p,small,span){color:var(--ti-subtext)}
+html[data-appearance] .command-palette button:hover{background:var(--ti-surface-raised)}
+html[data-appearance] .app-footer{color:var(--ti-subtext);border-color:var(--ti-line)}
+/* Intention-driven motion. Respect both system reduction and user pause. */
+html[data-appearance] :is(.vte-focus,.vte-matrix-cell,.vte-map-core,.pulse-indicator,.pulse-observatory){
+ transition:background .38s var(--ti-ease),color .3s ease,border-color .3s ease,box-shadow .38s ease
+}
+.motion-off :is(.hero-sweep,.entrance-stage-beam,.vte-map:after,.morph-links path,.morph-seeds i,.vte-map-lines .focused-path,.vte-map-node.selected .vte-node-icon){
+ animation:none!important
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-appearance] *,html[data-appearance] *:before,html[data-appearance] *:after{
+  scroll-behavior:auto!important;animation-duration:.01ms!important;
+  animation-iteration-count:1!important;transition-duration:.01ms!important
+ }
+}
+/* Accessible responsive geometry; avoid collisions between live controls and dock. */
+@media(min-width:761px){
+ html[data-appearance] .app-body .app-main{padding-right:clamp(46px,9.5vw,145px)}
+}
+@media(max-width:760px){
+ html[data-appearance] .vista-engine-dock{max-width:calc(100vw - 24px)}
+ html[data-appearance] .app-body .app-main{padding-bottom:90px}
+ html[data-appearance] .app-footer{margin-bottom:62px}
+ html[data-appearance] .command-hero{border-radius:18px}
+ html[data-appearance] .vte-map{border-radius:17px}
+}
