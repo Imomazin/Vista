@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowRight, Pause, Play, Radar, ScanLine, X, Crosshair, Layers3 } from 'lucide-react';
 import CinematicPearl from './cinematic-pearl';
 import TitaniumSignalField from './titanium-signal-field';
+import {AmbidextersLogo} from './visual-stories';
 import AppearanceSwitch from './appearance-switch';
 import type {Appearance} from '@/lib/appearance';
 import {VisTaMorph,VisTaMark} from './ecosystem';
@@ -31,7 +32,7 @@ export default function Experience({navigate,motion,toggleMotion,appearance,onAp
   <div className="entrance-reticle reticle-left" aria-hidden="true"/><div className="entrance-reticle reticle-right" aria-hidden="true"/>
   <header className="experience-header">
    <button className="experience-brand" onClick={()=>go('command')}><VisTaMark/><span>™</span></button>
-   <span>AN AMBIDEXTERS TECHNOLOGY</span>
+   <div className="ax-attribution"><AmbidextersLogo compact/><span>AN AMBIDEXTERS TECHNOLOGY</span></div>
    <div className="experience-header-actions"><AppearanceSwitch appearance={appearance} onChange={onAppearanceChange}/><button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button></div>
   </header>
   <div className="experience-editorial">
