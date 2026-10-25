@@ -195,3 +195,20 @@ html[data-appearance="light"] .vista-morph:before{background:conic-gradient(from
 @media(prefers-reduced-motion:reduce){.vista-morph:before,.morph-links path,.morph-seeds i{animation:none!important}.morph-seeds i{opacity:0!important}}
 .morph-still .morph-seeds i,.morph-still .vista-morph:before{animation:none!important;opacity:0!important}
 .morph-still .morph-links path{animation:none!important;stroke-dashoffset:0;opacity:.35}
+
+
+/* Interactive constellation: selected intelligence relationships illuminate without inventing data. */
+.vte-map{--focus-x:50%;--focus-y:50%}
+.vte-map-pointer-glow{pointer-events:none;position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 26% 34% at var(--focus-x) var(--focus-y),#b5ffe31b,transparent 93%);mix-blend-mode:screen;opacity:.7;transition:opacity .5s}
+.vte-map-lines path{fill:none;stroke:#c3ffdf27;stroke-linecap:round;transition:stroke .5s ease,stroke-width .5s ease,filter .5s ease}
+.vte-map-lines .focused-path{stroke:#baffdcab;filter:drop-shadow(0 0 9px #b5ffd69e);stroke-dasharray:7 6;animation:constellation-current 15s linear infinite}
+.vte-map-node.selected .vte-node-icon{animation:vte-node-signal 4.5s ease-in-out infinite alternate}
+@keyframes constellation-current{from{stroke-dashoffset:0}to{stroke-dashoffset:-156}}
+@keyframes vte-node-signal{from{box-shadow:0 0 0 4px #b6ffe40d,0 0 19px #b6ffe420}to{box-shadow:0 0 0 10px #b6ffe408,0 0 43px #b6ffe45b}}
+html[data-appearance="light"] .vte-map-pointer-glow{background:radial-gradient(ellipse 26% 34% at var(--focus-x) var(--focus-y),#ffffffcc,transparent 92%);mix-blend-mode:soft-light;opacity:1}
+html[data-appearance="light"] .vte-map-lines path{stroke:#2d7d5f38}
+html[data-appearance="light"] .vte-map-lines .focused-path{stroke:#197858;filter:drop-shadow(0 0 7px #21835b80)}
+html[data-appearance="light"] .vte-map-node.selected .vte-node-icon{animation:vte-node-signal-light 4.5s ease-in-out infinite alternate}
+@keyframes vte-node-signal-light{from{box-shadow:0 0 0 4px #ffffff95,0 10px 19px #48916b3a}to{box-shadow:0 0 0 9px #ffffff83,0 15px 34px #2d805b72}}
+.motion-off .vte-map-lines .focused-path,.motion-off .vte-map-node.selected .vte-node-icon{animation:none}
+@media(prefers-reduced-motion:reduce){.vte-map-lines .focused-path,.vte-map-node.selected .vte-node-icon{animation:none!important}.vte-map-lines path{transition:none!important}}
