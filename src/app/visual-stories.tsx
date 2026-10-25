@@ -1,6 +1,7 @@
 'use client';
 import Image from "next/image";
-import {ArrowUpRight,Images,Layers3,ScanLine,Sparkles} from "lucide-react";
+import {useState} from "react";
+import {ArrowLeft,ArrowRight,ArrowUpRight,Images,Layers3,Sparkles} from "lucide-react";
 import {categoryForEngine,cinematicVisuals,getEngineVisuals,selectedPhotography,visualAssets,type VisualCategory} from "@/lib/visual-assets";
 import type {EngineId} from "@/lib/engine-methods";
 import "./visual-stories.css";
@@ -60,24 +61,55 @@ export function CommandEditorial({onNavigate}:{onNavigate:(engine:EngineId)=>voi
  </section>;
 }
 
+const narratives:Record<EngineId,{overline:string;opening:string;emphasis:string;description:string;label:string}>={
+ 1:{overline:"DISCOVERABILITY / DEMAND",opening:"Be found where",emphasis:"the future looks.",description:"Search visibility is the gateway to strategic advantage. Investigate demand, understand discoverability and act on real evidence.",label:"Explore search intelligence"},
+ 2:{overline:"SIGNAL / OUTCOME",opening:"Turn every insight",emphasis:"into measurable impact.",description:"Connect marketing decisions to customer journeys, meaningful outcomes and verifiable performance evidence.",label:"Explore impact intelligence"},
+ 3:{overline:"TECHNOLOGY / EXPERIENCE",opening:"See the architecture",emphasis:"behind performance.",description:"Discover how the technical foundations of a digital presence create or constrain visibility, trust and experience.",label:"Investigate site intelligence"},
+ 4:{overline:"IDEA / INFLUENCE",opening:"Create what",emphasis:"moves the world.",description:"Bring human imagination together with evidence-led content strategy, confident storytelling and purposeful execution.",label:"Enter the content studio"},
+ 5:{overline:"IDENTITY / TRUST",opening:"See what connects",emphasis:"authority and influence.",description:"Make entities, relationships and sources understandable. Distinguish what is evidenced from what is merely assumed.",label:"Explore authority intelligence"},
+ 6:{overline:"PERCEPTION / REPUTATION",opening:"Understand the",emphasis:"conversation around you.",description:"Bring audience understanding, public signals and source-aware reputation decisions into one strategic view.",label:"Explore reputation intelligence"},
+ 7:{overline:"PEOPLE / ORCHESTRATION",opening:"Run intelligence",emphasis:"at enterprise scale.",description:"Turn collaborative work, client relationships and campaign execution into a considered, accountable operating system.",label:"Open agency operations"},
+ 8:{overline:"EVIDENCE / DECISIONS",opening:"Find the meaning",emphasis:"inside the metrics.",description:"From analytical signals to executive decisions: read the data, understand the context and trace what deserves action.",label:"Explore analytics intelligence"},
+ 9:{overline:"AI / GENERATIVE DISCOVERY",opening:"Become visible in",emphasis:"the age of answers.",description:"Explore how generative systems describe, connect and cite brands. Bring prompt evidence, interpretation and action together.",label:"Enter the AI exposure studio"}
+};
 export function EngineVisualStory({engine,onAction}:{engine:EngineId;onAction:()=>void}){
- const category=categoryForEngine[engine];const selected=getEngineVisuals(engine);
+ const category=categoryForEngine[engine];
+ const selected=getEngineVisuals(engine);
+ const [active,setActive]=useState(0);
  if(!selected.length)return null;
- const hero=selected[0];const others=selected.slice(1);
- return <section className={"vista-engine-story engine-story-"+category} aria-label={captions[category]+" visual story"}>
-  <div className="engine-story-photo">
-   <Image src={hero.path} alt={hero.title+" — illustrative photograph"} fill sizes="(max-width:900px) 95vw, 45vw" quality={82}/>
-   <div className="engine-story-photo-scrim"/><span>VisTa / {captions[category].toUpperCase()}</span>
+ const current=selected[active]||selected[0];
+ const narrative=narratives[engine];
+ return <section className={"vista-engine-story story-immersive engine-story-"+category} aria-label={captions[category]+" visual story"}>
+  <div className="story-stage">
+   <div className="story-stage-image">
+    <Image key={current.path} src={current.path} alt={current.title.replace(/-/g," ")+", illustrative visual for "+captions[category]} fill priority={false} sizes="(max-width:900px) 100vw, 65vw" quality={86}/>
+    <span className="story-image-shade" aria-hidden="true"/>
+    <div className="story-image-label"><span>VisTa / {captions[category].toUpperCase()}</span><span>{String(active+1).padStart(2,"0")} / {String(selected.length).padStart(2,"0")}</span></div>
+    <span className="story-image-caption">{current.title.replace(/-/g," ")}</span>
+   </div>
+   <div className="story-stage-copy">
+    <span className="story-kicker"><i aria-hidden="true"/>{narrative.overline}</span>
+    <h3>{narrative.opening}<br/><em>{narrative.emphasis}</em></h3>
+    <p>{narrative.description}</p>
+    <button className="story-main-action" type="button" onClick={onAction}>{narrative.label}<ArrowUpRight size={17}/></button>
+    <div className="story-stage-navigation">
+     <span>SELECTED VISUAL STORIES</span>
+     <div>
+      <button type="button" aria-label="Previous visual" disabled={selected.length<2} onClick={()=>setActive(i=>(i+selected.length-1)%selected.length)}><ArrowLeft size={17}/></button>
+      <button type="button" aria-label="Next visual" disabled={selected.length<2} onClick={()=>setActive(i=>(i+1)%selected.length)}><ArrowRight size={17}/></button>
+     </div>
+    </div>
+   </div>
   </div>
-  <div className="engine-story-copy">
-   <small>THE HUMAN SIDE OF SUPERIOR INTELLIGENCE</small>
-   <h3>Intelligence you can<br/><em>put to work.</em></h3>
-   <p>{hero.placement}. VisTa connects visual perspective with evidence, source context and real operational next steps.</p>
-   <button className="engine-story-cta" onClick={onAction}>Open the working studio <ArrowUpRight size={16}/></button>
-   {others.length>0&&<div className="engine-story-thumbnails" aria-label="Additional selected visuals">
-    {others.map(pic=><div key={pic.path} className="engine-story-mini" title={pic.title}><Image src={pic.path} alt={pic.title} fill sizes="110px" quality={72}/></div>)}
-   </div>}
-  </div>
+  {selected.length>1&&<div className="story-gallery" aria-label={"Explore selected "+captions[category]+" visuals"}>
+   {selected.map((pic,i)=><button type="button" key={pic.path} className={"story-gallery-card"+(active===i?" active":"")} onClick={()=>setActive(i)} aria-pressed={active===i} aria-label={"Show "+pic.title.replace(/-/g," ")}>
+    <Image src={pic.path} alt="" fill sizes="(max-width:640px) 75vw, (max-width:1050px) 42vw, 28vw" quality={79}/>
+    <span className="story-gallery-tint"/>
+    <span className="story-gallery-copy"><small>VISUAL {String(i+1).padStart(2,"0")}</small><strong>{pic.title.replace(/-/g," ")}</strong></span>
+    <ArrowUpRight className="story-gallery-arrow" size={17}/>
+   </button>)}
+  </div>}
+  <p className="story-visual-disclosure">Visual references illustrate the discipline. Source-backed intelligence, actual measurements and actions are provided in the working studio below.</p>
  </section>;
 }
 
