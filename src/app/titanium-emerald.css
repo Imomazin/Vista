@@ -1,0 +1,141 @@
+/* VisTa | Titanium + Emerald Intelligence
+   Actual product styles. Titanium builds the world; emerald identifies intelligence.
+   This file deliberately loads AFTER the legacy theme styles. */
+
+/* Paired accessible tokens */
+:root,html[data-appearance="dark"]{
+ color-scheme:dark;
+ --bg:#090D12;--panel:#172027;--panel-light:#222C33;--text:#F2F5F4;--muted:#A1B3B0;--line:#B3C5C332;
+ --mint:#68E1B4;--teal:#239B78;--ink:var(--text);--sub:var(--muted);--paper:var(--bg);--gold:#CEAF7E;
+ --ti-canvas:#090D12;--ti-surface:#172027;--ti-surface-raised:#232D34;
+ --ti-text:#F2F5F4;--ti-subtext:#A1B3B0;--ti-metal:#BAC8CD;--ti-platinum:#EDF5F2;
+ --ti-emerald:#68E1B4;--ti-signal:#239B78;--ti-on-emerald:#081E18;--ti-champagne:#CEAF7E;
+ --ti-line:#B3C5C332;--ti-hairline:#C5D8DB1A;--ti-glass:#233139E8;--ti-glass-edge:#BAC8CD54;
+ --ti-raised:linear-gradient(142deg,#222E36,#172027 52%,#121920);
+ --ti-backdrop:linear-gradient(128deg,#0B1117,#151D23 54%,#101A1E);
+ --ti-card-shadow:0 22px 62px #03080C5A;--ti-focus:#8CECC1;--ti-grid:#D4E1E515;
+ --ti-metal-sheen:linear-gradient(110deg,#87999D 2%,#F2F7F5 25%,#9FAFB6 41%,#E6EFF0 57%,#778E94 78%,#DCE9E9);
+ --ti-primary:#68E1B4;--ti-primary-ink:#081E18;
+ --ti-good:#68E1B4;--ti-bad:#FF979A;--ti-warning:#F3C879;--ti-info:#9BCAE8;
+ --ti-radius:18px;--ti-ease:cubic-bezier(.2,.75,.24,1);
+}
+html[data-appearance="light"]{
+ color-scheme:light;
+ --bg:#F8F7F2;--panel:#FFFFFF;--panel-light:#F0F2ED;--text:#19332D;--muted:#526F64;--line:#41685632;
+ --mint:#136C50;--teal:#248667;--ink:var(--text);--sub:var(--muted);--paper:var(--bg);--gold:#967243;
+ --ti-canvas:#F8F7F2;--ti-surface:#FFFFFF;--ti-surface-raised:#F0F2ED;
+ --ti-text:#19332D;--ti-subtext:#526F64;--ti-metal:#85969A;--ti-platinum:#E6ECE8;
+ --ti-emerald:#136C50;--ti-signal:#248667;--ti-on-emerald:#FFFFFF;--ti-champagne:#967243;
+ --ti-line:#41685632;--ti-hairline:#7F959123;--ti-glass:#FFFFFFDE;--ti-glass-edge:#92A6A35A;
+ --ti-raised:linear-gradient(145deg,#FFFFFF,#F5F6F3 62%,#EAEEEC);
+ --ti-backdrop:linear-gradient(126deg,#FCFCFA,#F1F3EF 52%,#F7F7F2);
+ --ti-card-shadow:0 18px 58px #425A521C;--ti-focus:#136C50;--ti-grid:#5C7C721C;
+ --ti-metal-sheen:linear-gradient(110deg,#72858B 2%,#EEF4F2 25%,#90A3A7 41%,#F8FAFA 57%,#8F9FA6 78%,#D7E0E0);
+ --ti-primary:#136C50;--ti-primary-ink:#FFFFFF;
+ --ti-good:#136C50;--ti-bad:#B23A45;--ti-warning:#87571C;--ti-info:#276A8D;
+ --ti-radius:18px;--ti-ease:cubic-bezier(.2,.75,.24,1);
+}
+html[data-appearance] body{background:var(--ti-canvas);color:var(--ti-text)}
+html[data-appearance="dark"] .ambient-light{background:radial-gradient(ellipse,#AFC5CD15,transparent 70%)}
+html[data-appearance="light"] .ambient-light{background:radial-gradient(ellipse,#C5D8D266,transparent 70%)}
+html[data-appearance] :is(button,a,input,textarea,select):focus-visible{outline:2px solid var(--ti-focus);outline-offset:3px}
+html[data-appearance] :is(input,select,textarea){accent-color:var(--ti-primary)}
+/* Material-like brand wordmark. Capital T carries the active signal. */
+html[data-appearance] .vista-wordmark{
+ color:var(--ti-metal);
+ background:var(--ti-metal-sheen);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 2px 6px #050D1019);letter-spacing:-.083em;
+}
+html[data-appearance] .vista-wordmark>span{
+ background:linear-gradient(122deg,var(--ti-metal) 0%,var(--ti-platinum) 25%,var(--ti-emerald) 49%,var(--ti-metal) 67%,var(--ti-platinum));
+ background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+ text-shadow:none;filter:drop-shadow(0 0 11px color-mix(in srgb,var(--ti-emerald),transparent 58%));
+ transform:translateY(-.025em) scale(1.075);position:relative
+}
+html[data-appearance] .brand-period{color:var(--ti-emerald)}
+html[data-appearance] .brand small{color:var(--ti-subtext);letter-spacing:2.4px}
+html[data-appearance] .app-rail{
+ background:var(--ti-backdrop);border-color:var(--ti-hairline);
+ box-shadow:8px 0 42px #02080B11;
+}
+html[data-appearance] .app-topbar{
+ background:var(--ti-glass);border-color:var(--ti-hairline);
+ box-shadow:0 1px 15px #0610120A;backdrop-filter:blur(26px) saturate(1.16)
+}
+html[data-appearance] .rail-workspace,html[data-appearance] .rail-vision{
+ background:var(--ti-raised);border:1px solid var(--ti-line);box-shadow:inset 0 1px 0 #FFFFFF10
+}
+html[data-appearance] .rail-workspace strong,html[data-appearance] .rail-vision>span{color:var(--ti-text)}
+html[data-appearance] :is(.rail-workspace small,.rail-vision p,.rail-footer,.rail-caption,.topbar-location,.topbar-brand,.live-tag){color:var(--ti-subtext)}
+html[data-appearance] .rail-link{color:var(--ti-subtext);border-color:transparent}
+html[data-appearance] .rail-link:hover{color:var(--ti-text);background:color-mix(in srgb,var(--ti-metal),transparent 92%)}
+html[data-appearance] .rail-link.active{
+ color:var(--ti-text);background:linear-gradient(90deg,color-mix(in srgb,var(--ti-emerald),transparent 88%),transparent);
+ border-color:var(--ti-hairline);box-shadow:inset 2px 0 var(--ti-emerald)
+}
+html[data-appearance] .rail-link svg{color:var(--ti-metal)}
+html[data-appearance] .rail-link.active svg{color:var(--ti-emerald)}
+html[data-appearance] .app-topbar .icon-button,html[data-appearance] .app-topbar .command-trigger{
+ background:var(--ti-glass);border-color:var(--ti-line);color:var(--ti-subtext)
+}
+html[data-appearance] .app-topbar .icon-button:hover,html[data-appearance] .app-topbar .command-trigger:hover{
+ background:var(--ti-surface-raised);color:var(--ti-text)
+}
+html[data-appearance] .app-topbar .topbar-avatar{background:var(--ti-metal-sheen);color:#243A3B;border-color:var(--ti-surface)}
+/* Active control uses the signal, never a neon green surface everywhere. */
+html[data-appearance] :is(.mint-button,.primary-button,.vte-enter-command,.vte-primary){
+ background:var(--ti-primary);border:1px solid var(--ti-primary);color:var(--ti-primary-ink);
+ box-shadow:0 8px 27px color-mix(in srgb,var(--ti-emerald),transparent 80%);
+ font-weight:680;transition:transform .24s var(--ti-ease),box-shadow .28s ease,background .3s
+}
+html[data-appearance] :is(.mint-button,.primary-button,.vte-enter-command,.vte-primary):hover:not(:disabled){
+ background:color-mix(in srgb,var(--ti-primary),var(--ti-platinum) 13%);
+ color:var(--ti-primary-ink);border-color:var(--ti-primary);
+ box-shadow:0 12px 36px color-mix(in srgb,var(--ti-emerald),transparent 69%);transform:translateY(-2px)
+}
+html[data-appearance] :is(.hero-secondary,.ghost-button){color:var(--ti-text);border-color:var(--ti-line)}
+html[data-appearance] .ghost-button{background:var(--ti-glass)}
+/* Executive theatre. Obsidian is graphitic and Porcelain is neutral silver, not green. */
+html[data-appearance] .command-hero{
+ border-radius:24px;border:1px solid var(--ti-glass-edge);
+ background:
+ radial-gradient(ellipse 50% 65% at var(--pointer-x,77%) 36%,color-mix(in srgb,var(--ti-metal),transparent 84%),transparent 72%),
+ radial-gradient(ellipse 33% 50% at 82% 73%,color-mix(in srgb,var(--ti-emerald),transparent 93%),transparent 81%),
+ var(--ti-backdrop);
+ box-shadow:var(--ti-card-shadow),inset 0 1px 0 color-mix(in srgb,var(--ti-platinum),transparent 86%);
+}
+html[data-appearance] .command-hero:before{
+ content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+ background:linear-gradient(113deg,transparent 13%,color-mix(in srgb,var(--ti-platinum),transparent 95%) 35%,transparent 64%);
+ opacity:.8
+}
+html[data-appearance] .command-hero h1{color:var(--ti-text);font-weight:530}
+html[data-appearance] .command-hero h1 em{color:var(--ti-emerald)}
+html[data-appearance] .hero-kicker,html[data-appearance] .hero-signature{color:var(--ti-subtext)}
+html[data-appearance] .hero-kicker>span,html[data-appearance] .live-tag i{background:var(--ti-emerald)}
+html[data-appearance] .command-hero-copy>p{color:var(--ti-subtext)}
+html[data-appearance] .command-hero .hero-grid{opacity:.20;background-image:linear-gradient(var(--ti-grid) 1px,transparent 1px),linear-gradient(90deg,var(--ti-grid) 1px,transparent 1px)}
+html[data-appearance] :is(.launch-strip,.feature-ribbon,.workspace-card,.decision-card){
+ background:var(--ti-raised);border:1px solid var(--ti-line);
+ box-shadow:0 8px 25px #01050708;color:var(--ti-text)
+}
+html[data-appearance] :is(.launch-strip h3,.feature-ribbon h2,.workspace-card h2,.decision-card h2){color:var(--ti-text)}
+html[data-appearance] :is(.launch-strip p,.feature-ribbon p,.workspace-card p,.decision-card p){color:var(--ti-subtext)}
+html[data-appearance] :is(.feature-ribbon h2 em,.tool-heading h1 em,.workspace-section h1 em){color:var(--ti-emerald)}
+html[data-appearance] .launch-strip input{background:var(--ti-glass);border-color:var(--ti-line);color:var(--ti-text)}
+/* Strategic executive matrix */
+html[data-appearance] .vte-matrix-cell{
+ background:var(--ti-raised);border-color:var(--ti-line);color:var(--ti-text);
+ box-shadow:0 8px 27px #0107080D;transition:transform .28s var(--ti-ease),border-color .3s,box-shadow .3s
+}
+html[data-appearance] .vte-matrix-cell:hover{
+ background:var(--ti-raised);border-color:var(--ti-emerald);
+ box-shadow:0 18px 30px #0107081D;transform:translateY(-3px)
+}
+html[data-appearance] .vte-matrix-icon{
+ background:color-mix(in srgb,var(--ti-metal),transparent 88%);border-color:var(--ti-line);color:var(--ti-metal)
+}
+html[data-appearance] .vte-matrix-cell h3{color:var(--ti-text)}
+html[data-appearance] :is(.vte-matrix-cell p,.vte-matrix-cell small,.vte-matrix-cell-top>span:nth-child(2),.vte-matrix-progress>span:last-child,.vte-matrix-bottom>span){color:var(--ti-subtext)}
+html[data-appearance] .vte-matrix-progress>span:first-child{color:var(--ti-text)}
+html[data-appearance] .vte-matrix-bottom{border-color:var(--ti-hairline)}
