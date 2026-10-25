@@ -10,6 +10,7 @@ import {engineMethods,engineSummary,type EngineId,engineById} from "@/lib/engine
 import {emptyEngineLedger,parseEngineLedger,saveEngineEvidence,removeEngineEvidence,engineLedgerKey,countEngineEvidence,type EngineEvidence,type EngineLedger,type EvidenceKind,type EvidenceStage} from "@/lib/engine-evidence";
 import {decisionKey,parseDecisions} from "@/lib/decisions";
 import EngineDiagnostic from "./engine-diagnostic";
+import {EngineVisualStory,VisualAtlas} from "./visual-stories";
 import "./ecosystem.css";
 
 const icons=[Search,Target,ScanLine,BookOpen,ShieldCheck,RadioTower,Layers3,Activity,Sparkles] as const;
@@ -112,6 +113,7 @@ export default function VisTaEcosystem({data,selected,onSelect,onNavigate}:{data
    <div className="vte-focus-top"><div className="vte-focus-number">{String(current.id).padStart(2,"0")}</div><div><span className="eyebrow">PILLAR {current.pillar} / {current.short.toUpperCase()}</span><h2>{current.name}</h2><p>{current.promise}</p></div><span className="vte-capability-label">{current.id===3?"LIVE HTML AUDITS":current.id===4||current.id===7||current.id===9||current.id===8?"PARTIAL WORKSPACE":"SOURCE INTEGRATION PLANNED"}</span></div>
    <div className="vte-focus-tabs">{(["overview","diagnostic","evidence","playbook"] as const).map(t=><button key={t} onClick={()=>{setTab(t);setEditing(false);setMessage("");}} aria-pressed={tab===t} className={tab===t?"selected":""}>{t==="overview"?"Intelligence & value":t==="diagnostic"?"Deep diagnostic":t==="evidence"?"Evidence ledger":"Decision playbook"}</button>)}</div>
    {tab==="overview"&&<div className="vte-overview">
+    <EngineVisualStory engine={selected} onAction={openAction}/>
     {[3,5].includes(current.id)&&<div className="vte-evidence-kick"><div><span>SITE & AUTHORITY OBSERVATORY</span><h3>Inspect declared entities and page relationships</h3><p>Extract structured claims, compare identity names, inspect links and review static accessibility signals.</p></div><button onClick={()=>onNavigate("investigation")}>Open observatory <ArrowRight size={16}/></button></div>}
     {[1,2,8].includes(current.id)&&<div className="vte-evidence-kick"><div><span>IMPORTED FIRST-PARTY REPORTS</span><h3>Inspect search and outcome measurements</h3><p>Import daily GSC or GA4 reports, segment evidence, compare compatible periods and create sourced hypotheses.</p></div><button onClick={()=>onNavigate("measurements")}>Open measurements <ArrowRight size={16}/></button></div>}
     <div className="vte-value-lead"><div><span className="eyebrow">STRATEGIC DECISION</span><h3>{current.decision}</h3><p>{current.available}</p><button onClick={openAction} className="vte-primary">{current.action}<ArrowUpRight size={16}/></button></div><div className="vte-measured"><span>RECORDED EVIDENCE</span><strong>{detail.value===null?"—":detail.value}</strong><small>{detail.label}</small><p>{detail.note}</p></div></div>
@@ -145,5 +147,6 @@ export default function VisTaEcosystem({data,selected,onSelect,onNavigate}:{data
     <p className="vte-local-note">Records are browser-local and can be lost if browser data is cleared. Export backups regularly. User-verified records are user attestations, not automated verification. Do not store sensitive customer data here.</p>
    </div>}
   </div>
+  <VisualAtlas onChoose={id=>{choose(id);document.querySelector(".vte-focus")?.scrollIntoView({behavior:"auto",block:"start"});}}/>
  </section>;
 }
