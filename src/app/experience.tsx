@@ -9,7 +9,7 @@ import type {Appearance} from '@/lib/appearance';
 import {VisTaMorph,VisTaMark} from './ecosystem';
 import './experience-premium.css';
 
-type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines'|'pricing'|'audit';
+type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines'|'pricing'|'audit'|'demo';
 export default function Experience({navigate,motion,toggleMotion,appearance,onAppearanceChange}:{navigate:(view:Destination)=>void;motion:boolean;toggleMotion:()=>void;appearance:Appearance;onAppearanceChange:(next:Appearance)=>void}) {
  const [entering,setEntering]=useState(false);const [revealing,setRevealing]=useState(false);
  const [preview,setPreview]=useState(false);
@@ -33,7 +33,7 @@ export default function Experience({navigate,motion,toggleMotion,appearance,onAp
   <header className="experience-header">
    <button className="experience-brand" onClick={()=>go('command')}><VisTaMark/><span>™</span></button>
    <div className="ax-attribution"><AmbidextersLogo compact/><span>AN AMBIDEXTERS TECHNOLOGY</span></div>
-   <div className="experience-header-actions"><button type="button" className="entrance-pricing-link" onClick={()=>go("pricing")}>Plans & pricing</button><AppearanceSwitch appearance={appearance} onChange={onAppearanceChange}/><button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button></div>
+   <div className="experience-header-actions"><button type="button" className="entrance-pricing-link" onClick={()=>go("demo")}>Watch the Demo</button><button type="button" className="entrance-pricing-link" onClick={()=>go("pricing")}>Plans & pricing</button><AppearanceSwitch appearance={appearance} onChange={onAppearanceChange}/><button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button></div>
   </header>
   <div className="experience-editorial">
    <span className="eyebrow">MARKETING SUPERIOR INTELLIGENCE</span>
@@ -41,7 +41,7 @@ export default function Experience({navigate,motion,toggleMotion,appearance,onAp
    <p>See the signals. Connect the dots.<br/>Make your next move with VisTa.</p>
    <div className="entrance-actions">
     <button className="experience-enter" onClick={enter} disabled={entering}>{entering?'Opening your VisTa…':'Reveal your VisTa'}<ArrowRight size={23}/></button>
-    <button className="entrance-preview-trigger" onClick={()=>setPreview(v=>!v)} aria-expanded={preview} aria-controls="vista-entrance-preview">{preview?'Close preview':'Explore the intelligence'}<ArrowUpRight size={15}/></button><button className="entrance-preview-trigger" onClick={()=>go("audit")}>Try a live website audit <ScanLine size={15}/></button>
+    <button className="entrance-preview-trigger" onClick={()=>setPreview(v=>!v)} aria-expanded={preview} aria-controls="vista-entrance-preview">{preview?'Close preview':'Explore the intelligence'}<ArrowUpRight size={15}/></button><button className="entrance-preview-trigger" onClick={()=>go("audit")}>Try a live website audit <ScanLine size={15}/></button><button className="entrance-preview-trigger" onClick={()=>go("demo")}>Watch the ten-minute tour <Play size={15}/></button>
    </div>
    <span className="entrance-footnote"><span/> OBSERVE / INTERPRET / ACT / VERIFY</span>
   </div>
