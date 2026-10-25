@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./appearance.css";
+import "./titanium-emerald.css";
 
 export const metadata: Metadata = {
   title: "VisTa | Marketing Superior Intelligence",
