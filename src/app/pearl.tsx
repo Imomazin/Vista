@@ -1,9 +1,10 @@
 'use client';
 import type { CSSProperties } from 'react';
 import CinematicPearl from './cinematic-pearl';
+import type {Appearance} from '@/lib/appearance';
 
-export default function Pearl({ compact = false, motion = true }: { compact?: boolean; motion?: boolean }) {
-  if (!compact) return <div className="pearl-stage"><CinematicPearl motion={motion}/></div>;
+export default function Pearl({ compact = false, motion = true, appearance = 'dark' }: { compact?: boolean; motion?: boolean; appearance?:Appearance }) {
+  if (!compact) return <div className="pearl-stage"><CinematicPearl motion={motion} appearance={appearance}/></div>;
   return <div className={compact ? 'pearl-stage compact' : 'pearl-stage'} aria-label="VisTa iridescent pearl emblem" role="img">
     <div className="pearl-aura" />
     {!compact && <><div className="orbital-track track-one"><i /></div><div className="orbital-track track-two"><i /></div><div className="orbital-track track-three" /><div className="pearl-coordinate coordinate-one">V / VISIBILITY</div><div className="pearl-coordinate coordinate-two">I / INTELLIGENCE</div><div className="pearl-coordinate coordinate-three">A / AI EXPOSURE</div></>}
