@@ -457,3 +457,51 @@ html[data-appearance] :is(.vte-focus,.vte-matrix-cell,.vte-map-core,.pulse-indic
  html[data-appearance] .command-hero{border-radius:18px}
  html[data-appearance] .vte-map{border-radius:17px}
 }
+
+
+/* Executive brand motif: nine deliberate, evidence-neutral signal emissions. */
+.titanium-signal-field{
+ position:absolute;inset:-18% -30% -20% -28%;pointer-events:none;z-index:0;
+ opacity:.76;transform:perspective(950px) rotateY(-10deg) rotateZ(-6deg);
+}
+.titanium-signal-field svg{display:block;width:100%;height:100%;overflow:visible}
+.ti-signal-guide{
+ fill:none;stroke:var(--ti-metal);stroke-opacity:.14;
+ stroke-width:1;stroke-dasharray:2 11;transform-origin:500px 300px
+}
+.ti-signal-guide.outer{stroke-opacity:.09;stroke-dasharray:1 19}
+.ti-signal-ray{fill:none;stroke:url(#ti-signal-ray);stroke-width:1.6;opacity:.68}
+.ti-signal-energy{
+ fill:none;stroke:var(--ti-emerald);stroke-width:2.4;stroke-linecap:round;
+ stroke-dasharray:5 210;stroke-dashoffset:235;opacity:0;
+ filter:drop-shadow(0 0 5px var(--ti-emerald))
+}
+.ti-signal-anchor{
+ fill:var(--ti-metal);fill-opacity:.63;
+ stroke:var(--ti-emerald);stroke-opacity:.22;stroke-width:2
+}
+.motion-on .ti-signal-energy{
+ opacity:.86;animation:ti-signal-travel calc(8s + var(--order)*.25s) linear infinite;
+ animation-delay:calc(-.43s * var(--order))
+}
+.motion-on .ti-signal-guide{animation:ti-signal-guide-turn 90s linear infinite}
+.motion-on .ti-signal-guide.outer{animation-direction:reverse;animation-duration:110s}
+@keyframes ti-signal-travel{
+ 0%{stroke-dashoffset:235;opacity:0}
+ 11%{opacity:.92}
+ 80%{opacity:.7}
+ 100%{stroke-dashoffset:-270;opacity:0}
+}
+@keyframes ti-signal-guide-turn{to{transform:rotate(360deg)}}
+html[data-appearance="light"] .titanium-signal-field{opacity:.67}
+html[data-appearance="light"] .ti-signal-ray{opacity:.48}
+html[data-appearance="light"] .ti-signal-anchor{fill:#9BAEAB}
+html[data-appearance] .hero-pearl .pearl-stage{position:relative;z-index:2}
+html[data-appearance] .hero-pearl .pearl-caption{position:relative;z-index:3;color:var(--ti-subtext)}
+.motion-off .ti-signal-energy,.motion-off .ti-signal-guide{animation:none}
+@media(max-width:760px){
+ .titanium-signal-field{inset:-12% -14%;opacity:.45}
+}
+@media(prefers-reduced-motion:reduce){
+ .ti-signal-energy,.ti-signal-guide{animation:none!important}
+}
