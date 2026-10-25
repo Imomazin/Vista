@@ -10,7 +10,7 @@
   "description": "Paths align with the prepared VisTa Web Images archive. Each selected photo is included once with additional transparent logo variants.",
   "assets": [
     {
-      "path": "/web-images/brand/ambidexters-logo-original.jpeg",
+      "path": "/web-images/brand/ambidexters-logo-original.jpg",
       "title": "ambidexters logo original",
       "placement": "Brand attribution",
       "folder": "brand"
