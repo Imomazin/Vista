@@ -6,7 +6,7 @@
   "exactRepeatSelections": 3,
   "provenance": "User-supplied conversation imagery",
   "sourceRights": "User confirmation of public web and redistribution rights needed before publishing",
-  "binaryStatus": "Prepared offline; binary files not yet transferred to GitHub",
+  "binaryStatus": "Uploaded to GitHub and verified; all 40 binary assets present on vista-cinematic-intelligence",
   "description": "Paths align with the prepared VisTa Web Images archive. Each selected photo is included once with additional transparent logo variants.",
   "assets": [
     {
@@ -249,5 +249,6 @@
       "placement": "Site intelligence",
       "folder": "site"
     }
-  ]
+  ],
+  "visualImplementation": "Cinematic entrance, Command Centre, engine stories, and complete Visual Atlas are wired to these paths"
 }
