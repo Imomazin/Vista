@@ -1,4 +1,4 @@
-# VISTA Marketing Superior Intelligence Ecosystem
+# VisTa Marketing Superior Intelligence Ecosystem
 
 Marketing Superior Intelligence. Reimagined.
 
@@ -6,7 +6,7 @@ An Ambidexters technology.
 
 ## Product ambition
 
-VISTA connects marketing evidence, strategic decisions, execution and measured outcomes across organisations, agencies and channels. The nine engines define its initial capability families. Each can support multiple specialist services and workflows.
+VisTa connects marketing evidence, strategic decisions, execution and measured outcomes across organisations, agencies and channels. The nine engines define its initial capability families. Each can support multiple specialist services and workflows.
 
 ## Shared operating model
 

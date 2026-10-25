@@ -1,3 +1,4 @@
+import {validInspection} from "./inspection-schema";
 import type { AuditReport } from './audit';
 export type Project = { id: string; name: string; url: string; audience: string; goal: string };
 export type Snapshot = { id: string; projectId: string; report: AuditReport };
@@ -47,7 +48,7 @@ function validReport(r: Record<string, unknown>): boolean {
   return typeof r.inspectedAt === 'string' && Number.isFinite(Date.parse(r.inspectedAt)) && typeof r.technicalScore === 'number' && r.technicalScore >= 0 && r.technicalScore <= 100 &&
     ['title','description','canonical','language'].every(k => r[k] === null || typeof r[k] === 'string') &&
     ['headingOneCount','headingTwoCount','imageCount','imagesMissingAlt','structuredDataBlocks'].every(k => typeof r[k] === 'number' && Number.isInteger(r[k]) && (r[k] as number) >= 0) &&
-    Array.isArray(r.limitations) && r.limitations.every(x => typeof x === 'string') && Array.isArray(r.signals) && r.signals.every(s => record(s) && strings(s,['id','name','status','detail','recommendation']) && ['pass','warning','issue'].includes(String(s.status)));
+    (r.inspection===undefined||validInspection(r.inspection)) && Array.isArray(r.limitations) && r.limitations.every(x => typeof x === 'string') && Array.isArray(r.signals) && r.signals.every(s => record(s) && strings(s,['id','name','status','detail','recommendation']) && ['pass','warning','issue'].includes(String(s.status)));
 }
 export function addSnapshot(w: Workspace, projectId: string, report: AuditReport): Workspace {
   if (!w.projects.some(p => p.id === projectId)) throw new Error('Select a project before saving an audit.');

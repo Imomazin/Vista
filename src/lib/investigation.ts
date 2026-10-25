@@ -23,5 +23,18 @@ export function investigationFindings(reports: AuditReport[]) {
     group.pages.push({url:report.url,detail:signal.detail,status:signal.status});
     groups.set(signal.id,group);
   }
+  // Cross-page facts the single-page analysis cannot see.
+  const shared=[
+    {id:"duplicate-description",name:"Repeated meta description",field:(r:AuditReport)=>r.description,recommendation:"Write distinct page descriptions matching each page's real intent and content."},
+    {id:"duplicate-title",name:"Repeated page title",field:(r:AuditReport)=>r.title,recommendation:"Use unique, descriptive page titles across distinct URLs."},
+    {id:"shared-canonical",name:"Multiple pages declare the same canonical",field:(r:AuditReport)=>r.canonical,recommendation:"Check that internal pages are not unintentionally declaring the homepage as canonical."}
+  ];
+  for(const rule of shared){
+   const seen=new Map<string,AuditReport[]>();
+   for(const report of unique){const value=rule.field(report)?.trim();if(!value)continue;const key=value.toLowerCase();seen.set(key,[...(seen.get(key)||[]),report]);}
+   const duplicates=[...seen.values()].filter(items=>items.length>1);
+   if(!duplicates.length)continue;
+   groups.set(rule.id,{id:rule.id,name:rule.name,recommendation:rule.recommendation,issues:0,pages:duplicates.flatMap(items=>items.map(report=>({url:report.url,detail:"Shared value: "+rule.field(report)?.slice(0,180),status:"warning"})))});
+  }
   return [...groups.values()].sort((a,b)=>b.issues-a.issues || b.pages.length-a.pages.length || a.name.localeCompare(b.name));
 }

@@ -21,7 +21,7 @@ export default function ActionBoard({data,projectId,persist,scan,busy,onBrief,no
   }
   function exportBoard(){
     const body=`# ${project.name}: action register\n\n${actions.map(a=>`## ${a.signal.name}\nStatus: ${a.stage}\nPriority: ${a.signal.status==='issue'?'High':'Review'}\nPage: ${a.url}\nOwner: ${a.plan.owner||'Unassigned'}\nDue: ${a.plan.due||'Unscheduled'}\nEvidence: ${a.signal.detail}\nRecommendation: ${a.signal.recommendation}\nNotes: ${a.plan.notes||'None'}\n`).join('\n')}`;
-    const url=URL.createObjectURL(new Blob([body],{type:'text/markdown'}));const link=document.createElement('a');link.href=url;link.download='Vista Action Register.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(new Blob([body],{type:'text/markdown'}));const link=document.createElement('a');link.href=url;link.download='VisTa Action Register.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   return <div className="action-workspace">
     <div className="workspace-card action-intro"><div><span className="section-overline">EVIDENCE INTO EXECUTION</span><h2>Make the next move count.</h2><p>Assign the work. Track the change. Verify it against fresh evidence.</p></div><button className="primary-button" disabled={busy} onClick={()=>scan()}>{busy?'Analysing…':'Rescan project website'}<ArrowRight size={16}/></button></div>

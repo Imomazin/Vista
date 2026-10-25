@@ -1,10 +1,10 @@
-# VISTA
+# VisTa
 
 Marketing Superior Intelligence. Reimagined.
 
 An Ambidexters technology.
 
-VISTA is an integrated marketing intelligence platform organised around five strategic pillars and nine interconnected engines. The product combines search visibility, commercial impact, technical optimisation, content strategy, brand authority, digital reputation, agency operations, analytics and AI exposure.
+VisTa is an integrated marketing intelligence platform organised around five strategic pillars and nine interconnected engines. The product combines search visibility, commercial impact, technical optimisation, content strategy, brand authority, digital reputation, agency operations, analytics and AI exposure.
 
 ## Five pillars
 
@@ -26,6 +26,48 @@ VISTA is an integrated marketing intelligence platform organised around five str
 8. Digital Analytics and Performance Intelligence
 9. AI Exposure and Generative Engine Optimisation
 
+## VisTa nine-element evolution
+
+The development branch adds a cinematic transition from the VisTa wordmark into nine labelled, orbiting intelligence elements. The constellation is interactive and the nine-element navigation dock remains available inside the application. Users can open each engine's value dashboard, review practical decision criteria, complete four diagnostic questions and log evidence against a saved project.
+
+Each engine has a source-aware local evidence ledger with observation date, manual categorisation, HTTPS source URL, implications, actions, review stage, filters, exports and version-validated imports. Self-assessment results are explicitly labelled hypotheses and are not automatically verified by the platform. The Command Centre includes a cross-engine matrix with truthful per-engine source status and counts. These capabilities extend existing audit, content, comparison, project and action workflows.
+
+The nine-element UI does not imply that nine external data sources are connected. Only public HTTPS HTML audit measurement currently runs as a live retrieval. Search Console, GA4, automated AI provider sampling, CRM and media intelligence require authenticated, authorised integrations. Browser-local data does not synchronize across users or devices. Do not store sensitive client records in this local-only beta.
+
+Development and Work continuation instructions are in docs/vista-master-work-brief.md. The main production branch is kept separate while preview, accessibility and end-to-end testing remain open.
+
+## Definitive visual identity
+
+VisTa uses the **Titanium + Emerald Intelligence** design system in two equally intentional environments: **Obsidian Titanium** (dark) and **Porcelain Titanium** (light). Platinum, graphite, titanium and ivory materials structure each experience; emerald is intentionally reserved for active focus, action controls and intelligence signals. The accessible theme switch honours a saved user selection or system preference.
+
+Both environments now have dedicated CSS material tokens and styling across the cinematic entrance, Command Centre, nine-engine constellation, analytics, measurement/decision rooms, workspace and evidence interfaces. The Canvas V uses neutral machined-metal surfaces with a distinct emerald intelligence highlight. A decorative nine-signal spatial field is used in the entrance and executive cockpit; its signals are visual branding, **not measured data**.
+
+Theme contract and contrast tests: `src/lib/visual-identity.ts` and `src/lib/visual-identity.test.ts`. Implementation CSS: `src/app/titanium-emerald.css`. Master creative and execution specification: `docs/titanium-emerald-master-brief.md`.
+
+The protected development preview is automatically built by Vercel and GitHub workflow runs compile/tests/build. Browser-based screenshot and accessibility/performance validation remain necessary before production promotion.
+
+## Curated VisTa imagery — installed
+
+Every user-selected asset is now stored in GitHub at `public/web-images`. The library contains **37 unique photographs, the original Ambidexters logo, and two transparent logo PNGs**, corresponding to 41 total upload selections with three exact duplicates consolidated.
+
+The brand variants use the original purple/navy logo for Porcelain and a platinum-adapted transparent version for Obsidian. The real, user-provided photos feature in the cinematic entrance, Command Centre editorial cards, the nine selected intelligence studios and an expandable, grouped **VisTa Visual Atlas**. The atlas makes all 37 unique photographs discoverable without overcrowding live decision screens.
+
+Implementation: `src/lib/visual-assets.ts`, `src/app/visual-stories.tsx` and `src/app/visual-stories.css`. `src/lib/visual-assets.test.ts` checks filenames, actual on-disk presence, engine coverage and upload selection counts. The exact folder allocation and image-placement design are in `docs/image-placement-blueprint.md`.
+
+The final visual direction combines Titanium structure, Emerald evidence/action signals, and controlled **Violet** atmosphere around cinematic and AI/content storytelling. Illustrative photography is never used as live evidence or marketing performance measurements. Public redistribution rights should be confirmed by the asset owner before production promotion. The Vercel preview remains protected until release approval.
+
+## Live-source connection implementation and truthful activation status
+
+A source-aware integration centre is available under Workspace > Connections. Server-backed adapters now implement Google Search Console, Google Analytics 4, read-only HubSpot CRM and OpenAI Responses API sampling. A permissioned endpoint performs real source requests; a daily AI worker and organisation-scoped storage schema support scheduled prompt observations with provenance.
+
+**Development cloud configured:** A dedicated VisTa Supabase London project now has organisation-scoped database tables and a verified Ambidexters application Owner. The `vista-cinematic-intelligence` Vercel **preview branch only** holds its Supabase URL and publishable key; production remains unchanged. Sign-in supports the default Supabase email magic link redirected to `/auth/callback`, plus six-digit OTP if the email template provides one. Passwordless sign-in and a user-operated cloud save still require a successful real-user browser test. GSC/GA4, HubSpot, OpenAI and recurring API credentials are **not connected**; credentials alone do not prove a live data source.
+
+Read the activation instructions in docs/live-connections.md and secret variable names in .env.example. Only authorised administrators should set these values privately in Vercel. The multi-tenant OAuth/token vault and vendors beyond HubSpot remain separate enterprise work.
+
+### Verified Ambidexters website exercise
+
+Five live public HTTPS HTML page scans were executed with VisTa's own analysis code on 25 October 2026. The corrected technical scores are 89 for homepage, 83 for About, 83 for Services, 83 for Contact and 89 for TheHost. Internal pages declare the homepage as canonical, triggering a new review warning; repeated meta descriptions and canonical values are now detected across pages. Read the nine-engine evidence table and limitations in docs/ambidexters-nine-engine-validation.md.
+
 ## Origin release
 
 - Obsidian, pearl and mint visual system with a dimensional animated V emblem
@@ -44,7 +86,7 @@ VISTA is an integrated marketing intelligence platform organised around five str
 - Manual AI response observations with timestamps and source links
 - Versioned JSON workspace backups with import validation
 
-Workspace records are stored in browser localStorage. They do not sync across devices or users. Export backups before clearing browser data. Audit history retains the latest 100 scans across the workspace. Cloud accounts, tenant access controls, Google connections and automated AI sampling are not implemented. No external metrics are fabricated.
+Workspace records are stored in browser localStorage. They do not sync across devices or users. Export backups before clearing browser data. Audit history retains the latest 100 scans across the workspace. Cloud account infrastructure, tenant-scoped integration APIs and an automated AI sampling worker are implemented but require cloud setup, provider credentials and explicit authorisation before they are live. The default browser workspace remains local-only. No external metrics are fabricated.
 
 ## Site intelligence
 
@@ -80,7 +122,7 @@ Never commit environment secrets, unpublished research, customer data or proprie
 
 Copyright 2026 Ambidexters. All rights reserved.
 
-This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VISTA is a working product name pending appropriate trademark clearance.
+This repository is publicly visible and no open-source licence is granted. Commercial copying or reuse requires permission. VisTa is a working product name pending appropriate trademark clearance.
 
 ## Evidence and execution
 

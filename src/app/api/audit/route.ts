@@ -1,3 +1,5 @@
+import {CloudError,readJson,requireSameOrigin} from '@/lib/cloud';
+import {requestLimit} from '@/lib/rate-limit';
 import * as cheerio from "cheerio";
 import { eligiblePages } from "@/lib/investigation";
 import { NextResponse } from "next/server";
@@ -8,28 +10,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
 
-const windowMs = 10 * 60 * 1000;
-const attempts = new Map<string, { start: number; count: number }>();
-
 export async function POST(request: Request) {
-  // Best-effort process-local throttling; production requires edge rate limits.
-  const key = request.headers.get("x-real-ip") || "anonymous";
-  const now = Date.now();
-  const previous = attempts.get(key);
-  const entry = !previous || now - previous.start > windowMs
-    ? { start: now, count: 1 }
-    : { start: previous.start, count: previous.count + 1 };
-  attempts.set(key, entry);
-  if (attempts.size > 5000) {
-    for (const [id, state] of attempts) {
-      if (now - state.start > windowMs) attempts.delete(id);
-    }
-  }
-  if (entry.count > 10) {
-    return NextResponse.json({ error: "Audit limit reached. Please try again later." }, { status: 429 });
-  }
+  const started=Date.now();const requestId=crypto.randomUUID();
   try {
-    const data: unknown = await request.json();
+    requireSameOrigin(request);
+    const limit=await requestLimit(request,'public-audit');
+    if(!limit.allowed)return NextResponse.json({error:'Audit limit reached. Please try again later.',requestId},{status:429,headers:{'Retry-After':String(limit.retryAfter),'Cache-Control':'no-store'}});
+    const data: unknown = await readJson(request,4096);
     const url = typeof data === "object" && data !== null && "url" in data ? (data as { url: unknown }).url : null;
     if (typeof url !== "string" || url.length > 2048) {
       return NextResponse.json({ error: "Enter a valid HTTPS website URL." }, { status: 400 });
@@ -39,11 +26,13 @@ export async function POST(request: Request) {
     const discover = typeof data === "object" && data !== null && "discover" in data && data.discover === true;
     const $ = discover ? cheerio.load(page.html) : null;
     const result = $ ? { report, links: eligiblePages(page.url, $("a[href]").map((_,el)=>$(el).attr("href") || "").get()) } : report;
+    console.info(JSON.stringify({event:'vista.audit',requestId,status:'success',durationMs:Date.now()-started,protection:limit.mode}));
     return NextResponse.json(result, {
-      headers: { "Cache-Control": "no-store" }
+      headers: { "Cache-Control": "no-store", "X-Request-ID": requestId }
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to inspect the website.";
-    return NextResponse.json({ error: message }, { status: 422 });
+    const status=error instanceof CloudError?error.status:422;console.warn(JSON.stringify({event:'vista.audit',requestId,status,durationMs:Date.now()-started}));
+    return NextResponse.json({ error: message,requestId }, { status,headers:{'Cache-Control':'no-store','X-Request-ID':requestId} });
   }
 }

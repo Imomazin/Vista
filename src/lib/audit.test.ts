@@ -30,3 +30,16 @@ test("honours X-Robots-Tag response headers", () => {
 test('distinguishes decorative alt text from missing attributes',()=>{const report=analyseHtml('https://example.com','<img alt=""><img alt="Illustration"><img src="missing.jpg">');assert.equal(report.imagesMissingAlt,1);});
 test('invalid structured data, canonical schemes and fixed viewports need review',()=>{const report=analyseHtml('https://example.com','<script type="application/ld+json">{broken}</script><link rel="canonical" href="javascript:alert(1)"><meta name="viewport" content="width=1200">');for(const id of ['structured','canonical','mobile'])assert.equal(report.signals.find(s=>s.id===id)?.status,'warning');});
 test('robots none restricts indexing and external canonical needs review',()=>{const report=analyseHtml('https://example.com','<meta name="robots" content="none"><link rel="canonical" href="https://other.example.com">');assert.equal(report.signals.find(s=>s.id==='index')?.status,'issue');assert.equal(report.signals.find(s=>s.id==='canonical')?.status,'warning');});
+
+
+test("internal pages canonically pointing to homepage are review findings, not passing checks",()=>{
+ const body='<html><head><title>About Ambidexters — Company History</title><link rel="canonical" href="https://example.com/"></head><body><h1>About</h1></body></html>';
+ const result=analyseHtml("https://example.com/about",body);
+ const canonical=result.signals.find(x=>x.id==="canonical");
+ assert.equal(canonical?.status,"warning");
+ assert.match(canonical?.detail||"",/different page/i);
+});
+test("trailing slash differences do not invalidate canonical",()=>{
+ const result=analyseHtml("https://example.com/about/","<link rel='canonical' href='https://example.com/about'>");
+ assert.equal(result.signals.find(x=>x.id==="canonical")?.status,"pass");
+});

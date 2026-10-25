@@ -1,0 +1,31 @@
+.vista-login-screen{padding:32px 19px;min-height:100svh}
+.vista-login-card{width:min(100%,620px);padding:clamp(24px,5vw,54px)}
+.vista-login-brand{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;align-items:center}
+.vista-login-badge{display:inline-flex;align-items:center;gap:7px;color:#8fdfbd;background:#3f9e7f15;border:1px solid #71c4a63b;padding:8px 12px;border-radius:99px;font-size:10px}
+.vista-login-card .vista-auth-orb{height:95px;width:95px;margin:30px 0 21px}
+.vista-login-card h1{font-size:clamp(32px,6vw,47px);max-width:500px}
+.vista-login-card .vista-login-lede{font-size:14px;line-height:1.75;margin-bottom:25px}
+.vista-login-form{display:grid;gap:11px;margin:18px 0 22px}
+.vista-login-form label{font-size:12px;color:#d0d4e1}
+.vista-login-form input{width:100%;padding:14px 15px;border-radius:9px;border:1px solid #9d9ca74a;background:#0a111d;color:#eff5f5;font:inherit;font-size:16px}
+.vista-login-form input:focus-visible{outline:2px solid #b99af9;outline-offset:2px}
+.vista-login-form button{display:flex;align-items:center;justify-content:center;gap:11px;border:0;background:linear-gradient(100deg,#8ad9b4,#c3a4fe);color:#07110d;border-radius:9px;padding:15px 18px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;line-height:1.35;min-height:52px}
+.vista-login-form button:disabled{opacity:.6;cursor:progress}
+.vista-login-back{display:inline-flex;gap:9px;align-items:center;padding:12px 0;color:#c3b1ef;font-weight:650;font-size:13px;text-decoration:none}
+.vista-login-back:hover{text-decoration:underline}
+.vista-login-back:focus-visible{outline:2px solid #c3b1ef;outline-offset:3px}
+.vista-login-alert{margin:14px 0;padding:14px;background:#8e3c4539;border:1px solid #ec9baf5c;border-radius:9px;color:#ffdfec;font-size:13px;line-height:1.55}
+.vista-login-signed-in{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:17px;background:#75c69c1b;border:1px solid #75c69c70;border-radius:12px;color:#9fe9c0}
+.vista-login-signed-in div{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
+.vista-login-signed-in strong{font-size:13px}
+.vista-login-signed-in span{font-size:11px;color:#c9d5cd}
+.vista-login-status{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.55;color:#dcdbef}
+.vista-login-delivery{background:#d2b4ff0c;border:1px solid #d2b4ff33;border-radius:12px;padding:16px;margin-bottom:12px}
+.vista-login-delivery p{font-size:13px;margin:0 0 12px}
+.vista-login-delivery strong{overflow-wrap:anywhere}
+.vista-login-delivery details{padding-top:9px;color:#c7c6da;font-size:13px}
+.vista-login-delivery summary{cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.vista-login-delivery details .vista-login-form{margin:17px 0 6px}
+.vista-login-reset{background:transparent;border:0;color:#c8adff;text-decoration:underline;text-underline-offset:4px;font:inherit;font-size:12px;padding:13px 0 3px;cursor:pointer}
+.vista-login-feedback{margin:12px 0;font-size:13px;color:#ffe3b7}
+@media(max-width:540px){.vista-login-screen{padding:12px}.vista-login-card{padding:25px 21px;border-radius:16px}.vista-login-brand{align-items:flex-start;flex-direction:column}.vista-login-card .vista-auth-orb{height:65px;width:65px;margin:22px 0 18px}.vista-login-card h1{font-size:33px}.vista-login-form button{font-size:13px}}
