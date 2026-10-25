@@ -24,6 +24,8 @@ export default function ConnectionCentre(){
  const [running,setRunning]=useState<Source|null>(null);
  const [error,setError]=useState("");
  const [results,setResults]=useState<Partial<Record<Source,unknown>>>({});
+ const [sampleHistory,setSampleHistory]=useState<Record<string,unknown>[]|null>(null);
+ const [historyBusy,setHistoryBusy]=useState(false);
  async function refresh(){
   try{const [status,session]=await Promise.all([
    fetch("/api/integrations",{cache:"no-store"}).then(r=>r.json()),
@@ -48,6 +50,7 @@ export default function ConnectionCentre(){
   }catch(e){setError(source.toUpperCase()+": "+(e instanceof Error?e.message:"Connection failed."));}
   finally{setRunning(null);}
  }
+ async function loadSampleHistory(){if(!org)return;setHistoryBusy(true);setError("");try{const response=await fetch("/api/integrations/ai-samples?organisationId="+encodeURIComponent(org),{cache:"no-store"});const data=await response.json();if(!response.ok)throw Error(data.error||"Unable to read AI sample history.");setSampleHistory(Array.isArray(data.samples)?data.samples:[]);}catch(e){setError(e instanceof Error?e.message:"AI sample history is unavailable.");}finally{setHistoryBusy(false);}}
  return <section className="vista-connection-centre" aria-labelledby="live-connector-title">
   <header className="live-connector-header"><div><span className="eyebrow"><PlugZap size={15}/> CONNECTED INTELLIGENCE / SOURCE INTEGRITY</span>
     <h2 id="live-connector-title">Real data. Verified connections.</h2>
@@ -66,6 +69,8 @@ export default function ConnectionCentre(){
       {tested&&<div className="connector-result"><div><strong>Authenticated response received</strong><button onClick={()=>exportJson(source.title,results[source.id])} type="button"><Download size={14}/> Export</button></div><pre>{JSON.stringify(results[source.id],null,2).slice(0,6000)}</pre></div>}
     </article>;
   })}</div>
+  <div className="connector-history"><div><h3>Scheduled AI answer sampling</h3><p>Once credentials, source table and a production scheduler are configured, VisTa records dated answers and citations for repeatable comparisons. Runs use one to three approved prompts per day.</p></div><button type="button" disabled={cloud!=="ready"||historyBusy} onClick={()=>void loadSampleHistory()}>{historyBusy?"Loading recorded samples…":"Review saved AI samples"}</button></div>
+  {sampleHistory!==null&&<div className="connector-history-results"><p>{sampleHistory.length} authorised sampling records returned</p>{sampleHistory.slice(0,15).map((sample,i)=><article key={String(sample.id||i)}><strong>{String(sample.brand||"Brand")} · {String(sample.model||"Model")}</strong><time>{String(sample.observed_at||"")}</time><p>{String(sample.prompt||"")}</p><blockquote>{String(sample.response||"").slice(0,750)}</blockquote><small>{sample.mentioned?"Brand mentioned":"No literal brand mention"} · {Array.isArray(sample.citations)?sample.citations.length:0} citation annotations</small></article>)}</div>}
   {error&&<div className="connector-error" role="alert">{error}</div>}
   <p className="connector-warning">Connection data is retrieved on demand and is not retained by this screen. Google properties, CRM accounts and AI keys require explicit authorisation. HubSpot is the initial CRM adapter; Salesforce and other CRMs need their own provider setup. AI samples are observations, not search rankings or representative share-of-voice measurements.</p>
  </section>;
