@@ -5,6 +5,8 @@ Complete VisTa as a cinematic, evidence-based, commercially useful nine-element 
 
 Deliver actual working software, design and tests. Preserve existing functionality, do not fabricate live marketing data and do not ship placeholder-only dashboards.
 
+The definitive product visual identity and its detailed dual-theme component, motion and QA specification is in docs/titanium-emerald-master-brief.md. Treat it as the governing design contract when creative references disagree.
+
 ## Working assets and starting point
 - GitHub repository: Imomazin/Vista (keep this repository name).
 - Main production branch: main.
