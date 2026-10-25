@@ -139,3 +139,159 @@ html[data-appearance] .vte-matrix-cell h3{color:var(--ti-text)}
 html[data-appearance] :is(.vte-matrix-cell p,.vte-matrix-cell small,.vte-matrix-cell-top>span:nth-child(2),.vte-matrix-progress>span:last-child,.vte-matrix-bottom>span){color:var(--ti-subtext)}
 html[data-appearance] .vte-matrix-progress>span:first-child{color:var(--ti-text)}
 html[data-appearance] .vte-matrix-bottom{border-color:var(--ti-hairline)}
+
+
+/* VisTa signature entrance: a neutral metallic stage + the emerald awakening. */
+html[data-appearance] .premium-entrance{
+ border-color:var(--ti-glass-edge);isolation:isolate;
+ background:
+ radial-gradient(ellipse 41% 57% at 78% 40%,color-mix(in srgb,var(--ti-metal),transparent 76%),transparent 79%),
+ radial-gradient(ellipse 26% 40% at 90% 90%,color-mix(in srgb,var(--ti-champagne),transparent 94%),transparent 81%),
+ var(--ti-backdrop);
+ box-shadow:inset 0 1px 0 color-mix(in srgb,var(--ti-platinum),transparent 88%)
+}
+html[data-appearance] .premium-entrance:before{
+ background:radial-gradient(ellipse 48% 52% at var(--scene-x) var(--scene-y),
+ color-mix(in srgb,var(--ti-metal),transparent 86%),transparent 80%)
+}
+html[data-appearance] .premium-entrance .experience-aurora{
+ background:radial-gradient(ellipse at 77% 44%,color-mix(in srgb,var(--ti-metal),transparent 80%),transparent 48%),
+ radial-gradient(ellipse at 83% 81%,color-mix(in srgb,var(--ti-emerald),transparent 95%),transparent 40%)
+}
+html[data-appearance] .entrance-stage-grid{
+ background-image:linear-gradient(var(--ti-grid) 1px,transparent 1px),linear-gradient(90deg,var(--ti-grid) 1px,transparent 1px);
+ opacity:.48
+}
+html[data-appearance] .entrance-stage-beam{
+ background:linear-gradient(97deg,transparent 27%,color-mix(in srgb,var(--ti-platinum),transparent 96%) 47%,
+ color-mix(in srgb,var(--ti-metal),transparent 86%) 51%,transparent 62%)
+}
+html[data-appearance] .premium-entrance.question-entrance .experience-editorial h1{
+ color:var(--ti-text);text-shadow:none;letter-spacing:-.057em
+}
+html[data-appearance] .premium-entrance.question-entrance .experience-editorial h1 em{
+ color:var(--ti-emerald);text-shadow:0 0 32px color-mix(in srgb,var(--ti-emerald),transparent 90%)
+}
+html[data-appearance] .premium-entrance :is(.experience-header>span,.experience-editorial>.eyebrow,.experience-editorial p,.entrance-footnote,.entrance-status,.entrance-signature,.experience-footer){
+ color:var(--ti-subtext)
+}
+html[data-appearance] .premium-entrance.question-entrance .experience-enter{
+ background:var(--ti-emerald);color:var(--ti-on-emerald);border:1px solid var(--ti-emerald);
+ box-shadow:0 13px 32px color-mix(in srgb,var(--ti-emerald),transparent 74%)
+}
+html[data-appearance] .premium-entrance.question-entrance .experience-enter:hover{box-shadow:0 16px 48px color-mix(in srgb,var(--ti-emerald),transparent 63%)}
+html[data-appearance] .premium-entrance .experience-menu,
+html[data-appearance] .entrance-preview-panel{
+ color:var(--ti-text);background:var(--ti-glass);border:1px solid var(--ti-glass-edge);
+ backdrop-filter:blur(24px) saturate(1.1);box-shadow:var(--ti-card-shadow)
+}
+html[data-appearance] .entrance-preview-panel :is(strong,.preview-heading button){color:var(--ti-text)}
+html[data-appearance] .entrance-preview-panel :is(small,p){color:var(--ti-subtext)}
+html[data-appearance] .entrance-preview-panel>button:hover{background:color-mix(in srgb,var(--ti-metal),transparent 94%)}
+html[data-appearance] .entrance-preview-trigger{color:var(--ti-emerald);border-color:var(--ti-emerald)}
+/* Scene lighting is material-driven and pointer responses never overwrite content. */
+html[data-appearance] .experience-sculpture{
+ filter:drop-shadow(0 19px 38px color-mix(in srgb,var(--ti-metal),transparent 89%))
+}
+html[data-appearance] .premium-entrance .pearl-resilience{
+ filter:drop-shadow(0 0 32px color-mix(in srgb,var(--ti-metal),transparent 92%))
+}
+html[data-appearance] .morph-centre .vista-wordmark{
+ filter:drop-shadow(0 0 20px color-mix(in srgb,var(--ti-metal),transparent 71%));
+ text-shadow:none
+}
+html[data-appearance] .vista-morph{
+ color:var(--ti-text);
+ background:radial-gradient(ellipse at 50% 50%,color-mix(in srgb,var(--ti-metal),transparent 82%),transparent 59%),var(--ti-canvas)
+}
+html[data-appearance] .morph-kicker,html[data-appearance] .morph-centre p{color:var(--ti-subtext)}
+html[data-appearance] .morph-halo{
+ border-color:color-mix(in srgb,var(--ti-metal),transparent 64%);
+ box-shadow:0 0 40px color-mix(in srgb,var(--ti-metal),transparent 90%)
+}
+html[data-appearance] .morph-links path{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--ti-emerald),transparent 51%))}
+html[data-appearance] .morph-element-icon{
+ background:radial-gradient(circle at 28% 18%,color-mix(in srgb,var(--ti-platinum),transparent 73%),transparent 60%),var(--ti-raised);
+ color:var(--ti-emerald);border:1px solid var(--ti-glass-edge);
+ box-shadow:0 14px 32px color-mix(in srgb,var(--ti-metal),transparent 89%),inset 0 1px color-mix(in srgb,var(--ti-platinum),transparent 68%)
+}
+html[data-appearance] .morph-element-label{color:var(--ti-text);text-shadow:none;font-weight:560}
+html[data-appearance] .morph-seeds i{background:var(--ti-emerald);box-shadow:0 0 7px 3px color-mix(in srgb,var(--ti-emerald),transparent 46%)}
+html[data-appearance] .morph-skip{background:var(--ti-primary);color:var(--ti-primary-ink);border-color:var(--ti-primary)}
+/* Constellation: titanium shells, quiet relation lines, selective emerald focus. */
+html[data-appearance] .vte-map{
+ background:
+ radial-gradient(ellipse 42% 55% at 50% 50%,color-mix(in srgb,var(--ti-metal),transparent 88%),transparent 83%),
+ radial-gradient(ellipse 26% 48% at 79% 18%,color-mix(in srgb,var(--ti-champagne),transparent 95%),transparent 78%),
+ var(--ti-backdrop);
+ border:1px solid var(--ti-glass-edge);box-shadow:var(--ti-card-shadow),inset 0 1px color-mix(in srgb,var(--ti-platinum),transparent 89%);
+}
+html[data-appearance] .vte-map:before{
+ opacity:.45;background-image:linear-gradient(var(--ti-grid) 1px,transparent 1px),linear-gradient(90deg,var(--ti-grid) 1px,transparent 1px)
+}
+html[data-appearance] .vte-map:after{background:conic-gradient(from 90deg,transparent,color-mix(in srgb,var(--ti-metal),transparent 92%),transparent 71%)}
+html[data-appearance] .vte-map-pointer-glow{
+ background:radial-gradient(ellipse 27% 36% at var(--focus-x) var(--focus-y),
+ color-mix(in srgb,var(--ti-metal),transparent 82%),transparent 94%);mix-blend-mode:normal
+}
+html[data-appearance] .vte-map-orbit{border-color:color-mix(in srgb,var(--ti-metal),transparent 80%)}
+html[data-appearance] .vte-map-lines path{stroke:color-mix(in srgb,var(--ti-metal),transparent 80%);stroke-width:1.1}
+html[data-appearance] .vte-map-lines .focused-path{
+ stroke:var(--ti-emerald);filter:drop-shadow(0 0 7px color-mix(in srgb,var(--ti-emerald),transparent 45%));
+ stroke-width:2.5
+}
+html[data-appearance] .vte-map-core{
+ background:radial-gradient(circle at 35% 21%,color-mix(in srgb,var(--ti-metal),transparent 79%),transparent 58%),var(--ti-raised);
+ border:1px solid var(--ti-glass-edge);
+ box-shadow:0 0 0 11px color-mix(in srgb,var(--ti-metal),transparent 95%),
+ 0 22px 65px color-mix(in srgb,var(--ti-metal),transparent 82%),
+ inset 0 1px color-mix(in srgb,var(--ti-platinum),transparent 60%)
+}
+html[data-appearance] .vte-map-core>span:nth-child(2){color:var(--ti-text)}
+html[data-appearance] .vte-map-core>small{color:var(--ti-subtext)}
+html[data-appearance] .vte-node-icon{
+ background:radial-gradient(circle at 30% 14%,color-mix(in srgb,var(--ti-platinum),transparent 72%),transparent 76%),var(--ti-raised);
+ color:var(--ti-metal);border-color:var(--ti-glass-edge);
+ box-shadow:0 12px 23px #02080B19,inset 0 1px color-mix(in srgb,var(--ti-platinum),transparent 68%)
+}
+html[data-appearance] .vte-map-node.selected .vte-node-icon,
+html[data-appearance] .vte-map-node:hover .vte-node-icon{
+ color:var(--ti-emerald);border-color:var(--ti-emerald);
+ box-shadow:0 0 0 5px color-mix(in srgb,var(--ti-emerald),transparent 92%),0 15px 34px color-mix(in srgb,var(--ti-emerald),transparent 82%)
+}
+html[data-appearance] .vte-node-caption{color:var(--ti-text);text-shadow:none}
+html[data-appearance] :is(.vte-node-caption small,.vte-map-corner,.vte-control-count,.vte-intro p){color:var(--ti-subtext)}
+html[data-appearance] .vte-control{border-color:var(--ti-line)}
+html[data-appearance] .vte-control-selector select{background:var(--ti-surface);border-color:var(--ti-line);color:var(--ti-text)}
+html[data-appearance] .vte-focus{
+ background:var(--ti-raised);border:1px solid var(--ti-line);box-shadow:0 11px 33px #06121410
+}
+html[data-appearance] .vte-focus h2,html[data-appearance] .vte-focus h3{color:var(--ti-text)}
+html[data-appearance] .vte-focus-number{color:var(--ti-metal)}
+html[data-appearance] :is(.vte-focus-top p,.vte-value-lead p,.vte-evidence-kick p,.vte-capability-label){color:var(--ti-subtext)}
+html[data-appearance] .vte-focus-tabs{border-color:var(--ti-hairline)}
+html[data-appearance] .vte-focus-tabs button{color:var(--ti-subtext)}
+html[data-appearance] .vte-focus-tabs button.selected{color:var(--ti-emerald);border-color:var(--ti-emerald)}
+html[data-appearance] :is(.vte-value-lead>div:first-child,.vte-overview-grid>div,.vte-measured,.vte-evidence-kick,.vte-record,.vte-diagnostic-question){
+ background:var(--ti-surface);border:1px solid var(--ti-line);color:var(--ti-text)
+}
+html[data-appearance] .vte-measured strong{color:var(--ti-emerald)}
+html[data-appearance] :is(.vte-overview-grid p,.vte-playbook li,.vte-playbook p){color:var(--ti-text)}
+html[data-appearance] :is(.vte-overview-grid small,.vte-measured p,.vte-measured small,.vte-local-note,.vte-empty p){color:var(--ti-subtext)}
+html[data-appearance] .vte-evidence-form{background:var(--ti-surface);border:1px solid var(--ti-line)}
+html[data-appearance] .vte-evidence-form :is(input,select,textarea),
+html[data-appearance] .vte-diagnostic-save :is(input,select){
+ background:var(--ti-surface-raised);color:var(--ti-text);border:1px solid var(--ti-line)
+}
+html[data-appearance] .vte-evidence-form label{color:var(--ti-subtext)}
+html[data-appearance] .vista-engine-dock{
+ border:1px solid var(--ti-glass-edge);background:var(--ti-glass);box-shadow:var(--ti-card-shadow)
+}
+html[data-appearance] .vista-engine-dock button{
+ color:var(--ti-metal);background:var(--ti-surface);border-color:var(--ti-hairline)
+}
+html[data-appearance] .vista-engine-dock button span{color:var(--ti-subtext)}
+html[data-appearance] .vista-engine-dock button:hover,
+html[data-appearance] .vista-engine-dock button[aria-current="page"]{
+ color:var(--ti-emerald);border-color:var(--ti-emerald);background:var(--ti-surface-raised)
+}
