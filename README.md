@@ -56,6 +56,18 @@ Implementation: `src/lib/visual-assets.ts`, `src/app/visual-stories.tsx` and `sr
 
 The final visual direction combines Titanium structure, Emerald evidence/action signals, and controlled **Violet** atmosphere around cinematic and AI/content storytelling. Illustrative photography is never used as live evidence or marketing performance measurements. Public redistribution rights should be confirmed by the asset owner before production promotion. The Vercel preview remains protected until release approval.
 
+## Live-source connection implementation and truthful activation status
+
+A source-aware integration centre is available under Workspace > Connections. Server-backed adapters now implement Google Search Console, Google Analytics 4, read-only HubSpot CRM and OpenAI Responses API sampling. A permissioned endpoint performs real source requests; a daily AI worker and organisation-scoped storage schema support scheduled prompt observations with provenance.
+
+**Not yet active:** Vercel had zero project environment variables when checked on 25 October 2026. This means no Supabase sign-in, GSC/GA4 service-account permissions, HubSpot credential, OpenAI API credit or recurring AI storage is enabled. A green build is not a live connection. The UI must display "Not connected" until authentication and a real provider request succeed.
+
+Read the activation instructions in docs/live-connections.md and secret variable names in .env.example. Only authorised administrators should set these values privately in Vercel. The multi-tenant OAuth/token vault and vendors beyond HubSpot remain separate enterprise work.
+
+### Verified Ambidexters website exercise
+
+Five live public HTTPS HTML page scans were executed with VisTa's own analysis code on 25 October 2026. The corrected technical scores are 89 for homepage, 83 for About, 83 for Services, 83 for Contact and 89 for TheHost. Internal pages declare the homepage as canonical, triggering a new review warning; repeated meta descriptions and canonical values are now detected across pages. Read the nine-engine evidence table and limitations in docs/ambidexters-nine-engine-validation.md.
+
 ## Origin release
 
 - Obsidian, pearl and mint visual system with a dimensional animated V emblem
@@ -74,7 +86,7 @@ The final visual direction combines Titanium structure, Emerald evidence/action 
 - Manual AI response observations with timestamps and source links
 - Versioned JSON workspace backups with import validation
 
-Workspace records are stored in browser localStorage. They do not sync across devices or users. Export backups before clearing browser data. Audit history retains the latest 100 scans across the workspace. Cloud accounts, tenant access controls, Google connections and automated AI sampling are not implemented. No external metrics are fabricated.
+Workspace records are stored in browser localStorage. They do not sync across devices or users. Export backups before clearing browser data. Audit history retains the latest 100 scans across the workspace. Cloud account infrastructure, tenant-scoped integration APIs and an automated AI sampling worker are implemented but require cloud setup, provider credentials and explicit authorisation before they are live. The default browser workspace remains local-only. No external metrics are fabricated.
 
 ## Site intelligence
 
