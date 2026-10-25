@@ -36,6 +36,16 @@ The nine-element UI does not imply that nine external data sources are connected
 
 Development and Work continuation instructions are in docs/vista-master-work-brief.md. The main production branch is kept separate while preview, accessibility and end-to-end testing remain open.
 
+## Definitive visual identity
+
+VisTa uses the **Titanium + Emerald Intelligence** design system in two equally intentional environments: **Obsidian Titanium** (dark) and **Porcelain Titanium** (light). Platinum, graphite, titanium and ivory materials structure each experience; emerald is intentionally reserved for active focus, action controls and intelligence signals. The accessible theme switch honours a saved user selection or system preference.
+
+Both environments now have dedicated CSS material tokens and styling across the cinematic entrance, Command Centre, nine-engine constellation, analytics, measurement/decision rooms, workspace and evidence interfaces. The Canvas V uses neutral machined-metal surfaces with a distinct emerald intelligence highlight. A decorative nine-signal spatial field is used in the entrance and executive cockpit; its signals are visual branding, **not measured data**.
+
+Theme contract and contrast tests: `src/lib/visual-identity.ts` and `src/lib/visual-identity.test.ts`. Implementation CSS: `src/app/titanium-emerald.css`. Master creative and execution specification: `docs/titanium-emerald-master-brief.md`.
+
+The protected development preview is automatically built by Vercel and GitHub workflow runs compile/tests/build. Browser-based screenshot and accessibility/performance validation remain necessary before production promotion.
+
 ## Origin release
 
 - Obsidian, pearl and mint visual system with a dimensional animated V emblem
