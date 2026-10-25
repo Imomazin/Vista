@@ -505,3 +505,17 @@ html[data-appearance] .hero-pearl .pearl-caption{position:relative;z-index:3;col
 @media(prefers-reduced-motion:reduce){
  .ti-signal-energy,.ti-signal-guide{animation:none!important}
 }
+
+
+/* Entrance uses the same nine-element intelligence circuit, mixed behind the 3D V. */
+html[data-appearance] .premium-entrance>.titanium-signal-field{
+ inset:-14% -20% -11% 22%;z-index:0;opacity:.38;
+ transform:perspective(1250px) rotateY(-23deg) rotateZ(-13deg);
+ filter:blur(.1px)
+}
+html[data-appearance="light"] .premium-entrance>.titanium-signal-field{opacity:.26}
+@media(max-width:760px){
+ html[data-appearance] .premium-entrance>.titanium-signal-field{
+  inset:35% -30% 6% -24%;opacity:.31;transform:perspective(900px) rotateY(-17deg) rotateZ(-9deg)
+ }
+}
