@@ -5,6 +5,7 @@ import {ArrowLeft,ArrowRight,ArrowUpRight,Images,Layers3,Sparkles} from "lucide-
 import {categoryForEngine,cinematicVisuals,getEngineVisuals,selectedPhotography,visualAssets,type VisualCategory} from "@/lib/visual-assets";
 import type {EngineId} from "@/lib/engine-methods";
 import "./visual-stories.css";
+import "./visual-immersive.css";
 
 const captions:Record<VisualCategory,string>={
  "brand":"Ambidexters",
