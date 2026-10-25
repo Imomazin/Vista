@@ -1,0 +1,11 @@
+.vista-cloud-entry{display:flex;align-items:center;justify-content:space-between;gap:22px;margin:0 0 18px;padding:clamp(22px,4vw,32px);border-radius:16px;border:1px solid rgba(178,151,242,.44);background:radial-gradient(circle at 87% 15%,rgba(155,114,239,.19),transparent 37%),linear-gradient(130deg,rgba(30,39,47,.96),rgba(16,27,25,.97));box-shadow:0 16px 36px rgba(0,0,0,.08)}
+.vista-cloud-entry .section-overline{display:block;font-size:9px;letter-spacing:.17em;color:#bfa4f6;margin-bottom:9px}
+.vista-cloud-entry h2{color:#f2f5ef;font-size:clamp(19px,2.8vw,25px);font-weight:600;letter-spacing:-.03em;margin:0 0 7px}
+.vista-cloud-entry p{font-size:12px;line-height:1.7;color:#bbcbc3;max-width:510px;margin:0}
+.vista-cloud-entry-button,.vista-cloud-login a{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(105deg,#86d9ac,#c5a5f5);color:#07120e!important;text-decoration:none!important;font-weight:700;font-size:13px;letter-spacing:0;padding:14px 18px;border-radius:9px;white-space:nowrap;min-height:48px;border:0}
+.vista-cloud-entry-button:hover,.vista-cloud-login a:hover{filter:brightness(1.08)}
+.vista-cloud-entry-button:focus-visible,.vista-cloud-login a:focus-visible{outline:2px solid #cda9ff;outline-offset:4px}
+.vista-cloud-login{border-radius:13px;border:1px solid rgba(171,140,231,.48);background:linear-gradient(125deg,rgba(146,109,208,.12),rgba(83,143,124,.1));padding:22px;margin:15px 0 23px}
+.vista-cloud-login h3{color:var(--ti-text,#f4f5f2);font-size:18px;font-weight:620;margin:0 0 9px}
+.vista-cloud-login p{font-size:12px;line-height:1.7;margin:0 0 15px}
+@media(max-width:670px){.vista-cloud-entry{align-items:stretch;flex-direction:column;gap:17px;padding:21px}.vista-cloud-entry-button{white-space:normal;align-self:stretch}.vista-cloud-login{padding:18px}}
