@@ -32,11 +32,11 @@ export default function CinematicPearl({motion,appearance='dark'}:{motion:boolea
    if(!ctx||width<1||height<1)return;
    ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height);
    const unit=Math.min(width,height)*.255,cx=width*.5,cy=height*.48+Math.sin(time*.9)*unit*.035,r=unit*1.52;
-   const light=appearance==='light';const glow=ctx.createRadialGradient(cx,cy,r*.5,cx,cy,r*1.5);glow.addColorStop(0,light?'#0f755c18':'#b6ffe91a');glow.addColorStop(.7,light?'#c7a87111':'#939bdf10');glow.addColorStop(1,'#00000000');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
+   const light=appearance==='light';const glow=ctx.createRadialGradient(cx,cy,r*.5,cx,cy,r*1.5);glow.addColorStop(0,light?'#91AAA721':'#BAC8CD16');glow.addColorStop(.7,light?'#C9A77913':'#CDD6D615');glow.addColorStop(1,'#00000000');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
    // Iridescent pearl shell. The V is the solid, fully closed metal core.
-   const pearl=ctx.createRadialGradient(cx-r*.45,cy-r*.6,r*.02,cx,cy,r);pearl.addColorStop(0,light?'#fffffffa':'#d9fff147');pearl.addColorStop(.24,light?'#e1f6f3e0':'#648b864a');pearl.addColorStop(.55,light?'#a3c1bddd':'#172c32d9');pearl.addColorStop(.82,light?'#d7dfeae8':'#3c4258e8');pearl.addColorStop(.94,light?'#fffaf2ea':'#b6b5da99');pearl.addColorStop(1,light?'#effff8fa':'#d7f6e5b3');ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=pearl;ctx.fill();
-   const ring=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);ring.addColorStop(0,light?'#ffffff':'#e5fffabf');ring.addColorStop(.35,light?'#629a9255':'#a2c2c622');ring.addColorStop(.7,light?'#9fadcac4':'#baaeff88');ring.addColorStop(1,light?'#eefdf4':'#e5fffabf');ctx.strokeStyle=ring;ctx.lineWidth=1.3;ctx.stroke();
-   ctx.save();ctx.translate(cx,cy);ctx.rotate(-.4);ctx.scale(1,.34);ctx.beginPath();ctx.arc(0,0,r*1.2,0,Math.PI*2);ctx.strokeStyle=light?'#207d6852':'#b8e6d84a';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
+   const pearl=ctx.createRadialGradient(cx-r*.45,cy-r*.6,r*.02,cx,cy,r);pearl.addColorStop(0,light?'#fffffffa':'#d9fff147');pearl.addColorStop(.24,light?'#F3F5F4':'#72868A73');pearl.addColorStop(.55,light?'#B6C5C8ED':'#202C34E8');pearl.addColorStop(.82,light?'#E3E8E7':'#414B56E8');pearl.addColorStop(.94,light?'#FDFBF7':'#BAC8CD99');pearl.addColorStop(1,light?'#FFFFFF':'#DCE6E6A8');ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=pearl;ctx.fill();
+   const ring=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);ring.addColorStop(0,light?'#ffffff':'#e5fffabf');ring.addColorStop(.35,light?'#85999D55':'#90A8AD3C');ring.addColorStop(.7,light?'#A5B5B9CC':'#BBC8D088');ring.addColorStop(1,light?'#FFFFFF':'#EDF6F2AF');ctx.strokeStyle=ring;ctx.lineWidth=1.3;ctx.stroke();
+   ctx.save();ctx.translate(cx,cy);ctx.rotate(-.4);ctx.scale(1,.34);ctx.beginPath();ctx.arc(0,0,r*1.2,0,Math.PI*2);ctx.strokeStyle=light?'#758C9466':'#ADBFC552';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
    // One complete turn per twelve seconds, with a smooth frontal pause.
    const phase=(time%12)/12;const yaw=-.42+Math.PI*2*(phase-Math.sin(phase*Math.PI*2)*.11)+pointerYaw;const pitch=.17+Math.sin(time*.65)*.07+pointerPitch;const roll=-.10;
    const transform=(p:Point)=>{const x=p.x*Math.cos(yaw)+p.z*Math.sin(yaw),z=-p.x*Math.sin(yaw)+p.z*Math.cos(yaw),y=p.y*Math.cos(pitch)-z*Math.sin(pitch),depth=p.y*Math.sin(pitch)+z*Math.cos(pitch);return{x:x*Math.cos(roll)-y*Math.sin(roll),y:x*Math.sin(roll)+y*Math.cos(roll),z:depth};};
@@ -54,9 +54,18 @@ export default function CinematicPearl({motion,appearance='dark'}:{motion:boolea
     ctx.fillStyle=gradient;ctx.fill();ctx.lineWidth=.65;ctx.strokeStyle=surface.kind==='side'?(light?'#60787f70':'#859ca366'):(light?'#ffffffc9':'#efffff66');ctx.stroke();
    }
    // Moving specular edge around the pearl, independent of the core rotation.
-   ctx.beginPath();ctx.arc(cx,cy,r-2,-2.8+time*.38,-2.1+time*.38);ctx.strokeStyle='#d9fff8';ctx.shadowColor='#b4ffe7';ctx.shadowBlur=14;ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;
-   for(let i=0;i<3;i++){const angle=time*.45+i*2.1;const x=cx+Math.cos(angle)*r*1.2,y=cy+Math.sin(angle)*r*.4;ctx.beginPath();ctx.arc(x,y,i===0?3:1.5,0,Math.PI*2);ctx.fillStyle=i===0?'#d6ffed':'#a5bbdb';ctx.fill();}
-   const floor=ctx.createRadialGradient(cx,cy+r*1.27,0,cx,cy+r*1.27,r*.7);floor.addColorStop(0,light?'#4a84732b':'#9bd7c32e');floor.addColorStop(1,'#9bd7c300');ctx.save();ctx.translate(0,(cy+r*1.27)*.88);ctx.scale(1,.12);ctx.fillStyle=floor;ctx.fillRect(cx-r,0,r*2,height*10);ctx.restore();
+   ctx.beginPath();ctx.arc(cx,cy,r-2,-2.8+time*.38,-2.1+time*.38);ctx.strokeStyle=light?'#FFFFFF':'#E1EBEA';ctx.shadowColor=light?'#7B969A':'#BAC8CD';ctx.shadowBlur=14;ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;
+   for(let i=0;i<3;i++){const angle=time*.45+i*2.1;const x=cx+Math.cos(angle)*r*1.2,y=cy+Math.sin(angle)*r*.4;ctx.beginPath();ctx.arc(x,y,i===0?3:1.5,0,Math.PI*2);ctx.fillStyle=i===0?(light?'#136C50':'#68E1B4'):(light?'#84979A':'#BAC8CD');ctx.fill();}
+   const floor=ctx.createRadialGradient(cx,cy+r*1.27,0,cx,cy+r*1.27,r*.7);floor.addColorStop(0,light?'#859A9628':'#A1B7B821');floor.addColorStop(1,'#9bd7c300');ctx.save();ctx.translate(0,(cy+r*1.27)*.88);ctx.scale(1,.12);ctx.fillStyle=floor;ctx.fillRect(cx-r,0,r*2,height*10);ctx.restore();
+   // A single emerald intelligence current crosses the engineered titanium shell.
+   const chargeAngle=time*.49-Math.PI*.66;
+   const chargeX=cx+Math.cos(chargeAngle)*r*.98;
+   const chargeY=cy+Math.sin(chargeAngle)*r*.98;
+   const charge=ctx.createRadialGradient(chargeX,chargeY,0,chargeX,chargeY,r*.13);
+   charge.addColorStop(0,light?'#136C50C7':'#68E1B4E7');
+   charge.addColorStop(.45,light?'#136C5025':'#68E1B43C');
+   charge.addColorStop(1,'#68E1B400');
+   ctx.fillStyle=charge;ctx.fillRect(chargeX-r*.15,chargeY-r*.15,r*.3,r*.3);
    el.dataset.rotation=String(Math.round(phase*360));
   }
   const scene=el.closest<HTMLElement>('.premium-entrance');
