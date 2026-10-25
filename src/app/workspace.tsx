@@ -6,6 +6,7 @@ import type { Workspace, Brief } from '@/lib/workspace';
 import ActionBoard from './actions';
 import CloudWorkspace from './cloud-workspace';
 import ConnectionCentre from './connection-centre';
+import './cloud-login.css';
 import type { AuditReport } from '@/lib/audit';
 const tabs = [{name:'Projects',icon:FolderOpen},{name:'Audit history',icon:History},{name:'Action board',icon:Activity},{name:'Content studio',icon:FileText},{name:'AI exposure',icon:Radar},{name:'Connections',icon:Plug}] as const;
 type Tab = typeof tabs[number]['name'];
