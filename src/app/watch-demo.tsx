@@ -3,7 +3,8 @@ import {useRef,useState} from "react";
 import {ArrowRight,BookOpen,CheckCircle2,Clock3,ExternalLink,FileText,Film,Play,ShieldCheck} from "lucide-react";
 import "./watch-demo.css";
 
-const film="https://pusbuucyprqbblfginbl.supabase.co/storage/v1/object/public/vista-media/vista-walkthrough.mp4";
+const film="/api/demo/video";
+const fallbackFilm="https://pusbuucyprqbblfginbl.supabase.co/storage/v1/object/public/vista-media/vista-walkthrough.mp4";
 const chapters=[
  {time:0,title:"The VisTa vision",detail:"Nine intelligence disciplines. One connected decision-making journey.",route:"engines",label:"Explore nine engines"},
  {time:50,title:"Search and discoverability",detail:"Why technical evidence is different from verified Search Console metrics.",route:"engines/1",label:"Open Search Visibility"},
@@ -40,7 +41,7 @@ export default function WatchDemo(){
       Your browser does not support video playback.
      </video>
     </div>
-    {videoError&&<p className="demo-playback-notice" role="status">The hosted video could not be loaded here. <a href={film} target="_blank" rel="noopener noreferrer">Open the video directly</a>, or use the interactive chapter links below.</p>}
+    {videoError&&<p className="demo-playback-notice" role="status">The hosted video could not be loaded here. <a href={fallbackFilm} target="_blank" rel="noopener noreferrer">Open the video directly</a>, or use the interactive chapter links below.</p>}
     <div className="demo-live-bridge"><div><span className="demo-kicker">LIVE / TRY IT YOURSELF</span><h2>Prefer evidence to a pitch?</h2><p>Run a real public-website HTML audit now. No account is required for this limited tool.</p></div><a href="#audit">Launch live website audit <ArrowRight size={16}/></a></div>
     <details className="demo-transcript"><summary><BookOpen size={16}/> Video overview and evidence notes</summary>
      <p>The presentation uses verified public-website HTML observations, a transparent nine-check scoring method and real VisTa workflows. Graphics and illustrative transitions are explanatory; they do not represent an authenticated analytics data feed. A live Google Search Console, GA4, HubSpot or AI model connection is not implied.</p>
