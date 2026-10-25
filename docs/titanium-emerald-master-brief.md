@@ -190,3 +190,33 @@ Performance targets using representative measurement: LCP at or below 2.5 s, INP
 Deliver desktop and mobile screenshots of the entrance, T transformation, fully formed constellation, Command Centre and all nine studios in each theme. Provide a before/after comparison, selected final tokens, tested commit and preview, performance/a11y results, remaining gaps and a realistic path to product release.
 
 **Creative non-negotiable:** Titanium is the environment. Emerald is the signal. VisTa must be visually distinctive and stunning, yet every screen must remain accurate, usable, accountable and commercially purposeful.
+
+
+## Implemented design refinement: chrome-violet cinematic identity
+
+The design now has three calibrated dimensions:
+- **Titanium**: product architecture, metallic frame, platinum reflectivity, sophistication.
+- **Emerald**: evidence signal, real action, selection and trusted intelligence flow.
+- **Violet chrome**: premium futuristic cinematic energy, especially the entrance, changing wordmark, AI/GEO, transitions and Platinum pricing.
+
+This violet layer must be visible to visitors rather than so subtle it disappears. Use deliberate polished gradients and luminous fields without polluting the working charts with false semantics.
+
+The image experience now uses a large, interactive featured photograph and responsive editorial image gallery for each of the nine studios, not tiny 70px strips. Every photograph must remain actually discoverable without overwhelming the analytical tools. Dark and light require deliberate, independently readable text/scrims.
+
+### Three-tier commercial architecture (PROPOSED, NOT LIVE)
+
+| Tier | Visual identity | Proposed monthly | Proposed annual commitment (monthly equivalent) | Starting limits |
+| --- | --- | ---: | ---: | --- |
+| VisTa Basic | Neutral Titanium | £49 | £39 | 1 brand / 1 user |
+| VisTa Standard | Emerald intelligence | £149 | £119 | 5 brands / 3 users |
+| VisTa Platinum | Violet chrome + polished platinum | £399 | £319 | 20 brands / 10 users |
+
+Annual totals are 12 times the equivalent monthly rate, not monthly bills. Show actual annual total and discount. Standard is the recommended growing-business option.
+
+At present these are **founding pricing proposals only**. Subscription management, payment processing, role enforcement, integrations, billing terms and certain advanced capabilities are not yet live. Pricing screens must use real enquiry options rather than fake checkout. Commercial approval, market validation, feature gating and privacy/legal terms are required before public sales.
+
+Current code: src/app/pricing.tsx, src/app/pricing.css, src/lib/pricing-plans.ts and src/app/chrome-violet.css. Accessible via #pricing from the entrance, navigation and Command Centre.
+
+Image layout remediation: src/app/visual-immersive.css and src/app/visual-stories.tsx.
+
+Acceptance: verify substantial photo compositions, no repeated 70px strips, distinct chrome-violet glow visible in each theme, all three plan colours genuinely different, functional plan enquiry links, transparent proposed pricing and mobile legibility.
