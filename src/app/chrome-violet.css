@@ -1,0 +1,120 @@
+/* VisTa Chrome Violet — deliberately visible third energy layer.
+   Titanium builds the environment, emerald validates the signal,
+   and violet chrome carries creative/AI intelligence. */
+:root,html[data-appearance="dark"]{
+ --cv-violet:#BE9BFF;--cv-indigo:#7757DE;--cv-pearl:#E6DBFF;
+ --cv-glow:#9C62FF50;--cv-platinum:#F0F2FA;--cv-emerald:#68E1B4;
+ --cv-chrome:linear-gradient(111deg,#85939F 0%,#F9F7FF 16%,#8677BA 34%,#EFEAFC 49%,#8A8FA7 66%,#D8E3E9 85%,#A087E3);
+}
+html[data-appearance="light"]{
+ --cv-violet:#7250B5;--cv-indigo:#9074D3;--cv-pearl:#634AA0;
+ --cv-glow:#9F7AD82D;--cv-platinum:#6A7284;--cv-emerald:#136C50;
+ --cv-chrome:linear-gradient(110deg,#647883,#B9B9D9 23%,#6943AE 37%,#B8C6D0 54%,#7257B3 78%,#98A3AC);
+}
+html[data-appearance] .vista-wordmark{
+ background:var(--cv-chrome);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 3px 8px #0002)
+}
+html[data-appearance] .vista-wordmark>span{
+ background:linear-gradient(100deg,var(--cv-pearl),var(--cv-violet) 30%,var(--ti-emerald) 65%,var(--ti-platinum));
+ background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 0 12px var(--cv-glow)) drop-shadow(0 0 8px color-mix(in srgb,var(--ti-emerald),transparent 73%))
+}
+html[data-appearance] .premium-entrance{
+ background:
+ radial-gradient(ellipse 43% 70% at 88% 43%,color-mix(in srgb,var(--cv-violet),transparent 76%),transparent 77%),
+ radial-gradient(ellipse 45% 60% at 41% 109%,color-mix(in srgb,var(--ti-emerald),transparent 89%),transparent 81%),
+ radial-gradient(ellipse 27% 44% at 78% 32%,color-mix(in srgb,var(--ti-metal),transparent 81%),transparent 86%),
+ var(--ti-backdrop);
+ box-shadow:inset 0 1px color-mix(in srgb,var(--cv-violet),transparent 65%)
+}
+html[data-appearance] .premium-entrance .experience-aurora{
+ background:radial-gradient(ellipse at 77% 43%,color-mix(in srgb,var(--cv-violet),transparent 67%),transparent 52%),
+ radial-gradient(ellipse at 89% 77%,color-mix(in srgb,var(--ti-emerald),transparent 90%),transparent 55%)
+}
+html[data-appearance] .premium-entrance.question-entrance .experience-editorial h1 em,
+html[data-appearance] .premium-entrance .experience-brand .vista-wordmark>span{
+ background:linear-gradient(107deg,var(--ti-emerald),var(--cv-violet) 46%,var(--cv-platinum));
+ background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 4px 13px var(--cv-glow))
+}
+html[data-appearance] .premium-entrance .experience-sculpture{
+ filter:drop-shadow(0 25px 30px color-mix(in srgb,var(--cv-violet),transparent 76%))
+}
+html[data-appearance] .command-hero{
+ background:
+ radial-gradient(ellipse 45% 65% at var(--pointer-x,78%) 35%,color-mix(in srgb,var(--cv-violet),transparent 76%),transparent 75%),
+ radial-gradient(ellipse 36% 55% at 93% 77%,color-mix(in srgb,var(--ti-emerald),transparent 86%),transparent 85%),
+ var(--ti-backdrop);
+ border-color:color-mix(in srgb,var(--cv-violet),var(--ti-metal) 65%);
+}
+html[data-appearance] .command-hero h1 em{
+ background:linear-gradient(95deg,var(--ti-emerald),var(--cv-violet) 80%);
+ background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent
+}
+html[data-appearance] .command-hero .hero-sweep{
+ background:linear-gradient(110deg,transparent 16%,color-mix(in srgb,var(--cv-violet),transparent 79%) 50%,transparent 78%)
+}
+html[data-appearance] .vte-map{
+ background:radial-gradient(ellipse at 81% 30%,color-mix(in srgb,var(--cv-violet),transparent 82%),transparent 57%),
+ radial-gradient(ellipse 40% 53% at 48% 50%,color-mix(in srgb,var(--ti-emerald),transparent 92%),transparent 81%),var(--ti-backdrop);
+ border-color:color-mix(in srgb,var(--cv-violet),transparent 73%)
+}
+html[data-appearance] .vte-map-core{
+ background:radial-gradient(ellipse at 35% 20%,color-mix(in srgb,var(--cv-violet),transparent 76%),transparent 55%),var(--ti-raised);
+ box-shadow:0 0 0 12px color-mix(in srgb,var(--cv-violet),transparent 92%),0 0 95px color-mix(in srgb,var(--cv-violet),transparent 73%);
+ border-color:color-mix(in srgb,var(--cv-violet),transparent 50%)
+}
+html[data-appearance] .vte-map-node.selected .vte-node-icon{
+ color:var(--ti-emerald);border-color:var(--cv-violet);
+ background:radial-gradient(ellipse at 22% 12%,color-mix(in srgb,var(--cv-violet),transparent 73%),transparent 65%),var(--ti-raised);
+ box-shadow:0 0 0 6px color-mix(in srgb,var(--cv-violet),transparent 87%),0 9px 26px color-mix(in srgb,var(--cv-violet),transparent 61%)
+}
+html[data-appearance] .vte-map-lines .focused-path{
+ stroke:var(--cv-violet);filter:drop-shadow(0 0 9px var(--cv-glow));
+}
+html[data-appearance] .morph-halo{border-color:color-mix(in srgb,var(--cv-violet),transparent 64%)}
+html[data-appearance] .vista-morph{
+ background:radial-gradient(ellipse 70% 65% at 50% 48%,color-mix(in srgb,var(--cv-violet),transparent 79%),transparent 75%),var(--ti-canvas)
+}
+html[data-appearance] .morph-element-icon{
+ border-color:color-mix(in srgb,var(--cv-violet),transparent 47%);
+ box-shadow:0 12px 28px color-mix(in srgb,var(--cv-violet),transparent 67%),inset 0 1px color-mix(in srgb,var(--ti-platinum),transparent 49%)
+}
+html[data-appearance] .vte-focus-top h2,
+html[data-appearance] .vte-intro h1 em{color:var(--ti-text)}
+html[data-appearance] .vte-intro h1 em{
+ background:linear-gradient(95deg,var(--ti-emerald),var(--cv-violet));
+ -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent
+}
+html[data-appearance] .vte-focus{
+ border-color:color-mix(in srgb,var(--cv-violet),transparent 83%);
+ box-shadow:0 10px 30px color-mix(in srgb,var(--cv-violet),transparent 94%)
+}
+html[data-appearance] .vista-editorial-heading h2 em{color:var(--cv-violet)}
+html[data-appearance] .vista-editorial-tile:first-child{
+ border-color:color-mix(in srgb,var(--cv-violet),transparent 35%);
+ box-shadow:0 15px 39px color-mix(in srgb,var(--cv-violet),transparent 87%)
+}
+html[data-appearance] .story-immersive .story-stage{
+ border-color:color-mix(in srgb,var(--cv-violet),transparent 54%)
+}
+html[data-appearance] .vista-pricing{--pricing-chrome:var(--cv-chrome)}
+/* Pricing teaser on actual Command Centre */
+.pricing-teaser{
+ display:flex;justify-content:space-between;align-items:center;gap:30px;margin:26px 0 37px;padding:28px 33px;
+ position:relative;isolation:isolate;overflow:hidden;border-radius:18px;
+ background:radial-gradient(ellipse at 87% 25%,color-mix(in srgb,var(--cv-violet),transparent 71%),transparent 56%),var(--ti-raised);
+ border:1px solid color-mix(in srgb,var(--cv-violet),transparent 66%)
+}
+.pricing-teaser:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#BFC3DE,var(--cv-violet),var(--ti-emerald))}
+.pricing-teaser .eyebrow{color:var(--cv-violet)}
+.pricing-teaser h2{font-size:clamp(22px,2.7vw,35px);letter-spacing:-.05em;font-weight:550;color:var(--ti-text);margin:13px 0 8px}
+.pricing-teaser p{color:var(--ti-subtext);font-size:12px;margin:0;line-height:1.6}
+.pricing-teaser button{display:inline-flex;align-items:center;gap:14px;white-space:nowrap;background:linear-gradient(110deg,#8D6ACB,#6A4BA7);border:1px solid #BFA8E9;border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:15px 18px}
+.pricing-teaser button:hover{background:linear-gradient(110deg,#9B75DC,#7455B2)}
+.entrance-pricing-link{border:1px solid color-mix(in srgb,var(--cv-violet),transparent 42%);border-radius:8px;background:color-mix(in srgb,var(--cv-violet),transparent 89%);color:var(--ti-text);padding:10px 14px;font-size:11px;font-weight:700;white-space:nowrap}
+.entrance-pricing-link:hover{border-color:var(--cv-violet);color:var(--cv-violet)}
+@media(max-width:730px){.pricing-teaser{flex-direction:column;align-items:stretch;padding:23px}.pricing-teaser button{justify-content:center}.entrance-pricing-link{padding:8px;font-size:10px}}
+@media(max-width:480px){.entrance-pricing-link{font-size:9px;padding:7px}}
+@media(prefers-reduced-motion:reduce){.pricing-teaser button,.entrance-pricing-link{transition:none!important}}
