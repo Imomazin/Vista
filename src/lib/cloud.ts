@@ -2,7 +2,22 @@ import {parseBundle} from './migration';
 export class CloudError extends Error { constructor(message:string,public status=400){super(message);} }
 export const sessionCookie='__Host-vista-session';
 export function cloudConfig(){const url=process.env.VISTA_SUPABASE_URL;const key=process.env.VISTA_SUPABASE_ANON_KEY;if(!url||!key)return null;const u=new URL(url);if(u.protocol!=='https:'||!u.hostname.endsWith('.supabase.co')||u.username||u.password||u.port)throw new CloudError('Cloud configuration needs review.',503);return {url:u.origin,key};}
-export function requireSameOrigin(request:Request){if(request.headers.get('origin')!==new URL(request.url).origin||request.headers.get('sec-fetch-site')==='cross-site')throw new CloudError('Request origin is not permitted.',403);}
+export function requireSameOrigin(request:Request){
+ const origin=request.headers.get('origin');
+ const site=request.headers.get('sec-fetch-site');
+ if(!origin||(site&&site!=='same-origin'&&site!=='none'))throw new CloudError('Request origin is not permitted.',403);
+ // The Request URL can contain an internal bind address behind a trusted reverse proxy.
+ // The browser Host header instead identifies the actual site being addressed.
+ const allowed=new Set<string>([new URL(request.url).origin]);
+ const host=request.headers.get('host');
+ if(host){
+  const u=new URL(request.url);
+  allowed.add(u.protocol+'//'+host);
+  const forwarded=request.headers.get('x-forwarded-proto');
+  if(forwarded==='https'||forwarded==='http')allowed.add(forwarded+'://'+host);
+ }
+ if(!allowed.has(origin))throw new CloudError('Request origin is not permitted.',403);
+}
 export async function readJson(request:Request,max=3_000_000){
  if(!request.headers.get('content-type')?.startsWith('application/json'))throw new CloudError('Use an application/json request.',415);
  if(Number(request.headers.get('content-length'))>max)throw new CloudError('Request is too large.',413);
