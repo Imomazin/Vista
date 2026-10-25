@@ -6,7 +6,7 @@ import "./pricing.css";
 const icons={basic:Compass,standard:Sparkles,platinum:Crown};
 const email="info@ambidexters.com";
 function requestUrl(p:VisTaPlan,annual:boolean){
- const subject=encodeURIComponent("VisTa "+p.name+" | Founding access enquiry");
+ const subject=encodeURIComponent(p.name+" | Founding access enquiry");
  const body=encodeURIComponent("Hello Ambidexters,\n\nI would like to discuss early access for "+p.name+" ("+(annual?"annual":"monthly")+" proposal). Please share launch availability, confirmed capabilities and onboarding options.\n\nThank you.");
  return "mailto:"+email+"?subject="+subject+"&body="+body;
 }
