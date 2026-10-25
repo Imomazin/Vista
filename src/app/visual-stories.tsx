@@ -35,6 +35,17 @@ export function AmbidextersLogo({compact=false}:{compact?:boolean}){
  </span>;
 }
 
+export function CinematicPhotoReel(){
+ const scenes=[
+  {path:"/web-images/cinematic/violet-cyan-digital-orbit.jpg",alt:"Violet and cyan intelligence rings"},
+  {path:"/web-images/cinematic/ai-laptop-holographic-dashboard.jpg",alt:"Human and artificial intelligence"},
+  {path:"/web-images/cinematic/chromatic-data-spiral.jpg",alt:"Chromatic intelligence vortex"}
+ ];
+ return <div className="cinematic-photo-reel" aria-hidden="true">{scenes.map((scene,i)=><div key={scene.path} className={"cinematic-reel-frame reel-frame-"+i}>
+  <Image src={scene.path} fill sizes="(max-width:700px) 80vw, 50vw" alt="" quality={72}/>
+ </div>)}</div>;
+}
+
 export function CommandEditorial({onNavigate}:{onNavigate:(engine:EngineId)=>void}){
  return <section className="vista-editorial" aria-label="Marketing intelligence visual stories">
   <div className="vista-editorial-heading"><span className="eyebrow"><Sparkles size={15}/> VISUAL INTELLIGENCE</span><h2>See beyond the dashboard.<br/><em>Discover a new perspective.</em></h2><p>Human expertise, intelligent technology and evidence-led marketing decisions. Explore the individual VisTa intelligence studios.</p></div>
