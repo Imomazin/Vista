@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/integrations/ai-sampler",
-      "schedule": "0 8 * * *"
-    }
-  ]
-}
