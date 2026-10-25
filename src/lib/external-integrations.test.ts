@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {createPrivateKey,createPublicKey,generateKeyPairSync,verify} from "node:crypto";
+import {generateKeyPairSync,verify} from "node:crypto";
 import {assertion,externalStatus} from "./external-integrations";
 test("provider readiness reports missing credentials as disconnected",()=>{
  const r=externalStatus({});
@@ -28,6 +28,6 @@ test("Google JWT uses RS256, audience, restricted scope and exact expiry",()=>{
  assert.equal(body.aud,"https://oauth2.googleapis.com/token");
  assert.equal(body.scope,scope);
  assert.equal(body.exp-body.iat,3600);
- const v=verify("RSA-SHA256",Buffer.from(h+"."+p),createPublicKey(publicKey),Buffer.from(s,"base64url"));
+ const v=verify("RSA-SHA256",Buffer.from(h+"."+p),publicKey,Buffer.from(s,"base64url"));
  assert.equal(v,true);
 });
