@@ -19,7 +19,7 @@ for(let i=0;i<outline.length;i++){
  mesh.push({points:[vertex(outline[j],-.34),vertex(outline[i],-.34),vertex(inset[i],-.43),vertex(inset[j],-.43)],kind:'bevel'});
 }
 
-export default function CinematicPearl({motion}:{motion:boolean}){
+export default function CinematicPearl({motion,appearance='dark'}:{motion:boolean;appearance?:'dark'|'light'}){
  const gradientId=useId().replaceAll(":", "");
  const canvas=useRef<HTMLCanvasElement>(null);const moving=useRef(motion);
  useEffect(()=>{moving.current=motion;},[motion]);
@@ -32,11 +32,11 @@ export default function CinematicPearl({motion}:{motion:boolean}){
    if(!ctx||width<1||height<1)return;
    ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height);
    const unit=Math.min(width,height)*.255,cx=width*.5,cy=height*.48+Math.sin(time*.9)*unit*.035,r=unit*1.52;
-   const glow=ctx.createRadialGradient(cx,cy,r*.5,cx,cy,r*1.5);glow.addColorStop(0,'#b6ffe91a');glow.addColorStop(.7,'#939bdf10');glow.addColorStop(1,'#00000000');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
+   const light=appearance==='light';const glow=ctx.createRadialGradient(cx,cy,r*.5,cx,cy,r*1.5);glow.addColorStop(0,light?'#0f755c18':'#b6ffe91a');glow.addColorStop(.7,light?'#c7a87111':'#939bdf10');glow.addColorStop(1,'#00000000');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
    // Iridescent pearl shell. The V is the solid, fully closed metal core.
-   const pearl=ctx.createRadialGradient(cx-r*.45,cy-r*.6,r*.02,cx,cy,r);pearl.addColorStop(0,'#d9fff147');pearl.addColorStop(.24,'#648b864a');pearl.addColorStop(.55,'#172c32d9');pearl.addColorStop(.82,'#3c4258e8');pearl.addColorStop(.94,'#b6b5da99');pearl.addColorStop(1,'#d7f6e5b3');ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=pearl;ctx.fill();
-   const ring=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);ring.addColorStop(0,'#e5fffabf');ring.addColorStop(.35,'#a2c2c622');ring.addColorStop(.7,'#baaeff88');ring.addColorStop(1,'#e5fffabf');ctx.strokeStyle=ring;ctx.lineWidth=1.3;ctx.stroke();
-   ctx.save();ctx.translate(cx,cy);ctx.rotate(-.4);ctx.scale(1,.34);ctx.beginPath();ctx.arc(0,0,r*1.2,0,Math.PI*2);ctx.strokeStyle='#b8e6d84a';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
+   const pearl=ctx.createRadialGradient(cx-r*.45,cy-r*.6,r*.02,cx,cy,r);pearl.addColorStop(0,light?'#fffffffa':'#d9fff147');pearl.addColorStop(.24,light?'#e1f6f3e0':'#648b864a');pearl.addColorStop(.55,light?'#a3c1bddd':'#172c32d9');pearl.addColorStop(.82,light?'#d7dfeae8':'#3c4258e8');pearl.addColorStop(.94,light?'#fffaf2ea':'#b6b5da99');pearl.addColorStop(1,light?'#effff8fa':'#d7f6e5b3');ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=pearl;ctx.fill();
+   const ring=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);ring.addColorStop(0,light?'#ffffff':'#e5fffabf');ring.addColorStop(.35,light?'#629a9255':'#a2c2c622');ring.addColorStop(.7,light?'#9fadcac4':'#baaeff88');ring.addColorStop(1,light?'#eefdf4':'#e5fffabf');ctx.strokeStyle=ring;ctx.lineWidth=1.3;ctx.stroke();
+   ctx.save();ctx.translate(cx,cy);ctx.rotate(-.4);ctx.scale(1,.34);ctx.beginPath();ctx.arc(0,0,r*1.2,0,Math.PI*2);ctx.strokeStyle=light?'#207d6852':'#b8e6d84a';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
    // One complete turn per twelve seconds, with a smooth frontal pause.
    const phase=(time%12)/12;const yaw=-.42+Math.PI*2*(phase-Math.sin(phase*Math.PI*2)*.11)+pointerYaw;const pitch=.17+Math.sin(time*.65)*.07+pointerPitch;const roll=-.10;
    const transform=(p:Point)=>{const x=p.x*Math.cos(yaw)+p.z*Math.sin(yaw),z=-p.x*Math.sin(yaw)+p.z*Math.cos(yaw),y=p.y*Math.cos(pitch)-z*Math.sin(pitch),depth=p.y*Math.sin(pitch)+z*Math.cos(pitch);return{x:x*Math.cos(roll)-y*Math.sin(roll),y:x*Math.sin(roll)+y*Math.cos(roll),z:depth};};
@@ -51,12 +51,12 @@ export default function CinematicPearl({motion}:{motion:boolean}){
     if(surface.kind==='face'){gradient.addColorStop(0,'#f3ffff');gradient.addColorStop(.24,colour(211));gradient.addColorStop(.44,colour(116));gradient.addColorStop(.48,'#f7ffff');gradient.addColorStop(.56,colour(218));gradient.addColorStop(.82,colour(143,10));gradient.addColorStop(1,'#e2fffa');}
     else if(surface.kind==='bevel'){gradient.addColorStop(0,colour(250));gradient.addColorStop(.42,colour(157));gradient.addColorStop(.7,colour(237));gradient.addColorStop(1,colour(93));}
     else{gradient.addColorStop(0,colour(106));gradient.addColorStop(.4,colour(42));gradient.addColorStop(.72,colour(132,8));gradient.addColorStop(1,colour(61));}
-    ctx.fillStyle=gradient;ctx.fill();ctx.lineWidth=.65;ctx.strokeStyle=surface.kind==='side'?'#859ca366':'#efffff66';ctx.stroke();
+    ctx.fillStyle=gradient;ctx.fill();ctx.lineWidth=.65;ctx.strokeStyle=surface.kind==='side'?(light?'#60787f70':'#859ca366'):(light?'#ffffffc9':'#efffff66');ctx.stroke();
    }
    // Moving specular edge around the pearl, independent of the core rotation.
    ctx.beginPath();ctx.arc(cx,cy,r-2,-2.8+time*.38,-2.1+time*.38);ctx.strokeStyle='#d9fff8';ctx.shadowColor='#b4ffe7';ctx.shadowBlur=14;ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;
    for(let i=0;i<3;i++){const angle=time*.45+i*2.1;const x=cx+Math.cos(angle)*r*1.2,y=cy+Math.sin(angle)*r*.4;ctx.beginPath();ctx.arc(x,y,i===0?3:1.5,0,Math.PI*2);ctx.fillStyle=i===0?'#d6ffed':'#a5bbdb';ctx.fill();}
-   const floor=ctx.createRadialGradient(cx,cy+r*1.27,0,cx,cy+r*1.27,r*.7);floor.addColorStop(0,'#9bd7c32e');floor.addColorStop(1,'#9bd7c300');ctx.save();ctx.translate(0,(cy+r*1.27)*.88);ctx.scale(1,.12);ctx.fillStyle=floor;ctx.fillRect(cx-r,0,r*2,height*10);ctx.restore();
+   const floor=ctx.createRadialGradient(cx,cy+r*1.27,0,cx,cy+r*1.27,r*.7);floor.addColorStop(0,light?'#4a84732b':'#9bd7c32e');floor.addColorStop(1,'#9bd7c300');ctx.save();ctx.translate(0,(cy+r*1.27)*.88);ctx.scale(1,.12);ctx.fillStyle=floor;ctx.fillRect(cx-r,0,r*2,height*10);ctx.restore();
    el.dataset.rotation=String(Math.round(phase*360));
   }
   const scene=el.closest<HTMLElement>('.premium-entrance');
@@ -65,7 +65,7 @@ export default function CinematicPearl({motion}:{motion:boolean}){
   scene?.addEventListener('pointermove',pointerMove);scene?.addEventListener('pointerleave',pointerLeave);
   function tick(now:number){const delta=last?Math.min((now-last)/1000,.06):0;last=now;if(moving.current&&!document.hidden){elapsed+=delta;pointerYaw+=(targetYaw-pointerYaw)*Math.min(1,delta*4);pointerPitch+=(targetPitch-pointerPitch)*Math.min(1,delta*4);dirty=true;}if(dirty){draw(elapsed);dirty=false;}frame=requestAnimationFrame(tick);}
   frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();scene?.removeEventListener('pointermove',pointerMove);scene?.removeEventListener('pointerleave',pointerLeave);};
- },[]);
+ },[appearance]);
  return <div className="cinematic-pearl is-ready solid-core"><svg className="pearl-resilience" viewBox="0 0 640 760" aria-hidden="true"><defs>
   <radialGradient id={gradientId+'shell'} cx="30%" cy="20%"><stop stopColor="#819b95"/><stop offset=".38" stopColor="#253d3f"/><stop offset=".8" stopColor="#131e27"/><stop offset="1" stopColor="#9ca7bf"/></radialGradient>
   <linearGradient id={gradientId+'metal'} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#f3fffb"/><stop offset=".3" stopColor="#a3babd"/><stop offset=".48" stopColor="#435d68"/><stop offset=".51" stopColor="#f4ffff"/><stop offset=".76" stopColor="#99aab8"/><stop offset="1" stopColor="#ecfff5"/></linearGradient>
