@@ -180,3 +180,18 @@
 .vte-focus{scroll-margin-top:90px}
 .morph-still *{animation-play-state:paused!important}
 @media(max-width:760px){.vista-engine-dock{grid-template-columns:repeat(9,minmax(0,1fr));padding-bottom:max(7px,env(safe-area-inset-bottom))}.vista-engine-dock button{width:100%;min-width:0}.app-main{padding-bottom:90px}.vte input,.vte select,.vte textarea{font-size:16px}}
+
+
+/* Second-generation cinematic light paths: nine signals are emitted by VisTa, not faded between screens. */
+.vista-morph:before{content:'';position:absolute;left:50%;top:50%;width:36vmin;height:36vmin;transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(from 0deg,#b0ffe018,transparent 38%,#eaffee1d 56%,transparent);filter:blur(12px);pointer-events:none;animation:vista-emission 3.25s cubic-bezier(.21,.6,.3,1) both}
+.morph-links path{fill:none;stroke-width:1.45;stroke-dasharray:8 9;stroke-dashoffset:170;stroke-linecap:round;filter:drop-shadow(0 0 5px #a1f3ce99);animation:ray-release 2.2s calc(.28s + var(--order)*.083s) cubic-bezier(.2,.75,.25,1) both}
+.morph-seeds{position:absolute;inset:0;z-index:4;pointer-events:none}
+.morph-seeds i{width:6px;height:6px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.15);border-radius:50%;background:#f0fff4;box-shadow:0 0 0 7px #c0ffe410,0 0 28px 8px #9affe28c;animation:vista-seed-travel 2.7s calc(.15s + var(--order)*.095s) cubic-bezier(.2,.8,.3,1) both}
+@keyframes vista-emission{0%{opacity:0;scale:.1}35%{opacity:1;scale:1}100%{opacity:.14;scale:1.85;rotate:90deg}}
+@keyframes ray-release{0%{opacity:0;stroke-dashoffset:170}25%{opacity:.9}100%{opacity:.7;stroke-dashoffset:0}}
+@keyframes vista-seed-travel{0%{opacity:0;left:50%;top:50%;transform:translate(-50%,-50%) scale(.1)}22%{opacity:1}72%{opacity:.8}100%{opacity:0;left:var(--x);top:var(--y);transform:translate(-50%,-50%) scale(1.5)}}
+html[data-appearance="light"] .morph-seeds i{background:#1f9e71;box-shadow:0 0 0 7px #2d977220,0 0 28px 8px #55a27c8a}
+html[data-appearance="light"] .vista-morph:before{background:conic-gradient(from 0deg,#20876119,transparent 38%,#f6fffa9c 56%,transparent)}
+@media(prefers-reduced-motion:reduce){.vista-morph:before,.morph-links path,.morph-seeds i{animation:none!important}.morph-seeds i{opacity:0!important}}
+.morph-still .morph-seeds i,.morph-still .vista-morph:before{animation:none!important;opacity:0!important}
+.morph-still .morph-links path{animation:none!important;stroke-dashoffset:0;opacity:.35}
