@@ -2,11 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowRight, Pause, Play, Radar, ScanLine, X, Crosshair, Layers3 } from 'lucide-react';
 import CinematicPearl from './cinematic-pearl';
+import AppearanceSwitch from './appearance-switch';
+import type {Appearance} from '@/lib/appearance';
 import {VisTaMorph,VisTaMark} from './ecosystem';
 import './experience-premium.css';
 
 type Destination='command'|'investigation'|'benchmark'|'content'|'workspace'|'engines';
-export default function Experience({navigate,motion,toggleMotion}:{navigate:(view:Destination)=>void;motion:boolean;toggleMotion:()=>void}) {
+export default function Experience({navigate,motion,toggleMotion,appearance,onAppearanceChange}:{navigate:(view:Destination)=>void;motion:boolean;toggleMotion:()=>void;appearance:Appearance;onAppearanceChange:(next:Appearance)=>void}) {
  const [entering,setEntering]=useState(false);const [revealing,setRevealing]=useState(false);
  const [preview,setPreview]=useState(false);
  const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
@@ -29,7 +31,7 @@ export default function Experience({navigate,motion,toggleMotion}:{navigate:(vie
   <header className="experience-header">
    <button className="experience-brand" onClick={()=>go('command')}><VisTaMark/><span>™</span></button>
    <span>AN AMBIDEXTERS TECHNOLOGY</span>
-   <button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button>
+   <div className="experience-header-actions"><AppearanceSwitch appearance={appearance} onChange={onAppearanceChange}/><button className="experience-menu" onClick={()=>go('command')}>Go straight in <ArrowUpRight size={18}/></button></div>
   </header>
   <div className="experience-editorial">
    <span className="eyebrow">MARKETING SUPERIOR INTELLIGENCE</span>
@@ -41,7 +43,7 @@ export default function Experience({navigate,motion,toggleMotion}:{navigate:(vie
    </div>
    <span className="entrance-footnote"><span/> OBSERVE / INTERPRET / ACT / VERIFY</span>
   </div>
-  <div className="experience-sculpture"><CinematicPearl motion={motion}/></div>
+  <div className="experience-sculpture"><CinematicPearl motion={motion} appearance={appearance}/></div>
   <div className="experience-index" aria-hidden="true"><span>V / 001</span><span>A NEW PERSPECTIVE</span></div>
   <div className="entrance-signature"><span>VISIBILITY</span><i/><span>INTELLIGENCE</span><i/><span>ACTION</span></div>
   <div className="entrance-status" aria-hidden="true"><i/> SYSTEM / READY TO EXPLORE</div>
