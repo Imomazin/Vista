@@ -1,0 +1,29 @@
+@media print{
+ @page{size:A4;margin:12mm}
+ body.vista-print-mode{background:#fff!important;color:#202933!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body.vista-print-mode .app-rail,
+ body.vista-print-mode .app-topbar,
+ body.vista-print-mode .app-footer,
+ body.vista-print-mode .vista-engine-dock,
+ body.vista-print-mode .tool-heading,
+ body.vista-print-mode .scan-bar,
+ body.vista-print-mode .report-buttons,
+ body.vista-print-mode .scan-progress,
+ body.vista-print-mode .ambient-light,
+ body.vista-print-mode .mobile-scrim,
+ body.vista-print-mode .floating-button,
+ body.vista-print-mode .app-toast{display:none!important}
+ body.vista-print-mode .vista-app,body.vista-print-mode .app-body,body.vista-print-mode .app-main,body.vista-print-mode .tool-page{position:static!important;width:100%!important;max-width:none!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;transform:none!important}
+ body.vista-print-mode .scan-results{padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;color:#182434!important;opacity:1!important;transform:none!important}
+ body.vista-print-mode .scan-result-heading{display:flex!important;align-items:center;gap:20px;border-bottom:2px solid #506481;padding:0 0 15px!important;margin-bottom:16px}
+ body.vista-print-mode .scan-result-heading h2{color:#132333!important;font-size:27px!important}
+ body.vista-print-mode .scan-result-heading p{color:#52606b!important;font-size:11px!important}
+ body.vista-print-mode .score-orbit{box-shadow:none!important;filter:none!important;border:1px solid #345e55!important;background:#eff7f4!important;color:#123e32!important;width:95px!important;height:95px!important}
+ body.vista-print-mode .score-orbit strong{color:#134e3a!important}
+ body.vista-print-mode .signal-grid{display:block!important}
+ body.vista-print-mode .evidence-tile{display:block!important;break-inside:avoid-page;page-break-inside:avoid;border:1px solid #cbd2d7!important;border-radius:9px!important;padding:14px 16px!important;margin:10px 0!important;background:#fff!important;color:#222e3a!important;box-shadow:none!important}
+ body.vista-print-mode .evidence-tile h3{font-size:15px!important;margin:7px 0!important;color:#182333!important}
+ body.vista-print-mode .evidence-tile p,body.vista-print-mode .evidence-tile .signal-advice{font-size:11px!important;color:#394653!important;line-height:1.5!important}
+ body.vista-print-mode .signal-state{color:#264f5e!important}
+ body.vista-print-mode .method-note{color:#59626c!important;font-size:9px!important;line-height:1.5!important}
+}
