@@ -1,5 +1,7 @@
 # VisTa Visual System
 
+Definitive specification: docs/titanium-emerald-master-brief.md. This summary records the existing implementation; the Titanium + Emerald master brief governs new design and refinements.
+
 ## Two complete environments
 
 VisTa Obsidian is the dark cinematic intelligence theatre: graphite, near-black depth, luminous emerald, titanium and pearl reflections, and restrained antique-gold indications.
