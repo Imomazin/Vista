@@ -4,7 +4,7 @@ Permanent public website asset path: `public/web-images`. This directory is a ca
 
 The complete prepared image pack retains the original source resolution, descriptive filenames and includes Ambidexters transparent PNG variants for dark and light themes.
 
-**Status:** The text catalogue is committed here, but the binary photos are **not yet in this GitHub branch**. The asset pack is attached separately in the conversation for transfer. Do not enable image URLs in live JSX until their actual binary files have been committed and verified. The folder should contain the thematic subfolders in the catalogue after import.
+**Status: Imported and verified.** All 40 named binary media files exist in the development branch in the listed thematic subfolders. The catalogue matches the Git tree exactly (zero missing files). The original supplied logo is archived and two transparent PNG variants are included for Obsidian and Porcelain.
 
 **Folders:** brand, cinematic, analytics, impact, authority, agency, ai-exposure, reputation, content, search, site.
 
