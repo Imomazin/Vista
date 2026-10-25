@@ -4,7 +4,7 @@
 
 This blueprint follows the prepared user-selected web image library at `public/web-images`, indexed by `public/web-images/asset-catalogue.json`. All **41 upload selections** represent **38 exact distinct original images**, including the Ambidexters brand file. Three repeats were byte-identical and therefore point to the same shared asset. Two additional transparent logo variants are supplied in the prepared archive.
 
-**Asset status:** Metadata and blueprint are committed. The original image binaries have been prepared in an attached archive, but are **not in the connected GitHub branch yet**, so do not link to nonexistent image URLs in a deployed page. Import the image archive before activating placements. Respect any public redistribution/licensing conditions.
+**Implementation status:** All 40 prepared binary media assets are now in the GitHub development branch, verified against the catalogue with zero missing paths. The parent brand logo variants, visual registry, Command Centre image editorial, cinematic entrance reel, one photography story in each of nine engine views and the expandable complete Visual Atlas are implemented. Screenshot-based visual QA, final imagery rights checks and production release approval remain outstanding.
 
 ## Design principle
 
