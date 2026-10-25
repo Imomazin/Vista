@@ -16,6 +16,7 @@ import WorkspacePanel from './workspace';
 import VistaPulse from './pulse';
 import EngineMatrix from './engine-matrix';
 import PricingSection from './pricing';
+import WatchDemo from './watch-demo';
 import VisTaEcosystem, {EngineDock,VisTaMark} from './ecosystem';
 import type {EngineId} from '@/lib/engine-methods';
 import { AuditLab, AuditResults, BenchmarkLab, ContentLab, fetchAudit } from './intelligence';
@@ -25,7 +26,7 @@ import { buildOpportunities } from '@/lib/opportunities';
 import type { Workspace } from '@/lib/workspace';
 
 import { readRoute, routeHash, type View, type WorkspaceTab } from '@/lib/navigation';
-const nav=[{id:'measurements',label:'Measurements',icon:BarChart3},{id:'decisions',label:'Decision room',icon:Target},{id:'investigation',label:'Deep investigation',icon:Radar},{id:'command',label:'Command centre',icon:Compass},{id:'audit',label:'Site intelligence',icon:ScanLine},{id:'benchmark',label:'Competitive lens',icon:Crosshair},{id:'content',label:'Content intelligence',icon:FileText},{id:'workspace',label:'My workspace',icon:FolderOpen},{id:'engines',label:'The ecosystem',icon:Orbit},{id:'pricing',label:'Pricing & plans',icon:Sparkles}] as const;
+const nav=[{id:'measurements',label:'Measurements',icon:BarChart3},{id:'decisions',label:'Decision room',icon:Target},{id:'investigation',label:'Deep investigation',icon:Radar},{id:'command',label:'Command centre',icon:Compass},{id:'audit',label:'Site intelligence',icon:ScanLine},{id:'benchmark',label:'Competitive lens',icon:Crosshair},{id:'content',label:'Content intelligence',icon:FileText},{id:'workspace',label:'My workspace',icon:FolderOpen},{id:'engines',label:'The ecosystem',icon:Orbit},{id:'pricing',label:'Pricing & plans',icon:Sparkles},{id:'demo',label:'Watch the Demo',icon:Play}] as const;
 
 export default function Home(){
  const [appearance,setAppearance]=useState<Appearance>('dark');const [view,setView]=useState<View>('experience');const [activeEngine,setActiveEngine]=useState<EngineId>(3);const [workspaceTab,setWorkspaceTab]=useState<WorkspaceTab>('Projects');const [menu,setMenu]=useState(false);const [palette,setPalette]=useState(false);const [query,setQuery]=useState('');const [motion,setMotion]=useState(true);const [data,setData]=useState<Workspace>(emptyWorkspace);const [loadError,setLoadError]=useState('');const [address,setAddress]=useState('');const [report,setReport]=useState<AuditReport|null>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
@@ -77,6 +78,7 @@ export default function Home(){
   {view==='audit'&&<AuditLab/>}{view==='benchmark'&&<BenchmarkLab/>}{view==='content'&&<ContentLab/>}{view==='workspace'&&<WorkspacePanel initialTab={workspaceTab} onSectionChange={sectionChange}/>}
   {view==='measurements'&&<MeasurementRoom data={data} onNavigate={navigate}/>}
   {view==='pricing'&&<PricingSection/>}
+  {view==='demo'&&<WatchDemo/>}
   {view==='decisions'&&<DecisionRoom workspace={data}/>}
   {view==='engines'&&<VisTaEcosystem data={data} selected={activeEngine} onSelect={id=>{setActiveEngine(id);window.history.pushState(null,"",routeHash("engines","Projects",id));}} onNavigate={navigate}/>}
   <footer className="app-footer"><span className="ax-attribution"><AmbidextersLogo compact/><span>VisTa™  /  AN AMBIDEXTERS TECHNOLOGY</span></span><span>MARKETING SUPERIOR INTELLIGENCE. REIMAGINED.</span></footer>
