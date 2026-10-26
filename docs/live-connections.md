@@ -11,6 +11,15 @@ Adapters and test UI are implemented on the development branch. The dedicated Vi
 - When service account creation completes, grant it Search Console access to the actual owned property and GA4 Viewer access to the correct numeric property, then configure the restricted credentials via encrypted Vercel environment settings.
 - **Billing controls:** Do not deploy a scheduled AI worker or paid API sampling merely because its implementation exists; wait for explicit provider funding and intended sample frequency.
 
+## Google provider setup audit — 26 October 2026
+- Google Cloud project `vista-intelligence` created under `imomazin.ae@gmail.com`; both **Google Search Console API** and **Google Analytics Data API** have been independently confirmed ENABLED. No billing or paid products were activated as part of that setup.
+- Dedicated service account `vista-readonly-intelligence@vista-intelligence.iam.gserviceaccount.com` exists without project IAM roles or private keys.
+- Google Search Console URL-prefix property `https://vista.ambidexters.com/` is **OWNER VERIFIED** via a deployed `google-site-verification` HTML meta tag; the tag must remain deployed. The property is registered in the linked GSC Wizard account and Google owner remains `imomazin.ae@gmail.com`.
+- The service account has **Restricted** Search Console permission for that property, and no ownership or editing rights. The Search Console API data is still initially processing, so zero returned rows are not proof of zero website traffic.
+- Vercel production has `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SEARCH_CONSOLE_SITE_URL` and `VISTA_PROVIDER_ORGANISATION_ID`; `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` has **not** been set. Therefore the app's GSC connection cannot yet make an authenticated query despite the external property setup being complete.
+- The linked Google account has one existing GA4 property named `Imowo Enang - GA4` (`properties/296462811`), which is a separate personal property and has NOT been silently configured as VisTa or Ambidexters analytics. Before GA4 can report on VisTa, create or select the correct company property, grant the service account Viewer access and configure its numeric property ID.
+- Avoid exposing the Google service-account JSON key in GitHub, public browser responses or conversation messages. Prefer keyless federation where feasible; otherwise create a restricted key and deliver it directly into encrypted provider secrets, rotate it and monitor usage.
+
 ## Minimum shared infrastructure
 - Configure VISTA_SUPABASE_URL and VISTA_SUPABASE_ANON_KEY for verified member sign-in and organisation membership.
 - Apply database/foundation.sql and relevant existing migrations to the authorised Supabase database.
