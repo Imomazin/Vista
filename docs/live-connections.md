@@ -21,6 +21,14 @@ Adapters and test UI are implemented on the development branch. The dedicated Vi
 - The linked Google account has one existing GA4 property named `Imowo Enang - GA4` (`properties/296462811`), which is a separate personal property and has NOT been silently configured as VisTa or Ambidexters analytics. Before GA4 can report on VisTa, create or select the correct company property, grant the service account Viewer access and configure its numeric property ID.
 - Avoid exposing the Google service-account JSON key in GitHub, public browser responses or conversation messages. Prefer keyless federation where feasible; otherwise create a restricted key and deliver it directly into encrypted provider secrets, rotate it and monitor usage.
 
+## GA4 activation update — 26 October 2026
+- Google Analytics account **Ambidexters** (account ID **413424624**) and GA4 property **VisTa Marketing Intelligence** (property ID **560772567**) were independently confirmed through the connected Google account, separate from the existing personal property.
+- The dedicated Google service account `vista-readonly-intelligence@vista-intelligence.iam.gserviceaccount.com` was granted **Viewer** permission on GA4 property 560772567 and verified in the Access Management list. It has no GA4 Editor/Administrator role.
+- The existing web stream **VisTa Website** has measurement ID `G-8HXNC966L2`; its URL was corrected from HTTP to **https://vista.ambidexters.com** and the updated value verified in Google Analytics Admin.
+- Vercel production configuration now includes `GOOGLE_ANALYTICS_PROPERTY_ID=560772567` and public `NEXT_PUBLIC_VISTA_GA4_MEASUREMENT_ID=G-8HXNC966L2`. The browser analytics loader in `src/app/analytics-consent.tsx` does **not load GA4 until visitors opt in** and provides ongoing preferences.
+- Historical reporting is currently expected to be empty until visitors explicitly consent and Google processes traffic. Do not confuse GA4 reporting API permission with an activated data collection stream.
+- An end-to-end read-only production Google API token exchange (Vercel OIDC to GCP STS / impersonated service account) still requires successful secret-protected runtime testing. Do not mark this connection as verified live based only on the configured environment and property access.
+
 ## Minimum shared infrastructure
 - Configure VISTA_SUPABASE_URL and VISTA_SUPABASE_ANON_KEY for verified member sign-in and organisation membership.
 - Apply database/foundation.sql and relevant existing migrations to the authorised Supabase database.
