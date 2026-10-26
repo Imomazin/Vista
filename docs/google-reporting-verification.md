@@ -32,3 +32,9 @@ Added explicit browser-local storage for up to 30 Google reports, organisation-f
 The reporting interface now uses a responsive evidence panel, staggered card entry, focus treatments and report transitions, with reduced-motion support. Corrected a generic flex rule that affected source tables. This is a reporting-interface increment; the 3D identity and constellation redesign remain outstanding.
 
 86 automated tests and TypeScript checks pass. The production build passes. Live authenticated browser verification and cloud-backed history remain outstanding.
+
+## Cloud history release
+
+Added an optional organisation cloud history for new Google retrievals, with member reads, owner-only inserts and deletes, immutable report bodies, bounded payloads, latest-thirty retrieval and explicit storage-failure messages. Existing browser history remains intact. A failed save does not conceal a successful Google response. Cloud history is intentionally opt-in for each session.
+
+Database schema: database/google-reports.sql. Postgres tests cover tenant isolation, owner writes/deletion, viewer reads and denied viewer writes/deletion. All 86 tests, TypeScript and the production build pass. Production database migration applied with row-level security enabled. Scheduled ingestion is not part of this release.

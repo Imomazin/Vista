@@ -20,6 +20,7 @@ export default function ConnectionCentre(){
  const [readiness,setReadiness]=useState<Record<Source,Connection>|null>(null);
  const [org,setOrg]=useState("");
  const [memberships,setMemberships]=useState<{organisation_id:string;role:string;vista_organisations:{name:string}}[]>([]);
+ const [retain,setRetain]=useState(false);
  const [view,setView]=useState('channels');
  const [startDate,setStartDate]=useState(()=>new Date(Date.now()-28*86400000).toISOString().slice(0,10));
  const [endDate,setEndDate]=useState(()=>new Date(Date.now()-86400000).toISOString().slice(0,10));
@@ -51,10 +52,12 @@ export default function ConnectionCentre(){
   if(!org){setError("Sign in to a configured VisTa organisation before testing provider access.");return;}
   setRunning(source);setError("");setResults(r=>{const next={...r};delete next[source];return next;});
   try{
-   const res=await fetch("/api/integrations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({organisationId:org,source,brand,prompt:question,...(source==='ga4'?{view,startDate,endDate}:{})})});
+   const res=await fetch("/api/integrations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({organisationId:org,source,brand,prompt:question,retain,...(source==='ga4'?{view,startDate,endDate}:{})})});
    const payload=await res.json();
    if(!res.ok||!payload.connected)throw new Error(payload.error||"Provider test failed.");
    setResults(r=>({...r,[source]:payload.result}));
+   if(payload.storageWarning)setError(payload.storageWarning);
+   if(payload.saved)window.dispatchEvent(new Event("vista-cloud-reports-update"));
   }catch(e){setError(source.toUpperCase()+": "+(e instanceof Error?e.message:"Connection failed."));}
   finally{setRunning(null);}
  }
@@ -66,6 +69,7 @@ export default function ConnectionCentre(){
    <button className="connector-refresh" type="button" disabled={running!==null||historyBusy} onClick={()=>void refresh()}><RefreshCw size={15}/> Refresh status</button></header>
   <div className="connector-identity">{cloud==="ready"?<><ShieldCheck size={17}/> Signed in to a verified VisTa organisation. Your read-only provider requests are permission-checked.</>:<><KeyRound size={17}/>{cloud==="signin"?"Cloud login is configured. Sign in using the workspace cloud controls before running provider tests.":cloud==="checking"?"Checking identity and source configuration…":"Cloud identity is not yet configured. Configure Supabase and authorise a workspace before connecting sources."}</>}</div>
   {cloud==='ready'&&<label className="connector-org">Organisation<select aria-label="Provider organisation" disabled={running!==null||historyBusy} value={org} onChange={e=>{setOrg(e.target.value);setResults({});setSampleHistory(null);setError('');}}><option value="">Select organisation</option>{memberships.map(m=><option key={m.organisation_id} value={m.organisation_id}>{m.vista_organisations?.name||m.organisation_id} · {m.role}</option>)}</select></label>}
+  <label className="connector-retain"><input type="checkbox" checked={retain} disabled={running!==null} onChange={e=>setRetain(e.target.checked)}/> Save new Google responses to this organisation’s cloud history</label>
   <div className="connector-grid">{sources.map(source=>{
     const config=readiness?.[source.id];
     const tested=results[source.id]!==undefined;

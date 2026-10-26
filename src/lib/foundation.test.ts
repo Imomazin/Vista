@@ -12,6 +12,7 @@ test('actual Postgres policies block foreign tenants, viewer writes and role esc
  const db=new PGlite();try{
  await db.exec("create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;");
  await db.exec(await readFile(new URL('../../database/foundation.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../../database/google-reports.sql',import.meta.url),'utf8'));
  const userA='00000000-0000-0000-0000-000000000001',userB='00000000-0000-0000-0000-000000000002',viewer='00000000-0000-0000-0000-000000000003',orgA='10000000-0000-0000-0000-000000000001',orgB='10000000-0000-0000-0000-000000000002';
  await db.exec(`insert into auth.users values('${userA}'),('${userB}'),('${viewer}');insert into vista_organisations values('${orgA}','A'),('${orgB}','B');insert into vista_memberships values('${orgA}','${userA}','owner'),('${orgB}','${userB}','editor'),('${orgA}','${viewer}','viewer');set role authenticated;`);
  const asUser=async(id:string)=>{await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);};
@@ -24,6 +25,16 @@ test('actual Postgres policies block foreign tenants, viewer writes and role esc
  await asUser(userA);await db.query('update vista_workspaces set revision=2,payload=$1 where organisation_id=$2 and revision=1',[{version:2},orgA]);assert.equal((await db.query('select * from vista_history')).rows.length,2);
  assert.equal((await db.query('update vista_workspaces set revision=2 where organisation_id=$1 and revision=1 returning *',[orgA])).rows.length,0);
  await assert.rejects(db.query('update vista_workspaces set revision=8 where organisation_id=$1',[orgA]));await assert.rejects(db.query('delete from vista_history'));await assert.rejects(db.query('update vista_history set payload=$1',[{}]));
+ await asUser(userA);
+ await db.query('insert into vista_google_reports(organisation_id,created_by,report) values($1,$2,$3)',[orgA,userA,{source:'GA4 Analytics Data API',rows:[]}]);
+ assert.equal((await db.query('select * from vista_google_reports')).rows.length,1);
+ await assert.rejects(db.query('insert into vista_google_reports(organisation_id,created_by,report) values($1,$2,$3)',[orgB,userA,{source:'GA4 Analytics Data API'}]));
+ await assert.rejects(db.query('update vista_google_reports set report=$1',[{}]));
+ await asUser(userB);assert.equal((await db.query('select * from vista_google_reports')).rows.length,0);
+ await asUser(viewer);assert.equal((await db.query('select * from vista_google_reports')).rows.length,1);
+ await assert.rejects(db.query('insert into vista_google_reports(organisation_id,created_by,report) values($1,$2,$3)',[orgA,viewer,{source:'GA4 Analytics Data API'}]));
+ assert.equal((await db.query('delete from vista_google_reports returning *')).rows.length,0);
+ await asUser(userA);assert.equal((await db.query('delete from vista_google_reports returning *')).rows.length,1);
  await asUser('');assert.equal((await db.query('select * from vista_workspaces')).rows.length,0);
  }finally{await db.close();}
 });

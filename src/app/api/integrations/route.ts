@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server";
-import {authenticated,CloudError,membership,organisationId,readJson,requireSameOrigin} from "@/lib/cloud";
+import {authenticated,CloudError,membership,organisationId,readJson,requireSameOrigin,provider} from "@/lib/cloud";
 import {requestLimit} from "@/lib/rate-limit";
 import {externalStatus,googleSearchConsole,googleAnalytics,hubspotCrm,openAiSample,requireProviderOwner,type Source} from "@/lib/external-integrations";
 export const runtime="nodejs";
@@ -32,7 +32,12 @@ export async function POST(request:Request){
   else if(source==="ga4")result=await googleAnalytics(request,input);
   else if(source==="hubspot")result=await hubspotCrm();
   else if(source==="openai")result=await openAiSample(String(input.brand||""),String(input.prompt||""));
+  let saved=false,storageWarning:string|undefined;
+  if(input.retain===true&&(source==='gsc'||source==='ga4')){
+   try{await provider('/rest/v1/vista_google_reports',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({organisation_id:org,created_by:user.id,report:result})},token);saved=true;}
+   catch{storageWarning='Report retrieved but cloud storage failed. Export this response and retry storage on the next retrieval.';}
+  }
   console.info(JSON.stringify({event:"vista.connector.success",source,organisationId:org,at:new Date().toISOString()}));
-  return NextResponse.json({connected:true,source,result},{headers:{"Cache-Control":"no-store"}});
+  return NextResponse.json({connected:true,source,result,saved,storageWarning},{headers:{"Cache-Control":"no-store"}});
  }catch(e){return respondError(e);}
 }
