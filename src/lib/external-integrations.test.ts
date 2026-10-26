@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {generateKeyPairSync,verify} from "node:crypto";
-import {assertion,externalStatus,requireProviderOwner,googleWifConfigured,googleWifAudience,exchangeVercelGoogleToken} from "./external-integrations";
+import {googleAnalytics,googleReportOptions,assertion,externalStatus,requireProviderOwner,googleWifConfigured,googleWifAudience,exchangeVercelGoogleToken} from "./external-integrations";
 test("provider readiness reports missing credentials as disconnected",()=>{
  const r=externalStatus({});
  for(const c of Object.values(r))assert.equal(c.configured,false);
@@ -80,4 +80,48 @@ test("keyless token exchange rejects malformed OIDC, scopes and configuration be
  await assert.rejects(exchangeVercelGoogleToken("bad","https://www.googleapis.com/auth/webmasters.readonly",config));
  await assert.rejects(exchangeVercelGoogleToken("abc.abc.abc","https://www.googleapis.com/auth/cloud-platform",config));
  assert.throws(()=>googleWifAudience({...config,GCP_PROJECT_NUMBER:"bad"}));
+});
+
+
+test("GA4 report dates reject invalid, reversed, future and excessive ranges",()=>{
+ const now=new Date('2026-10-26T12:00:00Z');
+ assert.deepEqual(googleReportOptions({},now),{view:'channels',startDate:'2026-09-28',endDate:'2026-10-25'});
+ for(const input of [{view:['channels']},{view:'unknown'},{startDate:'2026-02-30'},{startDate:'2026-10-26',endDate:'2026-10-25'},{endDate:'2026-10-27'},{startDate:'2020-01-01'}])assert.throws(()=>googleReportOptions(input,now));
+});
+
+test("GA4 reports use readonly identity, correct schemas and reject missing metrics",async()=>{
+ const config={GOOGLE_SERVICE_ACCOUNT_EMAIL:'test@vista-intelligence.iam.gserviceaccount.com',GCP_PROJECT_NUMBER:'639180933626',GCP_WORKLOAD_IDENTITY_POOL_ID:'vista-vercel',GCP_WORKLOAD_IDENTITY_PROVIDER_ID:'vercel-production',GOOGLE_ANALYTICS_PROPERTY_ID:'560772567'};
+ const previous=Object.fromEntries(Object.keys(config).map(k=>[k,process.env[k]]));
+ const originalFetch=globalThis.fetch;
+ let view='channels',response:unknown={rows:[]};
+ Object.assign(process.env,config);
+ globalThis.fetch=(async(url,init)=>{
+  const uri=String(url),body=JSON.parse(String(init?.body||'{}').startsWith('{')?String(init?.body):'{}');
+  if(uri.includes('sts.googleapis.com'))return Response.json({access_token:'sts-test'});
+  if(uri.includes('iamcredentials.googleapis.com')){
+   assert.deepEqual(body.scope,['https://www.googleapis.com/auth/analytics.readonly']);
+   return Response.json({accessToken:'readonly-test'});
+  }
+  assert.equal(uri,'https://analyticsdata.googleapis.com/v1beta/properties/560772567:'+ (view==='realtime'?'runRealtimeReport':'runReport'));
+  assert.equal(body.dimensions[0].name,({channels:'sessionDefaultChannelGroup',pages:'landingPage',daily:'date',realtime:'eventName'} as Record<string,string>)[view]);
+  assert.deepEqual(body.metrics.map((m:{name:string})=>m.name),view==='realtime'?['eventCount','activeUsers']:['sessions','totalUsers','keyEvents']);
+  assert.equal(Boolean(body.dateRanges),view!=='realtime');
+  return Response.json(response);
+ }) as typeof fetch;
+ try{
+  const request=new Request('https://example.com',{headers:{'x-vercel-oidc-token':'abc.abc.abc'}});
+  for(view of ['channels','pages','daily','realtime']){
+   const empty=await googleAnalytics(request,{view});assert.deepEqual(empty.rows,[]);assert.equal(empty.truncated,false);
+  }
+  view='channels';response={rows:[{dimensionValues:[{value:'Direct'}],metricValues:[{value:'10'},{value:'8'},{value:'2'}]}],rowCount:150};
+  const report=await googleAnalytics(request);assert.equal(report.truncated,true);assert.deepEqual(report.rows,[{label:'Direct',sessions:10,totalUsers:8,keyEvents:2}]);
+  for(const value of [undefined,'','NaN','-1']){
+   response={rows:[{metricValues:[{value},{value:'1'},{value:'1'}]}]};
+   await assert.rejects(googleAnalytics(request),{status:502});
+  }
+  response={rows:{}};await assert.rejects(googleAnalytics(request),{status:502});
+ }finally{
+  globalThis.fetch=originalFetch;
+  for(const [key,value] of Object.entries(previous)){if(value===undefined)delete process.env[key];else process.env[key]=value;}
+ }
 });

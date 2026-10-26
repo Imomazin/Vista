@@ -83,12 +83,37 @@ export async function googleSearchConsole(request?:Request){
  const data=await providerJson("https://www.googleapis.com/webmasters/v3/sites/"+encodeURIComponent(site)+"/searchAnalytics/query",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({...period,dimensions:["query"],rowLimit:25})});
  return {source:"Google Search Console API",site,period,observedAt:new Date().toISOString(),rows:(data.rows||[]).map((x:any)=>({query:String(x.keys?.[0]||""),clicks:Number(x.clicks||0),impressions:Number(x.impressions||0),ctr:Number(x.ctr||0),position:Number(x.position||0)})),note:"Property-scoped Google query sample, not a ranking prediction."};
 }
-export async function googleAnalytics(request?:Request){
+export function googleReportOptions(input:Record<string,unknown>={},now=new Date()){
+ const view=input.view===undefined?'channels':input.view;
+ if(typeof view!=='string'||!['channels','pages','daily','realtime'].includes(view))throw new CloudError('Choose a supported Google Analytics report.');
+ const end=new Date(now.getTime()-86400000).toISOString().slice(0,10);
+ const start=new Date(now.getTime()-28*86400000).toISOString().slice(0,10);
+ const startDate=input.startDate??start,endDate=input.endDate??end;
+ const valid=(v:unknown):v is string=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v;
+ if(!valid(startDate)||!valid(endDate)||startDate>endDate||endDate>now.toISOString().slice(0,10)||Date.parse(endDate)-Date.parse(startDate)>365*86400000)throw new CloudError('Choose valid dates in order, up to 366 days, ending no later than today.');
+ return {view:String(view),startDate,endDate};
+}
+export async function googleAnalytics(request?:Request,input:Record<string,unknown>={}){
+ const options=googleReportOptions(input);
  const property=required(process.env.GOOGLE_ANALYTICS_PROPERTY_ID,"GOOGLE_ANALYTICS_PROPERTY_ID");
  if(!/^\d{4,25}$/.test(property))throw new CloudError("Invalid GA4 property identifier.",503);
  const token=await googleToken("https://www.googleapis.com/auth/analytics.readonly",request);
- const data=await providerJson("https://analyticsdata.googleapis.com/v1beta/properties/"+property+":runReport",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({dateRanges:[{startDate:"28daysAgo",endDate:"yesterday"}],dimensions:[{name:"sessionDefaultChannelGroup"}],metrics:[{name:"sessions"},{name:"totalUsers"},{name:"keyEvents"}],limit:25})});
- return {source:"GA4 Analytics Data API",property,observedAt:new Date().toISOString(),scope:"Last 28 days, sessionDefaultChannelGroup",rows:(data.rows||[]).map((x:any)=>({channel:String(x.dimensionValues?.[0]?.value||""),sessions:Number(x.metricValues?.[0]?.value||0),users:Number(x.metricValues?.[1]?.value||0),keyEvents:Number(x.metricValues?.[2]?.value||0)}))};
+ const realtime=options.view==='realtime';
+ const dimension=realtime?'eventName':options.view==='pages'?'landingPage':options.view==='daily'?'date':'sessionDefaultChannelGroup';
+ const metrics=realtime?['eventCount','activeUsers']:['sessions','totalUsers','keyEvents'];
+ const body={...(!realtime?{dateRanges:[{startDate:options.startDate,endDate:options.endDate}]}:{}),dimensions:[{name:dimension}],metrics:metrics.map(name=>({name})),limit:100,orderBys:options.view==='daily'?[{dimension:{dimensionName:'date'}}]:[{metric:{metricName:metrics[0]},desc:true}]};
+ const data=await providerJson("https://analyticsdata.googleapis.com/v1beta/properties/"+property+(realtime?":runRealtimeReport":":runReport"),{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(body)});
+ if(!data||typeof data!=='object'||(data.rows!==undefined&&!Array.isArray(data.rows)))throw new CloudError('Provider returned an invalid report.',502);
+ const rows=(data.rows||[]).map((x:any)=>({label:String(x?.dimensionValues?.[0]?.value||''),...Object.fromEntries(metrics.map((metric,index)=>{
+  const value=x?.metricValues?.[index]?.value;
+  return [metric,typeof value==='string'&&value.trim()!==''?Number(value):NaN];
+ }))}));
+ if(rows.some((row:Record<string,unknown>)=>metrics.some(m=>!Number.isFinite(row[m])||Number(row[m])<0)))throw new CloudError('Provider returned invalid metrics.',502);
+ return {source:"GA4 Analytics Data API",property,observedAt:new Date().toISOString(),view:options.view,dimension,metrics,
+ period:realtime?null:{startDate:options.startDate,endDate:options.endDate},scope:realtime?'Realtime event observations, last 30 minutes':dimension,
+ timezone:data.metadata?.timeZone||null,metadata:data.metadata||{},rows,rowCount:data.rowCount??rows.length,
+ truncated:typeof data.rowCount==='number'&&data.rowCount>rows.length,
+ note:'Up to 100 rows. Users can appear in multiple rows and must not be summed. An empty response verifies access, not event collection. Realtime observations do not verify consent implementation.'};
 }
 export async function hubspotCrm(){
  const token=required(process.env.HUBSPOT_PRIVATE_APP_TOKEN,"HUBSPOT_PRIVATE_APP_TOKEN");
