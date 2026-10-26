@@ -3,6 +3,14 @@
 ## Current status
 Adapters and test UI are implemented on the development branch. The dedicated VisTa Supabase London project and its verified Ambidexters application Owner are operational, and Supabase URL/publishable key are configured on the Vercel development **preview branch only**. The application now supports magic-link redirect to `/auth/callback` and an optional six-digit email code. The authentication and cloud-save journey needs a final real-user browser check. Google Search Console, GA4, HubSpot and OpenAI provider credentials have not been authorised, so those external-data integrations remain inactive. Configured does not mean a live provider connection; an authenticated source response must succeed.
 
+## VisTa Intelligence Google project activation (26 October 2026)
+- Dedicated Google Cloud project **VisTa Intelligence**, project ID `vista-intelligence`, number `639180933626`, established under the authorised `imomazin.ae@gmail.com` account.
+- Google Search Console API has been enabled. Google Analytics Data API enablement and a dedicated read-only service account are in progress. The existing GSC Wizard integration lists `sc-domain:imoenang.com`; it does not by itself grant VisTa app credentials.
+- **Security safeguard:** `VISTA_PROVIDER_ORGANISATION_ID` restricts server-configured provider credentials to one pre-approved organisation, and the API further requires an authenticated `owner` role. This is an interim control, not multi-client OAuth.
+- No cloud service-account private key, GA4 property permission, HubSpot app token or funded OpenAI account has yet been supplied. Never mark those feeds live until their real API tests succeed.
+- When service account creation completes, grant it Search Console access to the actual owned property and GA4 Viewer access to the correct numeric property, then configure the restricted credentials via encrypted Vercel environment settings.
+- **Billing controls:** Do not deploy a scheduled AI worker or paid API sampling merely because its implementation exists; wait for explicit provider funding and intended sample frequency.
+
 ## Minimum shared infrastructure
 - Configure VISTA_SUPABASE_URL and VISTA_SUPABASE_ANON_KEY for verified member sign-in and organisation membership.
 - Apply database/foundation.sql and relevant existing migrations to the authorised Supabase database.
