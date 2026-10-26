@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {authenticated,CloudError,membership,organisationId,readJson,requireSameOrigin} from "@/lib/cloud";
 import {requestLimit} from "@/lib/rate-limit";
-import {externalStatus,googleSearchConsole,googleAnalytics,hubspotCrm,openAiSample,type Source} from "@/lib/external-integrations";
+import {externalStatus,googleSearchConsole,googleAnalytics,hubspotCrm,openAiSample,requireProviderOwner,type Source} from "@/lib/external-integrations";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const maxDuration=30;
@@ -21,7 +21,8 @@ export async function POST(request:Request){
   const {token,user}=await authenticated(request);
   const input=await readJson(request,3000);
   const org=organisationId(input.organisationId);
-  await membership(token,user.id,org);
+  const role=await membership(token,user.id,org);
+  requireProviderOwner(org,role,process.env.VISTA_PROVIDER_ORGANISATION_ID);
   const source=input.source as Source;
   const available=externalStatus();
   if(!["gsc","ga4","hubspot","openai"].includes(source))throw new CloudError("Choose a supported provider.");
