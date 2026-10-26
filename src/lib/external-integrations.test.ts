@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {generateKeyPairSync,verify} from "node:crypto";
-import {assertion,externalStatus,requireProviderOwner} from "./external-integrations";
+import {assertion,externalStatus,requireProviderOwner,googleWifConfigured,googleWifAudience,exchangeVercelGoogleToken} from "./external-integrations";
 test("provider readiness reports missing credentials as disconnected",()=>{
  const r=externalStatus({});
  for(const c of Object.values(r))assert.equal(c.configured,false);
@@ -39,4 +39,45 @@ test("shared provider access is restricted to the approved organisation owner",(
  assert.throws(()=>requireProviderOwner(target,"viewer",target),{status:403});
  assert.throws(()=>requireProviderOwner(target,"owner",undefined),{status:403});
  assert.throws(()=>requireProviderOwner("00000000-0000-4000-8000-000000000000","owner",target),{status:403});
+});
+
+test("keyless Vercel federation counts as configured GSC but not GA4 without a property",()=>{
+ const config={GOOGLE_SERVICE_ACCOUNT_EMAIL:"vista-readonly-intelligence@vista-intelligence.iam.gserviceaccount.com",GCP_PROJECT_NUMBER:"639180933626",GCP_WORKLOAD_IDENTITY_POOL_ID:"vista-vercel",GCP_WORKLOAD_IDENTITY_PROVIDER_ID:"vercel-production",GOOGLE_SEARCH_CONSOLE_SITE_URL:"https://vista.ambidexters.com/"};
+ assert.equal(googleWifConfigured(config),true);
+ assert.equal(externalStatus(config).gsc.configured,true);
+ assert.equal(externalStatus(config).ga4.configured,false);
+ assert.equal(googleWifAudience(config),"//iam.googleapis.com/projects/639180933626/locations/global/workloadIdentityPools/vista-vercel/providers/vercel-production");
+});
+test("Google keyless authentication performs restricted STS exchange and impersonation",async()=>{
+ const config={GOOGLE_SERVICE_ACCOUNT_EMAIL:"vista-readonly-intelligence@vista-intelligence.iam.gserviceaccount.com",GCP_PROJECT_NUMBER:"639180933626",GCP_WORKLOAD_IDENTITY_POOL_ID:"vista-vercel",GCP_WORKLOAD_IDENTITY_PROVIDER_ID:"vercel-production"};
+ const previous=globalThis.fetch;
+ let requests=0;
+ globalThis.fetch=(async(url:string|URL|Request,opts?:RequestInit)=>{
+  const uri=String(url);
+  requests++;
+  if(uri==="https://sts.googleapis.com/v1/token"){
+   assert.equal(opts?.method,"POST");
+   const body=opts?.body as URLSearchParams;
+   assert.equal(body.get("subject_token"),"abc.abc.abc");
+   assert.equal(body.get("requested_token_type"),"urn:ietf:params:oauth:token-type:access_token");
+   return new Response(JSON.stringify({access_token:"short-lived-sts"}),{status:200});
+  }
+  if(uri.startsWith("https://iamcredentials.googleapis.com/v1/")){
+   const headers=opts?.headers as Record<string,string>;
+   assert.equal(headers.Authorization,"Bearer short-lived-sts");
+   assert.deepEqual(JSON.parse(String(opts?.body)).scope,["https://www.googleapis.com/auth/webmasters.readonly"]);
+   return new Response(JSON.stringify({accessToken:"delegated-readonly-token"}),{status:200});
+  }
+  throw new Error("Unexpected URL "+uri);
+ }) as typeof fetch;
+ try{
+  assert.equal(await exchangeVercelGoogleToken("abc.abc.abc","https://www.googleapis.com/auth/webmasters.readonly",config),"delegated-readonly-token");
+  assert.equal(requests,2);
+ }finally{globalThis.fetch=previous;}
+});
+test("keyless token exchange rejects malformed OIDC, scopes and configuration before fetching",async()=>{
+ const config={GOOGLE_SERVICE_ACCOUNT_EMAIL:"vista-readonly-intelligence@vista-intelligence.iam.gserviceaccount.com",GCP_PROJECT_NUMBER:"639180933626",GCP_WORKLOAD_IDENTITY_POOL_ID:"vista-vercel",GCP_WORKLOAD_IDENTITY_PROVIDER_ID:"vercel-production"};
+ await assert.rejects(exchangeVercelGoogleToken("bad","https://www.googleapis.com/auth/webmasters.readonly",config));
+ await assert.rejects(exchangeVercelGoogleToken("abc.abc.abc","https://www.googleapis.com/auth/cloud-platform",config));
+ assert.throws(()=>googleWifAudience({...config,GCP_PROJECT_NUMBER:"bad"}));
 });
