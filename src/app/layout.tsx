@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AnalyticsConsent from "./analytics-consent";
 import "./globals.css";
 import "./appearance.css";
 import "./titanium-emerald.css";
@@ -17,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html: "(function(){try{var saved=localStorage.getItem(\"vista-appearance\");var system=matchMedia(\"(prefers-color-scheme: light)\").matches;document.documentElement.dataset.appearance=saved===\"light\"||saved===\"dark\"?saved:system?\"light\":\"dark\";}catch(e){document.documentElement.dataset.appearance=\"dark\";}})();"}}/></head><body>{children}</body></html>;
+  return <html lang="en" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html: "(function(){try{var saved=localStorage.getItem(\"vista-appearance\");var system=matchMedia(\"(prefers-color-scheme: light)\").matches;document.documentElement.dataset.appearance=saved===\"light\"||saved===\"dark\"?saved:system?\"light\":\"dark\";}catch(e){document.documentElement.dataset.appearance=\"dark\";}})();"}}/></head><body>{children}<AnalyticsConsent/></body></html>;
 }
