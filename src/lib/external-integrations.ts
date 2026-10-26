@@ -1,6 +1,11 @@
 import {createSign} from "node:crypto";
 import {CloudError} from "./cloud";
 export type Source="gsc"|"ga4"|"hubspot"|"openai";
+export function requireProviderOwner(organisationId:string,role:string,authorisedOrganisationId:string|undefined){
+ if(!authorisedOrganisationId||organisationId!==authorisedOrganisationId)throw new CloudError("This organisation is not authorised to access the shared provider connection.",403);
+ if(role!=="owner")throw new CloudError("Only the organisation owner may test shared provider credentials.",403);
+}
+
 export function externalStatus(env:Record<string,string|undefined>=process.env){
  const google=Boolean(env.GOOGLE_SERVICE_ACCOUNT_EMAIL&&env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY);
  return {

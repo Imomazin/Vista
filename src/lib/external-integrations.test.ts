@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {generateKeyPairSync,verify} from "node:crypto";
-import {assertion,externalStatus} from "./external-integrations";
+import {assertion,externalStatus,requireProviderOwner} from "./external-integrations";
 test("provider readiness reports missing credentials as disconnected",()=>{
  const r=externalStatus({});
  for(const c of Object.values(r))assert.equal(c.configured,false);
@@ -30,4 +30,13 @@ test("Google JWT uses RS256, audience, restricted scope and exact expiry",()=>{
  assert.equal(body.exp-body.iat,3600);
  const v=verify("RSA-SHA256",Buffer.from(h+"."+p),publicKey,Buffer.from(s,"base64url"));
  assert.equal(v,true);
+});
+
+test("shared provider access is restricted to the approved organisation owner",()=>{
+ const target="5fabaf24-5f9a-42ff-b8d8-1b9cf6177226";
+ assert.doesNotThrow(()=>requireProviderOwner(target,"owner",target));
+ assert.throws(()=>requireProviderOwner(target,"editor",target),{status:403});
+ assert.throws(()=>requireProviderOwner(target,"viewer",target),{status:403});
+ assert.throws(()=>requireProviderOwner(target,"owner",undefined),{status:403});
+ assert.throws(()=>requireProviderOwner("00000000-0000-4000-8000-000000000000","owner",target),{status:403});
 });
