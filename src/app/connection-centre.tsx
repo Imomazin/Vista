@@ -1,4 +1,5 @@
 'use client';
+import ProviderHistory from './provider-history';
 import {useEffect,useState} from "react";
 import {Activity,ArrowUpRight,Download,KeyRound,PlugZap,RefreshCw,ShieldCheck} from "lucide-react";
 import "./connection-centre.css";
@@ -78,10 +79,11 @@ export default function ConnectionCentre(){
       {tested&&<div className="connector-result"><div><strong>Authenticated response received</strong><button onClick={()=>exportJson(source.title,results[source.id])} type="button"><Download size={14}/> Export</button></div><ProviderReport result={results[source.id]}/><details><summary>Inspect source response</summary><pre>{JSON.stringify(results[source.id],null,2).slice(0,6000)}</pre></details></div>}
     </article>;
   })}</div>
+  <ProviderHistory organisationId={org} results={results}/>
   <div className="connector-history"><div><h3>Scheduled AI answer sampling</h3><p>Once credentials, source table and a production scheduler are configured, VisTa records dated answers and citations for repeatable comparisons. Runs use one to three approved prompts per day.</p></div><button type="button" disabled={cloud!=="ready"||!org||running!==null||historyBusy} onClick={()=>void loadSampleHistory()}>{historyBusy?"Loading recorded samples…":"Review saved AI samples"}</button></div>
   {sampleHistory!==null&&<div className="connector-history-results"><p>{sampleHistory.length} authorised sampling records returned</p>{sampleHistory.slice(0,15).map((sample,i)=><article key={String(sample.id||i)}><strong>{String(sample.brand||"Brand")} · {String(sample.model||"Model")}</strong><time>{String(sample.observed_at||"")}</time><p>{String(sample.prompt||"")}</p><blockquote>{String(sample.response||"").slice(0,750)}</blockquote><small>{sample.mentioned?"Brand mentioned":"No literal brand mention"} · {Array.isArray(sample.citations)?sample.citations.length:0} citation annotations</small></article>)}</div>}
   {error&&<div className="connector-error" role="alert">{error}</div>}
-  <p className="connector-warning">Connection data is retrieved on demand and is not retained by this screen. Google properties, CRM accounts and AI keys require explicit authorisation. HubSpot is the initial CRM adapter; Salesforce and other CRMs need their own provider setup. AI samples are observations, not search rankings or representative share-of-voice measurements.</p>
+  <p className="connector-warning">Connection data is retrieved on demand. Google responses are retained on this browser only when you choose Save. Google properties, CRM accounts and AI keys require explicit authorisation. HubSpot is the initial CRM adapter; Salesforce and other CRMs need their own provider setup. AI samples are observations, not search rankings or representative share-of-voice measurements.</p>
  </section>;
 }
 
