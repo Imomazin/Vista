@@ -28,8 +28,8 @@ export async function POST(request:Request){
   if(!["gsc","ga4","hubspot","openai"].includes(source))throw new CloudError("Choose a supported provider.");
   if(!available[source].configured)throw new CloudError("Provider has no server credentials configured.",503);
   let result:unknown;
-  if(source==="gsc")result=await googleSearchConsole();
-  else if(source==="ga4")result=await googleAnalytics();
+  if(source==="gsc")result=await googleSearchConsole(request);
+  else if(source==="ga4")result=await googleAnalytics(request);
   else if(source==="hubspot")result=await hubspotCrm();
   else if(source==="openai")result=await openAiSample(String(input.brand||""),String(input.prompt||""));
   console.info(JSON.stringify({event:"vista.connector.success",source,organisationId:org,at:new Date().toISOString()}));
