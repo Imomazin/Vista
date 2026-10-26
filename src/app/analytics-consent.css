@@ -1,0 +1,12 @@
+.vista-analytics-pref{position:fixed;right:12px;bottom:12px;z-index:1000;padding:8px 12px;border:1px solid rgba(176,190,193,.6);border-radius:30px;background:#19202b;color:#f1f5f2;font-size:11px;box-shadow:0 3px 14px #0005}
+.vista-analytics-pref:focus-visible,.vista-analytics-consent button:focus-visible,.vista-analytics-consent a:focus-visible{outline:3px solid #b9e6d3;outline-offset:3px}
+.vista-analytics-consent{position:fixed;left:clamp(10px,3vw,30px);right:clamp(10px,3vw,30px);bottom:clamp(12px,3vw,28px);z-index:1100;padding:clamp(17px,2.5vw,28px);max-width:940px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:24px;border:1px solid #aa95d38c;border-radius:15px;background:linear-gradient(130deg,#131e26f9,#20172df9);box-shadow:0 18px 70px #000b;color:#f4f6f5}
+.vista-analytics-copy{max-width:620px}
+.vista-analytics-copy strong{font-size:18px;letter-spacing:-.025em}
+.vista-analytics-copy p{font-size:12px;line-height:1.65;margin:8px 0;color:#d2d9da}
+.vista-analytics-copy a{font-size:12px;color:#c3abf0;text-decoration:underline;text-underline-offset:3px}
+.vista-analytics-actions{display:grid;gap:10px;min-width:165px}
+.vista-analytics-actions button{border-radius:9px;border:1px solid #b3c9be85;padding:12px 15px;background:#222a31;color:#f4f6f5;font-weight:650;font-size:12px}
+.vista-analytics-actions button:last-child{border:0;background:linear-gradient(95deg,#a0dfc2,#cbb3f6);color:#071714}
+@media(max-width:640px){.vista-analytics-consent{flex-direction:column;align-items:stretch;gap:15px}.vista-analytics-actions{grid-template-columns:1fr 1fr}.vista-analytics-actions button{padding:11px 10px}}
+@media print{.vista-analytics-consent,.vista-analytics-pref{display:none}}
