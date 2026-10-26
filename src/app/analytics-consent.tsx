@@ -35,7 +35,7 @@ export default function AnalyticsConsent(){
  },[]);
  useEffect(()=>{
   if(!enabled||choice!=='allow')return;
-  const a=window as AnalyticsWindow;
+  const a=window as unknown as AnalyticsWindow;
   a['ga-disable-'+measurementId]=false;
   a.dataLayer=a.dataLayer||[];
   a.gtag=a.gtag||function(...args:unknown[]){a.dataLayer!.push(args);};
@@ -65,7 +65,7 @@ export default function AnalyticsConsent(){
   setChoice(next);
   setVisible(false);
   if(next==='reject'){
-   (window as AnalyticsWindow)['ga-disable-'+measurementId]=true;
+   (window as unknown as AnalyticsWindow)['ga-disable-'+measurementId]=true;
    clearAnalyticsCookies();
    document.querySelector<HTMLScriptElement>('script[data-vista-analytics]')?.remove();
    setLoaded(false);
