@@ -6,6 +6,7 @@ import type { Workspace } from '@/lib/workspace';
 import type { View, WorkspaceTab } from '@/lib/navigation';
 import { buildOpportunities, latestProjectSnapshots, technicalTrend } from '@/lib/opportunities';
 import './pulse.css';
+import SourceReadiness from './source-readiness';
 
 type Props = {
   data: Workspace;
@@ -134,7 +135,8 @@ export default function VistaPulse({data, onNavigate}:Props) {
     </div>
     <div className="pulse-bottom-grid">
       <div className="pulse-trend-panel"><div className="pulse-card-title"><div><span className="pulse-overline">OBSERVED PERFORMANCE</span><h3>Technical history</h3></div><Activity size={17}/></div><p>{forTrend?host(forTrend.report.url):'Awaiting your first saved page'}</p><Trend values={trend}/></div>
-      <div className="pulse-connection-panel"><div className="pulse-card-title"><div><span className="pulse-overline">DATA PROVENANCE</span><h3>Intelligence sources</h3></div><Globe2 size={17}/></div><div className="pulse-source"><span><ScanLine size={15}/> Public HTML audits</span><small className={latest.length?'has-data':'not-connected'}>{latest.length?latest.length+' saved pages':'No evidence yet'}</small></div><div className="pulse-source"><span><Layers3 size={15}/> Google Search Console</span><small className="not-connected">Not connected</small></div><div className="pulse-source"><span><Activity size={15}/> Google Analytics</span><small className="not-connected">Not connected</small></div><button className="pulse-text-link" onClick={()=>onNavigate('workspace','Connections')}>View connections <ArrowUpRight size={14}/></button></div>
+      <div className="pulse-connection-panel"><div className="pulse-card-title"><div><span className="pulse-overline">PROJECT EVIDENCE</span><h3>Observed sources</h3></div><Globe2 size={17}/></div><div className="pulse-source"><span><ScanLine size={15}/> Public HTML audits</span><small className={latest.length?'has-data':'not-connected'}>{latest.length?latest.length+' saved pages':'No evidence yet'}</small></div><button className="pulse-text-link" onClick={()=>onNavigate('workspace','Audit history')}>Inspect saved audits <ArrowUpRight size={14}/></button></div>
+      <SourceReadiness onOpen={()=>onNavigate('workspace','Connections')}/>
       <div className="pulse-studio-panel"><div className="pulse-card-title"><div><span className="pulse-overline">CONTENT & EXPERIMENTATION</span><h3>Move from signal to story</h3></div><FileText size={17}/></div><strong>{briefs.length}</strong><p>Editorial briefs in your selected scope.</p><button className="pulse-text-link" onClick={()=>onNavigate('workspace','Content studio')}>Open content studio <ArrowUpRight size={14}/></button></div>
     </div>
   </section>;
