@@ -1,5 +1,7 @@
 import {readRoute,routeHash} from './navigation';
-export const guides=[
+import {engineMethods} from './engine-methods';
+const mainGuides=[
+ {id:'welcome',label:'VisTa entrance',hash:'#experience',keywords:'welcome entrance onboarding reveal start tour',steps:['Select Go straight in or Reveal your VisTa to enter the platform.','Explore Command centre to see the intelligence overview.','Open My workspace to set up a project and connect authorised sources.']},
  {id:'command',label:'Command centre',hash:'#command',keywords:'overview dashboard start pulse next move',steps:['Review workspace activity and the intelligence pulse.','Use Investigate your website to begin collecting evidence.','Open a relevant engine or action board to follow up.']},
  {id:'audit',label:'Site intelligence',hash:'#audit',keywords:'website audit scan technical seo indexing',steps:['Enter the website address in the site audit tool.','Run the audit and review the observed signals.','Save relevant evidence to a project and prioritise findings.']},
  {id:'investigation',label:'Deep investigation',hash:'#investigation',keywords:'deep investigate research diagnosis',steps:['Open Deep investigation and enter the site to examine.','Review the available investigation evidence and limitations.','Use the findings to guide subsequent actions.']},
@@ -17,7 +19,10 @@ export const guides=[
  {id:'pricing',label:'Pricing & plans',hash:'#pricing',keywords:'pricing subscription plan cost',steps:['Open Pricing & plans.','Compare the published plan details and features.']},
  {id:'demo',label:'Watch the Demo',hash:'#demo',keywords:'demo tour tutorial walkthrough',steps:['Open Watch the Demo.','Follow the walkthrough to understand the platform.']},
 ] as const;
-export type Guide=typeof guides[number];
-export function contextGuide(hash:string):Guide{const r=readRoute(hash);const normal=routeHash(r.view,r.tab,r.engine);return guides.find(g=>g.hash===normal)||(r.view==='engines'?guides[13]:guides[0]);}
+export type Guide={id:string;label:string;hash:string;keywords:string;steps:readonly string[]};
+export const guides:readonly Guide[]=[...mainGuides,...engineMethods.map(e=>({id:'engine-'+e.id,label:e.name,hash:'#engines/'+e.id,keywords:e.name.toLowerCase()+' '+e.short.toLowerCase(),steps:['Use Intelligence & value to understand this engine: '+e.promise,'Open Deep diagnostic and consider: '+e.diagnostic[0],'Use Evidence ledger to review or record source-backed findings.','Open Decision playbook to examine the evidence requirements. Use '+e.action+' to continue.']}))];
+export function contextGuide(hash:string):Guide{const r=readRoute(hash);const normal=routeHash(r.view,r.tab,r.engine);return [...guides].reverse().find(g=>g.hash===normal)||guides[0];}
 export function matchGuide(question:string):Guide|undefined{const words=question.toLowerCase().match(/[a-z0-9]+/g)||[];const scores=guides.map(g=>({g,score:words.reduce((n,w)=>n+(w.length>2&&g.keywords.split(' ').includes(w)?1:0),0)+(question.toLowerCase().includes(g.label.toLowerCase())?4:0)})).sort((a,b)=>b.score-a.score);return scores[0]?.score>0?scores[0].g:undefined;}
 export function safeGuide(id:unknown){return guides.find(g=>g.id===id);}
+
+export function guideTarget(id:string,step:number){if(id.startsWith('engine-'))return step===0?'.vte-focus-top':'.vte-focus-tabs';const selectors:Record<string,readonly string[]>={welcome:['.experience-enter','.experience-enter','.experience-enter'],command:['.vital-grid','.command-hero-copy .mint-button','.vista-pulse'],projects:['.workspace-tabs','.workspace-form','.workspace-toolbar'],connections:['.workspace-tabs','.vista-cloud-entry','.connector-grid'],audit:['.tool-heading','.tool-heading','.tool-heading'],investigation:['.investigation-heading'],benchmark:['.benchmark-form'],history:['.workspace-tabs','.workspace-toolbar'],editorial:['.workspace-tabs','.workspace-form'],ai:['.workspace-tabs','.workspace-toolbar'],actions:['.workspace-tabs','.workspace-toolbar'],engines:['.vte-map','.vte-map','.vte-focus-tabs']};return selectors[id]?.[step]||selectors[id]?.[0]||null;}
