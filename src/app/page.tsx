@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 const MeasurementRoom=dynamic(()=>import('./measurement-room'),{loading:()=> <p role="status">Loading measurements…</p>});
 const DecisionRoom=dynamic(()=>import('./decision-room'),{loading:()=> <p role="status">Loading decision workspace…</p>});
 import Experience from './experience';
+import VistaBot from './vista-bot';
 import Investigation from './investigation';
 import WorkspacePanel from './workspace';
 import VistaPulse from './pulse';
@@ -45,6 +46,7 @@ export default function Home(){
  const commandOptions=[...nav.map(n=>({label:n.label,description:n.id==='audit'?'Run a live website audit':n.id==='benchmark'?'Compare three websites':n.id==='content'?'Analyse a draft as you write':'Open '+n.label,action:()=>navigate(n.id)})),{label:'AI observation ledger',description:'Record prompt and citation evidence',action:()=>navigate('workspace','AI exposure')},{label:'Editorial pipeline',description:'Develop and export content briefs',action:()=>navigate('workspace','Content studio')},{label:'Integration status',description:'Inspect data connection requirements',action:()=>navigate('workspace','Connections')},...data.projects.map(p=>({label:'Project: '+p.name,description:p.url+' · '+p.goal,action:()=>{rememberProject(p.id);navigate('workspace','Projects');}})),...buildOpportunities(data).slice(0,30).map(o=>({label:'Finding: '+o.name,description:o.projectName+' · '+o.url+' · '+o.detail,action:()=>{rememberProject(o.projectId);navigate('workspace','Action board');}})),...data.briefs.slice(0,20).map(b=>({label:'Content: '+b.topic,description:b.intent+' · '+b.status,action:()=>{rememberProject(b.projectId);navigate('workspace','Content studio');}}))];
  return <div className={`vista-app ${view==='experience'?'experience-mode':''} ${motion?'motion-on':'motion-off'}`}>
   <a className="skip-link" href="#main-content">Skip to content</a>
+  <VistaBot hash={routeHash(view,workspaceTab,activeEngine)} onNavigate={hash=>{const r=readRoute(hash);navigate(r.view,r.tab,r.engine);}}/>
   <div className="ambient-light" aria-hidden="true"/>
   {menu&&<button className="mobile-scrim" aria-label="Close navigation" onClick={()=>setMenu(false)}/>}
   <aside className={`app-rail ${menu?'is-open':''}`}>
