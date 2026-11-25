@@ -24,7 +24,11 @@ export const categoryForEngine = {
 } as const satisfies Record<number,VisualCategory>;
 
 export const getVisuals = (folder:VisualCategory) => visualAssets.filter(x=>x.folder===folder);
-export const getEngineVisuals = (id:keyof typeof categoryForEngine)=>getVisuals(categoryForEngine[id]);
+const humanStories:VisualAsset[]=[
+ {path:'/web-images/editorial/marketing-team.jpg',title:'Marketing team reviewing campaign evidence',placement:'Engine opening',folder:'analytics'},
+ {path:'/web-images/editorial/creative-collaboration.jpg',title:'Creative colleagues collaborating on a project',placement:'Engine opening',folder:'content'}
+];
+export const getEngineVisuals = (id:keyof typeof categoryForEngine)=>[{...humanStories[[4,7,9].includes(id)?1:0],folder:categoryForEngine[id]},...getVisuals(categoryForEngine[id])];
 export const cinematicVisuals=getVisuals("cinematic");
 export const parentBrandVisuals=getVisuals("brand");
 export const selectedPhotography=visualAssets.filter(x=>x.folder!=="brand");

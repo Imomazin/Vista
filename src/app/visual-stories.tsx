@@ -24,10 +24,10 @@ const studioIds:Partial<Record<VisualCategory,EngineId>>={
  "search":1,"impact":2,"site":3,"content":4,"authority":5,"reputation":6,"agency":7,"analytics":8,"ai-exposure":9
 };
 const primeStories=[
- {file:"immersive-executive-command-centre.jpg",category:"cinematic" as const,title:"The intelligence theatre",detail:"One connected executive perspective.",engine:8 as EngineId},
+ {file:"../editorial/marketing-team.jpg",category:"cinematic" as const,title:"Bring evidence to the table",detail:"Connect the team around decisions that matter.",engine:8 as EngineId},
  {file:"artificial-intelligence-radiant-network.jpg",category:"ai-exposure" as const,title:"AI visibility, reimagined",detail:"Follow prompts, responses and real citations.",engine:9 as EngineId},
  {file:"holographic-growth-dashboard.jpg",category:"impact" as const,title:"Turn insights into impact",detail:"Move from findings to measured decisions.",engine:2 as EngineId},
- {file:"purple-production-studio.jpg",category:"content" as const,title:"Create with intelligence",detail:"Connect editorial craft to evidence.",engine:4 as EngineId}
+ {file:"../editorial/creative-collaboration.jpg",category:"content" as const,title:"Create with intelligence",detail:"Connect editorial craft to evidence.",engine:4 as EngineId}
 ];
 
 export function AmbidextersLogo({compact=false}:{compact?:boolean}){
