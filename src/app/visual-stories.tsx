@@ -52,7 +52,7 @@ export function CommandEditorial({onNavigate}:{onNavigate:(engine:EngineId)=>voi
  return <section className="vista-editorial" aria-label="Marketing intelligence visual stories">
   <div className="vista-editorial-heading"><span className="eyebrow"><Sparkles size={15}/> VISUAL INTELLIGENCE</span><h2>See beyond the dashboard.<br/><em>Discover a new perspective.</em></h2><p>Human expertise, intelligent technology and evidence-led marketing decisions. Explore the individual VisTa intelligence studios.</p></div>
   <div className="vista-editorial-grid">{primeStories.map((s,i)=>{
-   const src="/web-images/"+s.category+"/"+s.file;
+   const src=s.file.startsWith("../editorial/")?"/web-images/editorial/"+s.file.split("/").pop():"/web-images/"+s.category+"/"+s.file;
    return <button key={s.file} className={"vista-editorial-tile"+(i===0?" editorial-lead":"")} onClick={()=>onNavigate(s.engine)}>
     <Image src={src} alt={s.title+" — illustrative marketing technology photography"} fill sizes={i===0?"(max-width:800px) 100vw, 45vw":"(max-width:800px) 50vw, 25vw"} quality={82}/>
     <span className="editorial-shade"/><span className="editorial-caption"><small>EXPLORE / {String(i+1).padStart(2,"0")}</small><strong>{s.title}</strong><span>{s.detail}</span></span><ArrowUpRight className="editorial-arrow" size={19}/>

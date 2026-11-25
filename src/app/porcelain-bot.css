@@ -35,3 +35,14 @@ html[data-appearance="light"] :is(.editorial-caption,.story-image-label,.story-i
 html[data-appearance="light"] :is(.editorial-caption,.story-gallery-copy) :is(small,strong,span){color:#fff}
 .audit-page-facts{padding:24px;margin:24px 0;overflow-wrap:anywhere}.audit-page-facts dl{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px}.audit-page-facts dt{font-weight:650}.audit-page-facts dd{margin:0;line-height:1.6}.site-observatory .measurement-table{overflow:auto}.site-observatory td{max-width:420px;overflow-wrap:anywhere}.vb-notice{padding:10px;border:1px solid var(--vb-line);border-radius:8px;background:var(--vb-raised)}
 @media(max-width:600px){.audit-page-facts dl{grid-template-columns:1fr;gap:6px}.audit-page-facts dd{margin-bottom:12px}}
+
+html[data-appearance="light"] .decision-room{background:#f6f8f4;color:#19372e}
+html[data-appearance="light"] :is(.decision-heading p,.decision-limits,.decision-empty,.measurement-dictionary dd,.decision-event time){color:#39564b}
+html[data-appearance="light"] :is(.decision-heading h1 em,.decision-card a,.decision-card summary,.measurement-dictionary dt){color:#15583f}
+html[data-appearance="light"] :is(.decision-metrics>div,.decision-learning,.decision-citation,.measurement-schema){background:#eaf2ec;color:#244438;border-color:#a9bdb0}
+html[data-appearance="light"] .decision-metrics :is(span,small){color:#39564b}
+html[data-appearance="light"] .decision-room :is(input,select,textarea){background:#fff;color:#19372e;border-color:#91a99c}
+html[data-appearance="light"] :is(.decision-form label,.decision-checkpoints li){color:#39564b}
+html[data-appearance="light"] :is(.decision-advance,.decision-toolbar button){background:#15583f;color:#fff;border-color:#15583f}
+html[data-appearance="light"] .decision-tabs button{padding:14px 12px}
+html[data-appearance="light"] .story-image-label{background:#102d25d9;padding:9px 12px;border-radius:7px}
