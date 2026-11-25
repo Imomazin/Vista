@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {contextGuide,matchGuide,safeGuide,guides} from './bot-guide';import {readRoute,routeHash} from './navigation';
+test('every guide has a valid navigable route',()=>{for(const g of guides){const r=readRoute(g.hash);assert.equal(routeHash(r.view,r.tab,r.engine),g.hash);assert.ok(g.steps.length>0);}});
+test('navigation and unknown routes are safe',()=>{assert.equal(matchGuide('where is HubSpot CRM')?.id,'connections');assert.equal(contextGuide('#workspace/ai-exposure').id,'ai');assert.equal(contextGuide('#engines/9').id,'engines');assert.equal(safeGuide('https://evil.example'),undefined);});
