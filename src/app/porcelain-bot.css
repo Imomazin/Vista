@@ -46,3 +46,6 @@ html[data-appearance="light"] :is(.decision-form label,.decision-checkpoints li)
 html[data-appearance="light"] :is(.decision-advance,.decision-toolbar button){background:#15583f;color:#fff;border-color:#15583f}
 html[data-appearance="light"] .decision-tabs button{padding:14px 12px}
 html[data-appearance="light"] .story-image-label{background:#102d25d9;padding:9px 12px;border-radius:7px}
+html[data-appearance="light"] .scan-results{background:#f6f8f4;color:#19372e;border-color:#acbdb5}
+html[data-appearance="light"] .scan-results :is(.scan-result-heading p,.score-orbit span,.method-note,.signal-state){color:#39564b}
+html[data-appearance="light"] .scan-results .report-buttons .ghost-button{background:#fff;color:#15583f;border-color:#91a99c}
