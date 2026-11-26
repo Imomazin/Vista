@@ -24,3 +24,28 @@ html[data-appearance="light"] .vista-bot{--vb-bg:#fff;--vb-text:#19332d;--vb-mut
 @media print{.vista-bot{display:none}}
 
 .vb-highlight{outline:3px solid #8961cf!important;outline-offset:6px!important;box-shadow:0 0 0 8px #8961cf35!important;scroll-margin-top:100px}.vb-tour>div{margin-top:8px}.vb-tour>button{margin-top:3px}
+
+/* Explicit foreground/background pairs for evidence and working controls. */
+html[data-appearance="light"] :is(.evidence-tile,.decision-card,.audit-page-facts,.connector-card,.workspace-form,.measurement-table){color:#19372e;background:#fff;border-color:#acbdb5}
+html[data-appearance="light"] :is(.evidence-tile,.decision-card,.audit-page-facts,.connector-card,.workspace-form,.measurement-table) :is(p,small,dt,dd,td,th,label){color:#38564a}
+html[data-appearance="light"] :is(.signal-advice,.method-note,.connector-note,.workspace-empty,.transfer-preview small){color:#39564b}
+html[data-appearance="light"] :is(.decision-tabs,.workspace-tabs) button{background:#edf3ef;color:#25483b;border-color:#91a99c}
+html[data-appearance="light"] :is(.decision-tabs,.workspace-tabs) button[aria-pressed="true"]{background:#15583f;color:#fff}
+html[data-appearance="light"] :is(.editorial-caption,.story-image-label,.story-image-caption,.story-gallery-copy){color:#fff}
+html[data-appearance="light"] :is(.editorial-caption,.story-gallery-copy) :is(small,strong,span){color:#fff}
+.audit-page-facts{padding:24px;margin:24px 0;overflow-wrap:anywhere}.audit-page-facts dl{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px}.audit-page-facts dt{font-weight:650}.audit-page-facts dd{margin:0;line-height:1.6}.site-observatory .measurement-table{overflow:auto}.site-observatory td{max-width:420px;overflow-wrap:anywhere}.vb-notice{padding:10px;border:1px solid var(--vb-line);border-radius:8px;background:var(--vb-raised)}
+@media(max-width:600px){.audit-page-facts dl{grid-template-columns:1fr;gap:6px}.audit-page-facts dd{margin-bottom:12px}}
+
+html[data-appearance="light"] .decision-room{background:#f6f8f4;color:#19372e}
+html[data-appearance="light"] :is(.decision-heading p,.decision-limits,.decision-empty,.measurement-dictionary dd,.decision-event time){color:#39564b}
+html[data-appearance="light"] :is(.decision-heading h1 em,.decision-card a,.decision-card summary,.measurement-dictionary dt){color:#15583f}
+html[data-appearance="light"] :is(.decision-metrics>div,.decision-learning,.decision-citation,.measurement-schema){background:#eaf2ec;color:#244438;border-color:#a9bdb0}
+html[data-appearance="light"] .decision-metrics :is(span,small){color:#39564b}
+html[data-appearance="light"] .decision-room :is(input,select,textarea){background:#fff;color:#19372e;border-color:#91a99c}
+html[data-appearance="light"] :is(.decision-form label,.decision-checkpoints li){color:#39564b}
+html[data-appearance="light"] :is(.decision-advance,.decision-toolbar button){background:#15583f;color:#fff;border-color:#15583f}
+html[data-appearance="light"] .decision-tabs button{padding:14px 12px}
+html[data-appearance="light"] .story-image-label{background:#102d25d9;padding:9px 12px;border-radius:7px}
+html[data-appearance="light"] .scan-results{background:#f6f8f4;color:#19372e;border-color:#acbdb5}
+html[data-appearance="light"] .scan-results :is(.scan-result-heading p,.score-orbit span,.method-note,.signal-state){color:#39564b}
+html[data-appearance="light"] .scan-results .report-buttons .ghost-button{background:#fff;color:#15583f;border-color:#91a99c}

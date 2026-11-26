@@ -24,10 +24,10 @@ const studioIds:Partial<Record<VisualCategory,EngineId>>={
  "search":1,"impact":2,"site":3,"content":4,"authority":5,"reputation":6,"agency":7,"analytics":8,"ai-exposure":9
 };
 const primeStories=[
- {file:"immersive-executive-command-centre.jpg",category:"cinematic" as const,title:"The intelligence theatre",detail:"One connected executive perspective.",engine:8 as EngineId},
+ {file:"../editorial/marketing-team.jpg",category:"cinematic" as const,title:"Bring evidence to the table",detail:"Connect the team around decisions that matter.",engine:8 as EngineId},
  {file:"artificial-intelligence-radiant-network.jpg",category:"ai-exposure" as const,title:"AI visibility, reimagined",detail:"Follow prompts, responses and real citations.",engine:9 as EngineId},
  {file:"holographic-growth-dashboard.jpg",category:"impact" as const,title:"Turn insights into impact",detail:"Move from findings to measured decisions.",engine:2 as EngineId},
- {file:"purple-production-studio.jpg",category:"content" as const,title:"Create with intelligence",detail:"Connect editorial craft to evidence.",engine:4 as EngineId}
+ {file:"../editorial/creative-collaboration.jpg",category:"content" as const,title:"Create with intelligence",detail:"Connect editorial craft to evidence.",engine:4 as EngineId}
 ];
 
 export function AmbidextersLogo({compact=false}:{compact?:boolean}){
@@ -52,7 +52,7 @@ export function CommandEditorial({onNavigate}:{onNavigate:(engine:EngineId)=>voi
  return <section className="vista-editorial" aria-label="Marketing intelligence visual stories">
   <div className="vista-editorial-heading"><span className="eyebrow"><Sparkles size={15}/> VISUAL INTELLIGENCE</span><h2>See beyond the dashboard.<br/><em>Discover a new perspective.</em></h2><p>Human expertise, intelligent technology and evidence-led marketing decisions. Explore the individual VisTa intelligence studios.</p></div>
   <div className="vista-editorial-grid">{primeStories.map((s,i)=>{
-   const src="/web-images/"+s.category+"/"+s.file;
+   const src=s.file.startsWith("../editorial/")?"/web-images/editorial/"+s.file.split("/").pop():"/web-images/"+s.category+"/"+s.file;
    return <button key={s.file} className={"vista-editorial-tile"+(i===0?" editorial-lead":"")} onClick={()=>onNavigate(s.engine)}>
     <Image src={src} alt={s.title+" — illustrative marketing technology photography"} fill sizes={i===0?"(max-width:800px) 100vw, 45vw":"(max-width:800px) 50vw, 25vw"} quality={82}/>
     <span className="editorial-shade"/><span className="editorial-caption"><small>EXPLORE / {String(i+1).padStart(2,"0")}</small><strong>{s.title}</strong><span>{s.detail}</span></span><ArrowUpRight className="editorial-arrow" size={19}/>

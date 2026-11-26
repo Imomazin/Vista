@@ -1,6 +1,8 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {contextGuide,matchGuide,safeGuide,guides} from './bot-guide';import {readRoute,routeHash} from './navigation';
+import test from 'node:test';import assert from 'node:assert/strict';import {contextGuide,matchGuide,safeGuide,guides,guideTarget} from './bot-guide';import {readRoute,routeHash} from './navigation';
 test('every guide has a valid navigable route',()=>{for(const g of guides){const r=readRoute(g.hash);assert.equal(routeHash(r.view,r.tab,r.engine),g.hash);assert.ok(g.steps.length>0);}});
 test('navigation and unknown routes are safe',()=>{assert.equal(matchGuide('where is HubSpot CRM')?.id,'connections');assert.equal(contextGuide('#workspace/ai-exposure').id,'ai');assert.equal(contextGuide('#engines/9').id,'engine-9');assert.equal(safeGuide('https://evil.example'),undefined);assert.equal(contextGuide('#experience').id,'welcome');});
 
 function luminance(hex:string){const c=hex.match(/.{2}/g)!.map(s=>parseInt(s,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return c[0]*.2126+c[1]*.7152+c[2]*.0722;}
 test('Porcelain semantic foreground pairs meet 4.5:1',()=>{for(const [a,b] of [['19332d','ffffff'],['3e594f','f0f2ed'],['105e46','ffffff'],['604095','ffffff'],['c3d4cb','172027'],['d1baff','172027'],['45594e','dbe3dd'],['ffffff','164d3b']]){const l=[luminance(a),luminance(b)].sort((x,y)=>y-x);assert.ok((l[0]+.05)/(l[1]+.05)>=4.5,a+' on '+b);}});
+
+test("audit walkthrough identifies input, submit and results",()=>{assert.equal(guideTarget("audit",0),"#scan-url");assert.equal(guideTarget("audit",1),".scan-bar button");assert.equal(guideTarget("audit",2),".scan-results");});
