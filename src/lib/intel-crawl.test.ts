@@ -21,7 +21,7 @@ test("public URL validation blocks private, credentialed and custom-port targets
 });
 
 test("fetcher records redirect chains, detects loops, enforces type and size limits; crawler enforces robots.txt", async () => {
-  const big = "<html><body>" + "x".repeat(1_600_000) + "</body></html>";
+  const big = "<html><body>" + "x".repeat(5_200_000) + "</body></html>";
   const site = await server({
     "/robots.txt": res => { res.writeHead(200, { "Content-Type": "text/plain" }); res.end("User-agent: *\nDisallow: /private\nSitemap: /sitemap.xml"); },
     "/sitemap.xml": res => { res.writeHead(200, { "Content-Type": "application/xml" }); res.end("<urlset><url><loc>" + origin() + "/</loc></url><url><loc>" + origin() + "/a</loc></url></urlset>"); },
@@ -57,6 +57,9 @@ test("fetcher records redirect chains, detects loops, enforces type and size lim
     assert.equal(found.robots.state, "found"); assert.equal(found.robots.blocksAll, false);
     assert.equal(found.sitemaps[0].kind, "urlset"); assert.equal(found.sitemapUrls.length, 2);
 
+    const truncated = await fetchPublic(site.origin + "/big", { maxBytes: 100_000, allowTruncate: true });
+    assert.equal(truncated.truncated, true); assert.equal(truncated.body.length, 100_000);
+
     const links = await checkLinks([site.origin + "/a", site.origin + "/gone", site.origin + "/r1"]);
     assert.deepEqual(links.map(l => l.status), [200, 404, 200]); assert.equal(links[2].redirects, 2);
   } finally { delete process.env.VISTA_TEST_CRAWL_ORIGINS; site.close(); }
@@ -75,4 +78,12 @@ test("PageSpeed parsing separates Lighthouse lab data from CrUX field data", () 
   assert.equal(result.lab.score, 42); assert.equal(result.lab.lcpMs, 4200); assert.equal(result.lab.requests, 2); assert.equal(result.lab.transferBytes, 1500);
   assert.equal(result.field.scope, "origin"); assert.equal(result.field.lcp?.category, "SLOW"); assert.equal(result.field.cls?.percentile, 0.12);
   assert.equal(result.opportunities[0].id, "render-blocking-resources"); assert.equal(result.renderBlocking[0].wastedMs, 450);
+});
+
+test("private and malformed targets are explained as address problems, not robots outcomes", async () => {
+  for (const url of ["https://127.0.0.1/", "https://169.254.169.254/latest/meta-data/", "http://localhost/"]) {
+    const r = await crawlPage(url, 1);
+    assert.equal(r.failure?.kind, "invalid-url", url);
+    assert.ok(r.failure?.message.includes("not a public website"), r.failure?.message);
+  }
 });

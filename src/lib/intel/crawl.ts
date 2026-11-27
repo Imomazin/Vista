@@ -1,5 +1,5 @@
 /** Server-side crawl primitives. Each call is bounded so it fits a single serverless request. */
-import { crawlerUserAgent, explainFailure, FetchFailure, fetchPublic, type FailureKind, type Hop } from "./http";
+import { crawlerUserAgent, explainFailure, FetchFailure, fetchPublic, validatePublicUrl, type FailureKind, type Hop } from "./http";
 import { analysePage, siteKey, type PageRecord } from "./page";
 import { parseRobots, robotsDecision, type RobotsPolicy } from "./robots";
 import { parseSitemap } from "./sitemap";
@@ -30,6 +30,8 @@ export async function loadRobots(origin: string): Promise<{ policy: RobotsPolicy
     else if (response.status >= 400 && response.status < 500) result = { policy: { state: "missing", groups: [], sitemaps: [], bytes: 0 }, status: response.status };
     else result = { policy: { state: "unavailable", groups: [], sitemaps: [], bytes: 0 }, status: response.status };
   } catch (error) {
+    // Address problems are not robots outcomes: report them as what they are.
+    if (error instanceof FetchFailure && ["invalid-url", "blocked-address", "dns"].includes(error.kind)) throw error;
     // A robots.txt that is not HTML/text (for example served as HTML 404 pages) is treated as missing.
     result = error instanceof FetchFailure && error.kind === "unsupported-type"
       ? { policy: { state: "missing", groups: [], sitemaps: [], bytes: 0 }, status: error.chain.at(-1)?.status ?? null }
@@ -50,6 +52,7 @@ export async function crawlPage(url: string, depth: number, keywords: string[] =
   let origin: string;
   try { origin = new URL(url).origin; } catch { return { failure: { url, depth, kind: "invalid-url", message: explainFailure("invalid-url"), chain: [] } }; }
   try {
+    validatePublicUrl(url);
     const robots = await loadRobots(origin);
     if (!robotsDecision(robots.policy, url, crawlerUserAgent).allowed) return { failure: { url, depth, kind: "robots", message: robots.policy.state === "unavailable" ? "robots.txt could not be retrieved (server error), so crawling is paused for this site as RFC 9309 requires." : explainFailure("robots"), chain: [] } };
     const response = await fetchPublic(url, { timeoutMs: Math.max(3000, Math.min(12000, deadline - Date.now())) });
@@ -90,9 +93,9 @@ export async function discover(input: string, keywords: string[] = []): Promise<
   while (queue.length && sitemaps.length < 8 && Date.now() - started < 22000) {
     const sitemapUrl = queue.shift()!;
     try {
-      const response = await fetchPublic(sitemapUrl, { accept: "application/xml,text/xml,*/*;q=0.5", bodyTypes: /xml|text\/plain/i, maxBytes: 5_000_000, timeoutMs: 8000 });
+      const response = await fetchPublic(sitemapUrl, { accept: "application/xml,text/xml,*/*;q=0.5", bodyTypes: /xml|text\/plain/i, maxBytes: 10_000_000, timeoutMs: 9000, allowTruncate: true });
       if (response.status < 200 || response.status >= 300) { if (!declared.length && [404, 410].includes(response.status)) continue; sitemaps.push({ url: sitemapUrl, status: response.status, kind: "unreachable", entries: 0, truncated: false, error: explainFailure("http-error", response.status) }); continue; }
-      const parsed = parseSitemap(response.body);
+      const parsed = parseSitemap(response.body, 5000, response.truncated);
       sitemaps.push({ url: sitemapUrl, status: response.status, kind: parsed.kind, entries: parsed.entries.length, truncated: parsed.truncated, ...(parsed.error ? { error: parsed.error } : {}) });
       if (parsed.kind === "index") queue.push(...parsed.entries.map(e => e.loc).filter(loc => !sitemaps.some(s => s.url === loc)).slice(0, 5));
       else for (const entry of parsed.entries) { if (urls.size >= 3000) break; try { if (siteKey(new URL(entry.loc).hostname) === homeSite) urls.set(entry.loc, entry); } catch { /* skip */ } }
