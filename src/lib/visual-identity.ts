@@ -12,7 +12,7 @@ export const visualIdentity = {
     name: "Porcelain Titanium",
     background: "#F8F7F2", surface: "#FFFFFF",
     foreground: "#102C24", secondary: "#2B463A",
-    titanium: "#40565B", platinum: "#E6ECE8",
+    titanium: "#3b5055", platinum: "#E6ECE8",
     emerald: "#0B513C", onEmerald: "#FFFFFF",
     champagne: "#634317",
   }
