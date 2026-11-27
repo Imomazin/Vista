@@ -48,7 +48,7 @@ function validReport(r: Record<string, unknown>): boolean {
   return typeof r.inspectedAt === 'string' && Number.isFinite(Date.parse(r.inspectedAt)) && typeof r.technicalScore === 'number' && r.technicalScore >= 0 && r.technicalScore <= 100 &&
     ['title','description','canonical','language'].every(k => r[k] === null || typeof r[k] === 'string') &&
     ['headingOneCount','headingTwoCount','imageCount','imagesMissingAlt','structuredDataBlocks'].every(k => typeof r[k] === 'number' && Number.isInteger(r[k]) && (r[k] as number) >= 0) &&
-    (r.inspection===undefined||validInspection(r.inspection)) && Array.isArray(r.limitations) && r.limitations.every(x => typeof x === 'string') && Array.isArray(r.signals) && r.signals.every(s => record(s) && strings(s,['id','name','status','detail','recommendation']) && ['pass','warning','issue'].includes(String(s.status)));
+    (r.retrieval===undefined||(record(r.retrieval)&&typeof r.retrieval.durationMs==="number"&&Number.isSafeInteger(r.retrieval.durationMs)&&r.retrieval.durationMs>=0&&typeof r.retrieval.htmlBytes==="number"&&Number.isSafeInteger(r.retrieval.htmlBytes)&&r.retrieval.htmlBytes>=0)) && (r.inspection===undefined||validInspection(r.inspection)) && Array.isArray(r.limitations) && r.limitations.every(x => typeof x === 'string') && Array.isArray(r.signals) && r.signals.every(s => record(s) && strings(s,['id','name','status','detail','recommendation']) && ['pass','warning','issue'].includes(String(s.status)));
 }
 export function addSnapshot(w: Workspace, projectId: string, report: AuditReport): Workspace {
   if (!w.projects.some(p => p.id === projectId)) throw new Error('Select a project before saving an audit.');
