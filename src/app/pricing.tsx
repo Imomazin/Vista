@@ -1,4 +1,5 @@
 'use client';
+import {EditorialBand} from './visual-stories';
 import {useState} from "react";
 import {ArrowRight,ArrowUpRight,Check,Compass,Crown,ShieldCheck,Sparkles} from "lucide-react";
 import {vistaPlans,planDiscount,planTotal,type VisTaPlan} from "@/lib/pricing-plans";
@@ -38,6 +39,7 @@ export default function PricingSection(){
      <div className="pricing-card-footer"><ShieldCheck size={16}/><span>{p.projects} {p.projects===1?"brand workspace":"brand workspaces"} · {p.seats} {p.seats===1?"seat":"seats"}</span></div>
     </article>;
   })}</div>
+  <EditorialBand area="pricing" variant="strip" className="pricing-band"/>
   <div className="pricing-bridge"><span className="pricing-bridge-mark"><ArrowRight size={23}/></span><div><strong>Need something even more ambitious?</strong><p>Dedicated enterprise arrangements, bespoke intelligence integration and implementation-led services can be discussed with Ambidexters.</p></div><a href={"mailto:"+email+"?subject="+encodeURIComponent("VisTa | Enterprise partnership enquiry")}>Discuss enterprise needs <ArrowUpRight size={16}/></a></div>
   <p className="pricing-disclaimer">Founding pricing proposal for discussion, not a live subscription offer. Rates, taxes, annual terms, capacity limits and included capabilities require commercial confirmation. Some features require future integrations and are not yet activated. No payments are collected on this page.</p>
  </section>;

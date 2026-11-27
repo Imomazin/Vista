@@ -1,0 +1,108 @@
+/* Premium editorial photography: balanced galleries, readable captions and compact page bands.
+   Type sizes reuse the approved scale (base size + 2pt); nothing here enlarges text further. */
+
+/* Cinematic reel, now driven by state so only the visible and next frames are mounted. */
+.cinematic-photo-reel.reel-js .cinematic-reel-frame{animation:none;opacity:0;transform:scale(1.04);transition:opacity 1.6s ease,transform 6.5s ease-out}
+.cinematic-photo-reel.reel-js .cinematic-reel-frame.is-current{opacity:1;transform:scale(1)}
+@media(prefers-reduced-motion:reduce){.cinematic-photo-reel.reel-js .cinematic-reel-frame{transition:none!important;transform:none!important}.cinematic-photo-reel.reel-js .cinematic-reel-frame.is-current{opacity:1!important}}
+
+/* Command Centre tiles. */
+.vista-editorial-tile img{object-fit:cover}
+.vista-editorial-tile:focus-visible{outline:3px solid var(--ti-focus,#7ce3bd);outline-offset:3px}
+.editorial-caption{text-shadow:0 1px 3px #0009,0 2px 14px #0007;overflow-wrap:anywhere}
+.editorial-shade{background:linear-gradient(to top,rgba(7,16,25,.94),rgba(7,16,25,.32) 52%,rgba(7,16,25,.06) 80%),linear-gradient(110deg,#27114226,#03634B18)}
+
+/* Engine stage caption: one clear title, readable over bright and dark scenes. */
+.story-image-caption{max-width:min(620px,calc(100% - 50px));text-transform:none;overflow-wrap:anywhere;text-shadow:0 1px 3px #000A,0 3px 18px #0009}
+.story-image-shade{background:linear-gradient(to top,rgba(6,18,26,.92),rgba(6,18,26,.35) 38%,transparent 62%),linear-gradient(120deg,#18114630,transparent 67%)}
+
+/* Gallery cards. */
+.story-gallery{gap:14px;margin-top:14px}
+.story-gallery-card{position:relative;isolation:isolate;overflow:hidden;border-radius:18px;min-width:0;aspect-ratio:16 / 10;min-height:44px}
+.story-gallery-card img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.story-gallery-card:hover img,.story-gallery-card:focus-visible img{transform:scale(1.04)}
+.story-gallery-tint{position:absolute;inset:0;background:linear-gradient(to top,rgba(7,16,25,.94),rgba(7,16,25,.28) 48%,transparent 78%);pointer-events:none}
+.story-gallery-copy{position:absolute;bottom:20px;left:20px;right:44px;color:#fff;z-index:2;display:grid;gap:5px;overflow-wrap:anywhere;text-shadow:0 1px 3px #000B,0 2px 12px #0008}
+.story-gallery-copy strong{line-height:1.25;text-transform:none}
+.story-gallery-copy>span{font-size:calc(10.5px + 2pt);line-height:1.45;color:#E4ECEF;font-weight:450}
+.story-gallery-card.active:after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px #96F3D3;pointer-events:none;z-index:3}
+.story-gallery-card.active .story-gallery-tint{background:linear-gradient(to top,rgba(4,38,30,.95),rgba(7,16,25,.3) 50%,transparent 80%)}
+html[data-appearance="light"] .story-gallery-card.active:after{box-shadow:inset 0 0 0 3px #0b513c}
+html[data-appearance="light"] .story-gallery-copy :is(strong,span){color:#fff}
+
+/* Balanced layouts by collection size. Desktop. */
+@media(min-width:1001px){
+ .story-gallery.gallery-count-2,.story-gallery.gallery-count-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .story-gallery.gallery-count-3,.story-gallery.gallery-count-6{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .story-gallery.gallery-count-5{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .story-gallery.gallery-count-5>.story-gallery-card{grid-column:span 2}
+ .story-gallery.gallery-count-5>.story-gallery-card:nth-child(n+4){grid-column:span 3;aspect-ratio:16 / 8}
+ .story-gallery.gallery-count-2>.story-gallery-card,.story-gallery.gallery-count-4>.story-gallery-card{aspect-ratio:16 / 8.4}
+}
+/* Tablet. */
+@media(min-width:641px) and (max-width:1000px){
+ .story-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .story-gallery.gallery-count-3>.story-gallery-card:last-child,.story-gallery.gallery-count-5>.story-gallery-card:last-child{grid-column:1 / -1;aspect-ratio:16 / 7}
+}
+/* Mobile: single column, comfortable targets, no horizontal overflow. */
+@media(max-width:640px){
+ .story-gallery{grid-template-columns:minmax(0,1fr);gap:10px}
+ .story-gallery-card{aspect-ratio:16 / 9}
+ .story-gallery-copy{left:16px;bottom:16px;right:40px}
+ .story-gallery-copy strong{font-size:calc(16px + 2pt)}
+}
+@media(prefers-reduced-motion:reduce){.story-gallery-card img{transition:none}}
+
+/* Editorial bands on working pages. */
+.editorial-band{display:grid;gap:12px;min-width:0}
+.band-photo{position:relative;margin:0;overflow:hidden;isolation:isolate;border-radius:18px;border:1px solid var(--ti-glass-edge,#ffffff22);background:var(--ti-surface-raised,#151b29);min-height:0}
+.band-photo img{object-fit:cover}
+.band-shade{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(7,16,25,.9),rgba(7,16,25,.22) 52%,transparent 80%);pointer-events:none}
+.band-photo figcaption{position:absolute;left:18px;right:18px;bottom:16px;z-index:2;color:#fff;display:grid;gap:4px;overflow-wrap:anywhere;text-shadow:0 1px 3px #000B,0 2px 12px #0008}
+.band-photo figcaption strong{font-size:calc(14px + 2pt);line-height:1.25;font-weight:650}
+.band-photo figcaption span{font-size:calc(10.5px + 2pt);line-height:1.45;color:#E4ECEF}
+html[data-appearance="light"] .band-photo{border-color:#84978a}
+html[data-appearance="light"] .band-photo figcaption :is(strong,span){color:#fff}
+.band-aside{align-self:stretch}
+.band-aside.band-count-1 .band-photo{aspect-ratio:16 / 10}
+.band-aside.band-count-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.band-aside.band-count-2 .band-photo{aspect-ratio:4 / 5}
+.band-strip{margin:8px 0 30px}
+.band-strip.band-count-1 .band-photo{aspect-ratio:21 / 7}
+.band-strip.band-count-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.band-strip.band-count-2 .band-photo{aspect-ratio:16 / 7}
+
+/* Heading rows that pair page copy with photography. */
+.editorial-heading-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.9fr);gap:clamp(18px,3vw,40px);align-items:center;margin-bottom:6px}
+.editorial-heading-row>.tool-heading,.editorial-heading-row>.demo-head{margin-bottom:0}
+.editorial-heading-row.band-wide{grid-template-columns:minmax(0,1fr) minmax(320px,1fr)}
+.workspace-band{margin:-6px 0 26px}
+.workspace-band.band-count-1 .band-photo{aspect-ratio:21 / 6}
+.pricing-band{max-width:1180px;margin:34px auto 6px}
+
+@media(max-width:1000px){
+ .editorial-heading-row,.editorial-heading-row.band-wide{grid-template-columns:minmax(0,1fr);gap:16px;margin-bottom:18px}
+ .band-aside.band-count-1 .band-photo{aspect-ratio:16 / 7}
+ .band-aside.band-count-2 .band-photo{aspect-ratio:4 / 3}
+}
+@media(max-width:640px){
+ .band-strip.band-count-1 .band-photo,.workspace-band.band-count-1 .band-photo{aspect-ratio:16 / 9}
+ .band-strip.band-count-2,.band-aside.band-count-2{grid-template-columns:minmax(0,1fr)}
+ .band-aside.band-count-2 .band-photo,.band-strip.band-count-2 .band-photo{aspect-ratio:16 / 9}
+ .band-photo{border-radius:14px}
+ .band-photo figcaption{left:14px;right:14px;bottom:13px}
+}
+.editorial-heading-row:not(:has(.editorial-band)){grid-template-columns:minmax(0,1fr)}
+
+/* Porcelain working surfaces: glass panels inherit white, bordered surfaces instead of the Obsidian gradient. */
+html[data-appearance="light"] .tool-page .glass-panel{background:#fff;border-color:#84978a;color:#102c24}
+html[data-appearance="light"] .tool-page .glass-panel :is(.editor-top span,.editor-bottom span,.focus-label,.eyebrow,small,p,label,th){color:#29463a}
+html[data-appearance="light"] .tool-page .glass-panel :is(span,dt){color:#29463a}
+html[data-appearance="light"] .tool-page .glass-panel :is(strong,h2,h3,td,dd,b){color:#102c24}
+html[data-appearance="light"] .tool-page .glass-panel :is(input,textarea,select){background:#fff;color:#102c24;border-color:#61776a}
+html[data-appearance="light"] .benchmark-form label>div{background:#fff;border-color:#61776a;color:#29463a}
+html[data-appearance="light"] .benchmark-form label>div input{background:none;border:0}
+
+/* A full Command Centre collection has one lead and four companion images. */
+@media(min-width:651px){.vista-editorial-grid:has(> :nth-child(5))>.vista-editorial-tile:last-child{grid-column:auto}}
+@media(max-width:650px){.vista-editorial-grid{grid-template-columns:minmax(0,1fr)}.vista-editorial-grid>.vista-editorial-tile:nth-child(n){grid-column:1;grid-row:auto}}

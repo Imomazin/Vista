@@ -29,7 +29,6 @@ html[data-appearance="light"] .ax-transparent-logo .ax-for-dark{display:none}
 .vista-editorial-tile:hover img{transform:scale(1.075)}
 .editorial-shade{position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,#050C13EB,#070E174D 65%,#070C1518),linear-gradient(110deg,#27114236,#03634B20);pointer-events:none}
 .editorial-caption{position:absolute;left:22px;bottom:22px;right:42px;display:flex;flex-direction:column;gap:7px;z-index:2;color:#F6FAF7}
-.editorial-caption small{font-size:calc(8px + 2pt);letter-spacing:1.5px;color:#D2DAE5}
 .editorial-caption strong{font-size:calc(clamp(17px,1.7vw,25px) + 2pt);font-family:'Manrope',sans-serif;font-weight:580;letter-spacing:-.6px;line-height:1.23}
 .editorial-caption>span{font-size:calc(10px + 2pt);color:#D4E6E0;line-height:1.5}
 .editorial-arrow{position:absolute;right:19px;bottom:25px;z-index:2;color:#D8FDEA}

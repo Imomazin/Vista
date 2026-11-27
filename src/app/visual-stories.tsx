@@ -1,12 +1,14 @@
 'use client';
 import Image from "next/image";
-import {useState,type ComponentProps} from "react";
-import {commandPhotography,editorialPhotography,studioPhotography} from "@/lib/editorial-photos";
+import {useEffect,useState,type ComponentProps,type KeyboardEvent} from "react";
+import {atlasOnlyPhotography,commandPhotography,editorialPhotography} from "@/lib/editorial-photos";
 import {ArrowLeft,ArrowRight,ArrowUpRight,Images,Layers3,Sparkles} from "lucide-react";
-import {categoryForEngine,getEngineVisuals,selectedPhotography,type VisualCategory} from "@/lib/visual-assets";
+import {categoryForEngine,getEngineVisuals,selectedPhotography,type GalleryPhoto,type VisualCategory} from "@/lib/visual-assets";
+import {photosFor,type PhotoArea} from "@/lib/premium-photography";
 import type {EngineId} from "@/lib/engine-methods";
 import "./visual-stories.css";
 import "./visual-immersive.css";
+import "./editorial-premium.css";
 
 const captions:Record<VisualCategory,string>={
  "brand":"Ambidexters",
@@ -24,17 +26,19 @@ const captions:Record<VisualCategory,string>={
 const studioIds:Partial<Record<VisualCategory,EngineId>>={
  "search":1,"impact":2,"site":3,"content":4,"authority":5,"reputation":6,"agency":7,"analytics":8,"ai-exposure":9
 };
-function EditorialImage({fallback,...props}:ComponentProps<typeof Image>&{fallback?:string}){
+
+/** Next image that swaps to a local fallback, with its own accurate description, if the primary file fails. */
+export function EditorialImage({fallback,fallbackAlt,...props}:ComponentProps<typeof Image>&{fallback?:string;fallbackAlt?:string}){
  const [failed,setFailed]=useState(false);
- return <Image {...props} src={failed&&fallback?fallback:props.src} alt={failed&&fallback&&props.alt? "Illustrative marketing intelligence":props.alt} onError={fallback&&!failed?()=>setFailed(true):props.onError}/>;
+ const useFallback=failed&&!!fallback;
+ return <Image {...props} src={useFallback?fallback!:props.src} alt={useFallback&&props.alt?(fallbackAlt??""):props.alt} onError={fallback&&!failed?()=>setFailed(true):props.onError}/>;
 }
 
-const primeStories=[
- {file:"../editorial/marketing-team.jpg",category:"cinematic" as const,title:"Bring evidence to the table",detail:"Connect the team around decisions that matter.",engine:8 as EngineId,photo:commandPhotography},
- {file:"artificial-intelligence-radiant-network.jpg",category:"ai-exposure" as const,title:"AI visibility, reimagined",detail:"Follow prompts, responses and real citations.",engine:9 as EngineId,photo:studioPhotography[9]},
- {file:"holographic-growth-dashboard.jpg",category:"impact" as const,title:"Turn insights into impact",detail:"Move from findings to measured decisions.",engine:2 as EngineId,photo:studioPhotography[2]},
- {file:"../editorial/creative-collaboration.jpg",category:"content" as const,title:"Create with intelligence",detail:"Connect editorial craft to evidence.",engine:4 as EngineId,photo:studioPhotography[4]}
+const legacyCommand:GalleryPhoto[]=[
+ {id:"legacy-marketing-team",path:"/web-images/editorial/marketing-team.jpg",thumb:"/web-images/editorial/marketing-team.jpg",title:"Decide with the whole team",detail:"Every specialist at one table.",alt:"Team meeting around a table in a bright meeting room with a wall screen"},
+ {id:"legacy-creative-collaboration",path:"/web-images/editorial/creative-collaboration.jpg",thumb:"/web-images/editorial/creative-collaboration.jpg",title:"Create with intelligence",detail:"Editorial craft connected to evidence.",alt:"Three colleagues laughing together while working on laptops at a round table"},
 ];
+const commandLinks:EngineId[]=[8,2,7,1,4];
 
 export function AmbidextersLogo({compact=false}:{compact?:boolean}){
  return <span className={"ax-transparent-logo"+(compact?" ax-logo-compact":"")} role="img" aria-label="Ambidexters">
@@ -43,25 +47,36 @@ export function AmbidextersLogo({compact=false}:{compact?:boolean}){
  </span>;
 }
 
-export function CinematicPhotoReel(){
- const scenes=[
-  {path:"/web-images/cinematic/violet-cyan-digital-orbit.jpg",alt:"Violet and cyan intelligence rings"},
-  {path:"/web-images/cinematic/ai-laptop-holographic-dashboard.jpg",alt:"Human and artificial intelligence"},
-  {path:"/web-images/cinematic/chromatic-data-spiral.jpg",alt:"Chromatic intelligence vortex"}
- ];
- return <div className="cinematic-photo-reel" aria-hidden="true">{scenes.map((scene,i)=><div key={scene.path} className={"cinematic-reel-frame reel-frame-"+i}>
-  <Image src={scene.path} fill sizes="(max-width:700px) 80vw, 50vw" alt="" quality={72}/>
+const reelScenes=[
+ ...photosFor("cinematic").map(p=>p.path),
+ "/web-images/cinematic/violet-cyan-digital-orbit.jpg",
+ "/web-images/cinematic/ai-laptop-holographic-dashboard.jpg",
+ "/web-images/cinematic/chromatic-data-spiral.jpg",
+];
+/** Ambient entrance reel. Only the visible and next frames are mounted, so the library is not loaded on entry. */
+export function CinematicPhotoReel({motion=true}:{motion?:boolean}){
+ const [index,setIndex]=useState(0);
+ useEffect(()=>{
+  if(!motion||reelScenes.length<2)return;
+  if(typeof window!=="undefined"&&window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)return;
+  const timer=setInterval(()=>setIndex(i=>(i+1)%reelScenes.length),6000);
+  return()=>clearInterval(timer);
+ },[motion]);
+ const next=(index+1)%reelScenes.length;
+ return <div className="cinematic-photo-reel reel-js" aria-hidden="true">{reelScenes.map((path,i)=>(i===index||i===next)&&<div key={path} className={"cinematic-reel-frame"+(i===index?" is-current":"")}>
+  <Image src={path} fill sizes="(max-width:850px) 100vw, 60vw" alt="" quality={72} priority={i===0}/>
  </div>)}</div>;
 }
 
 export function CommandEditorial({onNavigate}:{onNavigate:(engine:EngineId)=>void}){
+ const tiles=[commandPhotography,...photosFor("command"),...legacyCommand].slice(0,Math.max(4,1+photosFor("command").length));
  return <section className="vista-editorial" aria-label="Marketing intelligence visual stories">
   <div className="vista-editorial-heading"><span className="eyebrow"><Sparkles size={15}/> VISUAL INTELLIGENCE</span><h2>See beyond the dashboard.<br/><em>Discover a new perspective.</em></h2><p>Human expertise, intelligent technology and evidence-led marketing decisions. Explore the individual VisTa intelligence studios.</p></div>
-  <div className="vista-editorial-grid">{primeStories.map((s,i)=>{
-   const src=s.file.startsWith("../editorial/")?"/web-images/editorial/"+s.file.split("/").pop():"/web-images/"+s.category+"/"+s.file;
-   return <button key={s.file} className={"vista-editorial-tile"+(i===0?" editorial-lead":"")} onClick={()=>onNavigate(s.engine)}>
-    <EditorialImage src={s.photo.path} fallback={src} alt={s.title+" — illustrative marketing technology photography"} fill sizes={i===0?"(max-width:800px) 100vw, 45vw":"(max-width:800px) 50vw, 25vw"} quality={82}/>
-    <span className="editorial-shade"/><span className="editorial-caption"><strong>{s.title}</strong><span>{s.detail}</span></span><ArrowUpRight className="editorial-arrow" size={19}/>
+  <div className="vista-editorial-grid">{tiles.map((s,i)=>{
+   const p=s as GalleryPhoto;
+   return <button key={p.id} type="button" className={"vista-editorial-tile"+(i===0?" editorial-lead":"")} onClick={()=>onNavigate(commandLinks[i])}>
+    <EditorialImage src={i===0?p.path:p.thumb} fallback={p.fallback} fallbackAlt={p.fallbackAlt} alt={p.alt} fill style={p.objectPosition?{objectPosition:p.objectPosition}:undefined} sizes={i===0?"(max-width:1000px) 100vw, 45vw":"(max-width:650px) 50vw, (max-width:1000px) 50vw, 25vw"} quality={80}/>
+    <span className="editorial-shade" aria-hidden="true"/><span className="editorial-caption"><strong>{p.title}</strong>{p.detail&&<span>{p.detail}</span>}</span><ArrowUpRight className="editorial-arrow" size={19} aria-hidden="true"/>
    </button>;
   })}</div>
   <p className="vista-editorial-disclaimer">Imagery illustrates the intelligence disciplines. Platform analytics and measurements are sourced separately from observed evidence.</p>
@@ -83,16 +98,26 @@ export function EngineVisualStory({engine,onAction}:{engine:EngineId;onAction:()
  const category=categoryForEngine[engine];
  const selected=getEngineVisuals(engine);
  const [active,setActive]=useState(0);
+ useEffect(()=>setActive(0),[engine]);
  if(!selected.length)return null;
  const current=selected[active]||selected[0];
  const narrative=narratives[engine];
- return <section className={"vista-engine-story story-immersive engine-story-"+category} aria-label={captions[category]+" visual story"}>
+ const step=(delta:number)=>setActive(i=>(i+selected.length+delta)%selected.length);
+ const onGalleryKey=(event:KeyboardEvent<HTMLDivElement>)=>{
+  if(event.key!=="ArrowRight"&&event.key!=="ArrowLeft")return;
+  event.preventDefault();
+  const buttons=[...event.currentTarget.querySelectorAll<HTMLButtonElement>("button")];
+  const from=Math.max(0,buttons.indexOf(document.activeElement as HTMLButtonElement));
+  const next=(from+selected.length+(event.key==="ArrowRight"?1:-1))%selected.length;
+  setActive(next);
+  buttons[next]?.focus();
+ };
+ return <section className={"vista-engine-story story-immersive engine-story-"+category} aria-label={captions[category]+" photography"}>
   <div className="story-stage">
    <div className="story-stage-image">
-    <EditorialImage key={current.path} src={current.path} fallback={current.fallback} alt={current.title.replace(/-/g," ")+", illustrative visual for "+captions[category]} fill priority={false} sizes="(max-width:900px) 100vw, 65vw" quality={86}/>
+    <EditorialImage key={current.path} src={current.path} fallback={current.fallback} fallbackAlt={current.fallbackAlt} alt={current.alt} fill style={current.objectPosition?{objectPosition:current.objectPosition}:undefined} sizes="(max-width:780px) 100vw, 62vw" quality={80}/>
     <span className="story-image-shade" aria-hidden="true"/>
-    <div className="story-image-label"><span>VisTa / {captions[category].toUpperCase()}</span></div>
-    <span className="story-image-caption">{current.title.replace(/-/g," ")}</span>
+    <span className="story-image-caption" aria-live="polite">{current.title}</span>
    </div>
    <div className="story-stage-copy">
     <span className="story-kicker"><i aria-hidden="true"/>{narrative.overline}</span>
@@ -102,35 +127,53 @@ export function EngineVisualStory({engine,onAction}:{engine:EngineId;onAction:()
     <div className="story-stage-navigation">
      <span>Explore the gallery</span>
      <div>
-      <button type="button" aria-label="Previous visual" disabled={selected.length<2} onClick={()=>setActive(i=>(i+selected.length-1)%selected.length)}><ArrowLeft size={17}/></button>
-      <button type="button" aria-label="Next visual" disabled={selected.length<2} onClick={()=>setActive(i=>(i+1)%selected.length)}><ArrowRight size={17}/></button>
+      <button type="button" aria-label="Previous photograph" disabled={selected.length<2} onClick={()=>step(-1)}><ArrowLeft size={17}/></button>
+      <button type="button" aria-label="Next photograph" disabled={selected.length<2} onClick={()=>step(1)}><ArrowRight size={17}/></button>
      </div>
     </div>
    </div>
   </div>
-  {selected.length>1&&<div className="story-gallery" aria-label={"Explore selected "+captions[category]+" visuals"}>
-   {selected.map((pic,i)=><button type="button" key={pic.path} className={"story-gallery-card"+(active===i?" active":"")} onClick={()=>setActive(i)} aria-pressed={active===i} aria-label={"Show "+pic.title.replace(/-/g," ")}>
-    <EditorialImage src={pic.path} fallback={pic.fallback} alt="" fill sizes="(max-width:640px) 75vw, (max-width:1050px) 42vw, 28vw" quality={79}/>
-    <span className="story-gallery-tint"/>
-    <span className="story-gallery-copy"><strong>{pic.title.replace(/-/g," ")}</strong></span>
-    <ArrowUpRight className="story-gallery-arrow" size={17}/>
+  {selected.length>1&&<div className={"story-gallery gallery-count-"+selected.length} role="group" aria-label={captions[category]+" gallery"} onKeyDown={onGalleryKey}>
+   {selected.map((pic,i)=><button type="button" key={pic.id} className={"story-gallery-card"+(active===i?" active":"")} onClick={()=>setActive(i)} aria-pressed={active===i} aria-label={"Show "+pic.title}>
+    <EditorialImage src={pic.thumb} fallback={pic.fallback} alt="" fill style={pic.objectPosition?{objectPosition:pic.objectPosition}:undefined} sizes="(max-width:640px) 92vw, (max-width:1000px) 46vw, 30vw" quality={75}/>
+    <span className="story-gallery-tint" aria-hidden="true"/>
+    <span className="story-gallery-copy"><strong>{pic.title}</strong>{pic.detail&&<span>{pic.detail}</span>}</span>
+    <ArrowUpRight className="story-gallery-arrow" size={17} aria-hidden="true"/>
    </button>)}
   </div>}
-  <p className="story-visual-disclosure">Visual references illustrate the discipline. Source-backed intelligence, actual measurements and actions are provided in the working studio below.</p>
+  <p className="story-visual-disclosure">Photography illustrates the discipline. Source-backed intelligence, actual measurements and actions are provided in the working studio below.</p>
  </section>;
 }
 
+/** Compact editorial photography for working pages; sits beside or below headings without covering tools. */
+export function EditorialBand({area,photos,variant="aside",className=""}:{area?:PhotoArea;photos?:GalleryPhoto[];variant?:"aside"|"strip";className?:string}){
+ const items=(photos??(area?photosFor(area):[])).slice(0,2);
+ if(!items.length)return null;
+ return <div className={"editorial-band band-"+variant+" band-count-"+items.length+(className?" "+className:"")}>
+  {items.map((p,i)=><figure key={p.id} className="band-photo">
+   <EditorialImage src={variant==="strip"&&items.length===1?p.path:p.thumb} fallback={p.fallback} fallbackAlt={p.fallbackAlt} alt={p.alt} fill loading="lazy" style={p.objectPosition?{objectPosition:p.objectPosition}:undefined}
+    sizes={variant==="strip"?(items.length===1?"(max-width:900px) 100vw, 1100px":"(max-width:700px) 100vw, 50vw"):"(max-width:1000px) 100vw, "+(items.length===1?"34vw":"18vw")} quality={78}/>
+   <span className="band-shade" aria-hidden="true"/>
+   <figcaption><strong>{p.title}</strong>{p.detail&&(items.length===1||i===0)&&<span>{p.detail}</span>}</figcaption>
+  </figure>)}
+ </div>;
+}
+
 export function VisualAtlas({onChoose}:{onChoose:(engine:EngineId)=>void}){
- const collection=[...selectedPhotography,...editorialPhotography];
+ const used=new Set(editorialPhotography.map(p=>p.path));
+ const collection=[
+  ...selectedPhotography.map(a=>({path:a.path,title:a.title,folder:a.folder,fallback:undefined as string|undefined,alt:a.title})),
+  ...atlasOnlyPhotography.filter(p=>!used.has(p.path)).map(p=>({path:p.thumb,title:p.title,folder:p.section as VisualCategory,fallback:p.fallback,alt:p.alt})),
+ ];
  const groups=[...new Set(collection.map(a=>a.folder))];
  return <details className="vista-visual-atlas" id="vista-visual-atlas">
-  <summary><span className="atlas-summary-icon"><Images size={23}/></span><span><small>THE CURATED VISUAL COLLECTION</small><strong>Explore the entire VisTa Visual Atlas</strong><em>{collection.length} selected photographs across our nine intelligence elements and cinematic universe.</em></span><Layers3 size={22}/></summary>
+  <summary><span className="atlas-summary-icon"><Images size={23}/></span><span><small>THE CURATED VISUAL COLLECTION</small><strong>Explore the entire VisTa Visual Atlas</strong><em>{collection.length} images across the nine intelligence elements and the cinematic universe.</em></span><Layers3 size={22}/></summary>
   <div className="atlas-body"><p>The selected images illustrate the fields VisTa covers. They do not depict connected analytics, measured marketing results or verified client work.</p>
    {groups.map(group=><section className="atlas-group" key={group}>
-    <h3>{captions[group]} <span>{collection.filter(a=>a.folder===group).length} visuals</span></h3>
+    <h3>{captions[group]} <span>{collection.filter(a=>a.folder===group).length} images</span></h3>
     <div className="atlas-grid">{collection.filter(a=>a.folder===group).map(pic=><article key={pic.path} className="atlas-card">
-     <div className="atlas-photo"><EditorialImage src={pic.path} fallback={"fallback" in pic?pic.fallback:undefined} fill alt={pic.title} sizes="(max-width:600px) 45vw, (max-width:1000px) 25vw, 18vw" quality={75}/></div>
-     <p>{pic.title.replace(/-/g," ")}</p>{studioIds[group]&&<button onClick={()=>onChoose(studioIds[group]!)}>Open studio <ArrowUpRight size={12}/></button>}
+     <div className="atlas-photo"><EditorialImage src={pic.path} fallback={pic.fallback} fill alt={pic.alt} loading="lazy" sizes="(max-width:600px) 45vw, (max-width:1000px) 25vw, 18vw" quality={72}/></div>
+     <p>{pic.title.replace(/-/g," ")}</p>{studioIds[group]&&<button type="button" onClick={()=>onChoose(studioIds[group]!)}>Open studio <ArrowUpRight size={12}/></button>}
     </article>)}</div>
    </section>)}
   </div>
