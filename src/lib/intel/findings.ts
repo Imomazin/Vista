@@ -144,7 +144,7 @@ export function buildFindings(projectId: string, brief: Brief, discovery: Discov
     if (opp.length) drafts.push({ rule: "gsc-low-ctr", module: "search", title: opp.length + " high-impression queries with below-average CTR", severity: "medium", summary: "Queries are seen often but clicked rarely relative to the property's average CTR.", affected: opp.slice(0, 20).map(r => ({ url: brief.website, detail: "\"" + r.query + "\": " + r.impressions + " impr · CTR " + (r.ctr * 100).toFixed(1) + "% · pos " + r.position.toFixed(1) })), evidence: ["Property average CTR across returned queries: " + (avgCtr * 100).toFixed(1) + "%", firstParty.gsc.scope], factors: ["Snippets (title/description) not matching intent.", "SERP features absorbing clicks."], implication: "Improving snippets on high-visibility queries can lift traffic without new rankings.", recommendation: "Rewrite titles and descriptions for these queries and test structured data eligibility.", effort: "low", impact: 3, metric: "CTR for the listed queries over the next 28 days.", evidenceClass: "first-party", source: "Google Search Console (authorised)", confidence: "high", methodology: "Queries with ≥ 100 impressions, position ≤ 15 and CTR < 60% of the returned average." });
   }
 
-  return drafts.map(d => ({
+  return drafts.map(d => ({ ...d, title: singular(d.title) })).map(d => ({
     id: d.rule,
     evidenceId: evidenceId(projectId, d.rule),
     rule: d.rule.split(":")[0],
@@ -178,4 +178,15 @@ export function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
+/** "1 pages are" → "1 page is": generated titles read correctly for a count of one. */
+export function singular(title: string): string {
+  const m = /^1 (\S+ )?(pages|links|keywords|titles|URLs|articles|images|pairs|chains|loops|issues|competitors|queries|descriptions|sitemap URLs|internally linked URLs)\b/.exec(title);
+  if (!m) return title;
+  const nouns: Record<string, string> = { pages: "page", links: "link", keywords: "keyword", titles: "title", URLs: "URL", articles: "article", images: "image", pairs: "pair", chains: "chain", loops: "loop", issues: "issue", competitors: "competitor", queries: "query", descriptions: "description" };
+  const verbs: [RegExp, string][] = [[/\bare\b/, "is"], [/\bhave\b/, "has"], [/\black\b/, "lacks"], [/\bshare\b/, "shares"], [/\bshow\b/, "shows"], [/\bpoint\b/, "points"], [/\bconflict\b/, "conflicts"], [/\bskip\b/, "skips"], [/\bcarry\b/, "carries"], [/\bload\b/, "loads"], [/\bpublish\b/, "publishes"]];
+  let out = title.replace(/^(1 (?:\S+ )?)(pages|links|keywords|titles|URLs|articles|images|pairs|chains|loops|issues|competitors|queries|descriptions)\b/, (_, a, noun) => a + (nouns[noun] || noun));
+  for (const [re, v] of verbs) if (re.test(out)) { out = out.replace(re, v); break; }
+  return out;
 }

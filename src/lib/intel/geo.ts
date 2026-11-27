@@ -16,12 +16,12 @@ export const promptCategories: { id: PromptCategory; label: string; recommendati
 export type BankPrompt = { prompt: string; category: PromptCategory; market: string };
 
 /** Build a configurable prompt bank from the brief. Users can edit, remove or add prompts. */
-export function promptBank(brief: Brief): BankPrompt[] {
+export function promptBank(brief: Brief, crawled: { website: string; name: string }[] = []): BankPrompt[] {
   const brand = brief.brand || hostLabel(brief.website);
   const industry = brief.industry || "this industry";
   const markets = brief.markets.length ? brief.markets : [""];
   const offerings = brief.offerings.length ? brief.offerings : [industry];
-  const competitors = brief.competitors.map(hostLabel).filter(Boolean);
+  const competitors = competitorNames(brief, crawled).map(c => c.name).filter(usableLabel);
   const audience = brief.audience || "organisations";
   const bank: BankPrompt[] = [];
   const add = (category: PromptCategory, prompt: string, market = markets[0]) => { if (!bank.some(b => b.prompt === prompt)) bank.push({ prompt: prompt.replace(/\s+/g, " ").trim(), category, market }); };
@@ -75,12 +75,18 @@ export function recommendationPosition(text: string, names: string[]): number | 
   return index >= 0 ? index + 1 : null;
 }
 
-export function analyseResponse(response: string, brief: Brief, citations: { url: string; title: string }[]) {
-  const names = [brief.brand, ...brief.aliases, hostLabel(brief.website)].filter(Boolean);
-  const competitorNames = brief.competitors.map(c => ({ site: c, name: hostLabel(c) }));
+export type CompetitorName = { site: string; name: string };
+/** Competitor names from crawled brand evidence when available, otherwise the domain label. */
+export function competitorNames(brief: Brief, crawled: { website: string; name: string }[] = []): CompetitorName[] {
+  return brief.competitors.map(site => ({ site, name: crawled.find(c => c.website === site)?.name || hostLabel(site) }));
+}
+const usableLabel = (label: string) => !/^\d+$/.test(label) && label.length >= 3;
+
+export function analyseResponse(response: string, brief: Brief, citations: { url: string; title: string }[], competitors: CompetitorName[] = competitorNames(brief)) {
+  const names = [brief.brand, ...brief.aliases, hostLabel(brief.website)].filter(n => n && usableLabel(n));
   return {
     brandMentioned: mentions(response, names) || citations.some(c => sameSite(c.url, brief.website)),
-    competitorMentions: competitorNames.filter(c => mentions(response, [c.name]) || citations.some(x => sameSite(x.url, c.site))).map(c => c.name),
+    competitorMentions: competitors.filter(c => mentions(response, [c.name, hostLabel(c.site)].filter(usableLabel)) || citations.some(x => sameSite(x.url, c.site))).map(c => c.name),
     position: recommendationPosition(response, names),
   };
 }

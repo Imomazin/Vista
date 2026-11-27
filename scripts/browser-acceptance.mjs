@@ -54,6 +54,8 @@ for (const theme of themes) for (const [vpName, viewport] of Object.entries(view
         numbered: (document.body.innerText.match(/\b(Selected\s+)?(Visual|Image)\s*0\d\b/gi) || []),
       };
     });
+    // Lazy architecture photographs load when the matrix approaches the viewport; bring it into view first.
+    if(name==="command"){await page.locator(".vte-matrix").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));await page.waitForFunction(()=>[...document.querySelectorAll(".vte-matrix-photo img")].every(i=>i.complete&&i.naturalWidth>0),null,{timeout:8000}).catch(()=>{});}
     const matrix = name==="command" ? await page.locator(".vte-matrix-cell").evaluateAll(cards=>cards.map(card=>{const img=card.querySelector(".vte-matrix-photo img");return {label:card.getAttribute("aria-label"),src:img?.currentSrc,loaded:!!img?.complete&&img.naturalWidth>0,visible:!!img&&img.getBoundingClientRect().height>0};})) : undefined;
     if(matrix&&(matrix.length!==9||new Set(matrix.map(p=>p.src)).size!==9||matrix.some(p=>!p.loaded||!p.visible)))report.problems.push({theme,viewport:vpName,name,matrix});
     const entry = { theme, viewport: vpName, name, ...state, matrix, failedRequests: [...failures] };

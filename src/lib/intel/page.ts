@@ -76,6 +76,7 @@ export function normaliseUrl(href: string, base: string): string | null {
 
 /** Registrable-domain approximation (last two labels, three for common second-level suffixes). */
 export function siteKey(hostname: string): string {
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.includes(":")) return hostname.toLowerCase();
   const parts = hostname.toLowerCase().replace(/^www\./, "").split(".");
   const secondLevel = new Set(["co", "com", "org", "net", "ac", "gov", "edu", "ltd", "plc"]);
   if (parts.length >= 3 && secondLevel.has(parts[parts.length - 2]) && parts[parts.length - 1].length === 2) return parts.slice(-3).join(".");

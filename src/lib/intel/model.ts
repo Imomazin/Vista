@@ -120,6 +120,17 @@ export type Investigation = {
   observations: AiObservation[];
   firstParty: FirstPartyData;
   job: JobState;
+  settings?: InvestigationSettings;
+};
+
+export type InvestigationSettings = {
+  owners?: Record<string, string>;
+  weights?: Record<string, number>;
+  dayRate?: number;
+  currency?: string;
+  valuePerClick?: number | null;
+  targets?: Record<string, number>;
+  decisions?: { id: string; at: string; interventionId: string; decision: "approved" | "deferred" | "rejected"; note: string }[];
 };
 
 export type StageStatus = "pending" | "active" | "complete" | "partial" | "failed" | "skipped";
