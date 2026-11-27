@@ -87,7 +87,7 @@ export async function runInvestigation(input: Investigation, options: RunOptions
       catch (error) { if (error instanceof Cancelled || error instanceof Paused) throw error; s1.errors = [{ source: "Website", message: (error as Error).message, retryable: true }]; await finish(s1, "failed", (error as Error).message); throw new Error((error as Error).message); }
       inv.discovery = discovery;
       if (!discovery.home) {
-        s1.errors = [{ source: "Website", message: discovery.homeFailure?.message || "The home page could not be retrieved.", retryable: true }];
+        s1.errors = [{ source: "Website", message: discovery.homeFailure?.message || "The home page could not be retrieved.", retryable: !["robots", "invalid-url", "blocked-address", "unsupported-type", "off-site-redirect", "too-large"].includes(discovery.homeFailure?.kind || "") && !(discovery.homeFailure?.status && discovery.homeFailure.status < 500 && discovery.homeFailure.status !== 429) }];
         await finish(s1, "failed", s1.errors[0].message);
         throw new Error(s1.errors[0].message);
       }
@@ -155,7 +155,7 @@ export async function runInvestigation(input: Investigation, options: RunOptions
       }
       const blocked = inv.failures.filter(f => f.kind === "robots").length;
       const errors = inv.failures.filter(f => f.kind !== "robots").length;
-      s3.errors = inv.failures.filter(f => f.kind !== "robots").slice(0, 20).map(f => ({ source: f.url, message: f.message, retryable: !["robots", "invalid-url", "unsupported-type", "off-site-redirect"].includes(f.kind) && !(f.status && f.status < 500 && f.status !== 429) }));
+      s3.errors = inv.failures.filter(f => f.kind !== "robots").slice(0, 20).map(f => ({ source: f.url, message: f.message, retryable: !["robots", "invalid-url", "blocked-address", "unsupported-type", "off-site-redirect", "too-large"].includes(f.kind) && !(f.status && f.status < 500 && f.status !== 429) }));
       await finish(s3, "complete", inv.pages.length + " pages analysed" + (errors ? ", " + errors + " failed" : "") + (blocked ? ", " + blocked + " restricted by robots.txt" : "") + (job.frontier.length ? "; " + job.frontier.length + " more URLs beyond the page budget." : "; inventory exhausted."));
     }
 

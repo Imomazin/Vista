@@ -191,3 +191,21 @@ test("generated finding titles read correctly for a count of one", async () => {
   assert.equal(singular("1 pages share duplicate titles"), "1 page shares duplicate titles");
   assert.equal(singular("12 pages share duplicate titles"), "12 pages share duplicate titles");
 });
+
+test("large and truncated sitemaps yield entries without a DOM parse", () => {
+  const entries = Array.from({ length: 6000 }, (_, i) => `<url><loc>https://a.example/p${i}</loc><lastmod>2026-01-01</lastmod></url>`).join("");
+  const parsed = parseSitemap(`<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries}</urlset>`);
+  assert.equal(parsed.entries.length, 5000); assert.equal(parsed.truncated, true);
+  const cut = parseSitemap(`<urlset><url><loc>https://a.example/a</loc></url><url><loc>https://a.example/b</loc></url><url><loc>https://a.ex`, 5000, true);
+  assert.equal(cut.entries.length, 2); assert.equal(cut.truncated, true);
+  assert.equal(parseSitemap('<sitemapindex><sitemap><loc><![CDATA[https://a.example/s.xml?x=1&amp;y=2]]></loc></sitemap></sitemapindex>').entries[0].loc, "https://a.example/s.xml?x=1&y=2");
+});
+
+test("inner pages canonicalised to the home page are reported as a high-severity finding", () => {
+  const home = page("https://shop.example.com/", html({ title: "Home page title for the canonical test site", h1: ["Home"], body: `<p>${words(200)}</p>`, extraHead: '<link rel="canonical" href="https://shop.example.com/">' }), 0);
+  const inner = ["about", "services", "contact"].map(p => page("https://shop.example.com/" + p, html({ title: p + " page title for canonical testing", h1: [p], body: `<p>${words(200, p)}</p>`, extraHead: '<link rel="canonical" href="https://shop.example.com/">' })));
+  const site = analyseSite(null, [home, ...inner], [], []);
+  const f = buildFindings("p", brief, null, [home, ...inner], site, [], [], { errors: [] }, "x").find(x => x.rule === "canonical-to-home");
+  assert.ok(f); assert.equal(f!.severity, "high"); assert.equal(f!.affectedCount, 3);
+  assert.ok(f!.limitations.some(l => l.includes("URL Inspection")));
+});

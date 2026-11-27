@@ -33,6 +33,7 @@ export type FetchOutcome = {
   body: string;
   bytes: number;
   durationMs: number;
+  truncated?: boolean;
 };
 
 export type FetchOptions = {
@@ -45,6 +46,8 @@ export type FetchOptions = {
   maxRedirects?: number;
   /** When false the body is discarded; useful for link status checks. */
   readBody?: boolean;
+  /** Keep the first maxBytes of an oversized body (marked truncated) instead of failing. */
+  allowTruncate?: boolean;
 };
 
 const headerAllowList = [
@@ -94,9 +97,9 @@ async function resolvePublic(url: URL, remaining: number): Promise<string | null
   } finally { clearTimeout(timer); }
 }
 
-type RawResponse = { status: number; headers: Record<string, string>; body: string; bytes: number };
+type RawResponse = { status: number; headers: Record<string, string>; body: string; bytes: number; truncated?: boolean };
 
-function request(url: URL, ip: string | null, options: Required<Pick<FetchOptions, "accept" | "maxBytes" | "method" | "readBody">> & { bodyTypes: RegExp }, deadline: number): Promise<RawResponse> {
+function request(url: URL, ip: string | null, options: Required<Pick<FetchOptions, "accept" | "maxBytes" | "method" | "readBody" | "allowTruncate">> & { bodyTypes: RegExp }, deadline: number): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
     const client = url.protocol === "http:" ? http : https;
     const req = client.request(url, {
@@ -128,7 +131,10 @@ function request(url: URL, ip: string | null, options: Required<Pick<FetchOption
       let bytes = 0;
       res.on("data", (chunk: Buffer) => {
         bytes += chunk.length;
-        if (bytes > options.maxBytes) { req.destroy(new FetchFailure("too-large", "The response exceeds the " + Math.round(options.maxBytes / 1024) + " KB inspection limit.")); return; }
+        if (bytes > options.maxBytes) {
+          if (options.allowTruncate) { chunks.push(chunk.subarray(0, Math.max(0, chunk.length - (bytes - options.maxBytes)))); resolve({ status, headers, body: Buffer.concat(chunks).toString("utf8"), bytes: options.maxBytes, truncated: true }); req.destroy(); return; }
+          req.destroy(new FetchFailure("too-large", "The response exceeds the " + Math.round(options.maxBytes / 1024) + " KB inspection limit.")); return;
+        }
         chunks.push(chunk);
       });
       res.on("end", () => resolve({ status, headers, body: Buffer.concat(chunks).toString("utf8"), bytes }));
@@ -150,9 +156,10 @@ export async function fetchPublic(input: string, options: FetchOptions = {}): Pr
   const settings = {
     accept: options.accept ?? "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5",
     bodyTypes: options.bodyTypes ?? /text\/html|application\/xhtml\+xml/i,
-    maxBytes: options.maxBytes ?? 1_500_000,
+    maxBytes: options.maxBytes ?? 5_000_000,
     method: options.method ?? "GET",
     readBody: options.readBody ?? true,
+    allowTruncate: options.allowTruncate ?? false,
   };
   const maxRedirects = options.maxRedirects ?? 5;
   let url = validatePublicUrl(input);
@@ -179,7 +186,7 @@ export async function fetchPublic(input: string, options: FetchOptions = {}): Pr
     if (settings.readBody && settings.method === "GET" && response.status >= 200 && response.status < 300 && !settings.bodyTypes.test(contentType)) {
       throw new FetchFailure("unsupported-type", "The response is " + (contentType.split(";")[0] || "an unknown type") + ", not a supported document.", chain);
     }
-    return { requestedUrl, finalUrl: url.href, status: response.status, chain, headers: response.headers, contentType, body: response.body, bytes: response.bytes, durationMs: Date.now() - started };
+    return { requestedUrl, finalUrl: url.href, status: response.status, chain, headers: response.headers, contentType, body: response.body, bytes: response.bytes, durationMs: Date.now() - started, ...(response.truncated ? { truncated: true } : {}) };
   }
   throw new FetchFailure("too-many-redirects", "The URL redirects more than " + maxRedirects + " times.", chain);
 }
