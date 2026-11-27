@@ -38,7 +38,7 @@ const legacyCommand:GalleryPhoto[]=[
  {id:"legacy-marketing-team",path:"/web-images/editorial/marketing-team.jpg",thumb:"/web-images/editorial/marketing-team.jpg",title:"Decide with the whole team",detail:"Every specialist at one table.",alt:"Team meeting around a table in a bright meeting room with a wall screen"},
  {id:"legacy-creative-collaboration",path:"/web-images/editorial/creative-collaboration.jpg",thumb:"/web-images/editorial/creative-collaboration.jpg",title:"Create with intelligence",detail:"Editorial craft connected to evidence.",alt:"Three colleagues laughing together while working on laptops at a round table"},
 ];
-const commandLinks:EngineId[]=[8,2,7,1];
+const commandLinks:EngineId[]=[8,2,7,1,4];
 
 export function AmbidextersLogo({compact=false}:{compact?:boolean}){
  return <span className={"ax-transparent-logo"+(compact?" ax-logo-compact":"")} role="img" aria-label="Ambidexters">
@@ -69,7 +69,7 @@ export function CinematicPhotoReel({motion=true}:{motion?:boolean}){
 }
 
 export function CommandEditorial({onNavigate}:{onNavigate:(engine:EngineId)=>void}){
- const tiles=[commandPhotography,...photosFor("command"),...legacyCommand].slice(0,4);
+ const tiles=[commandPhotography,...photosFor("command"),...legacyCommand].slice(0,Math.max(4,1+photosFor("command").length));
  return <section className="vista-editorial" aria-label="Marketing intelligence visual stories">
   <div className="vista-editorial-heading"><span className="eyebrow"><Sparkles size={15}/> VISUAL INTELLIGENCE</span><h2>See beyond the dashboard.<br/><em>Discover a new perspective.</em></h2><p>Human expertise, intelligent technology and evidence-led marketing decisions. Explore the individual VisTa intelligence studios.</p></div>
   <div className="vista-editorial-grid">{tiles.map((s,i)=>{

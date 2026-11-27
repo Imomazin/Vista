@@ -44,7 +44,7 @@ for (const theme of themes) for (const [vpName, viewport] of Object.entries(view
     await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 500) { window.scrollTo(0, y); await new Promise(r => setTimeout(r, 120)); } window.scrollTo(0, 0); });
     await page.waitForLoadState("networkidle");
     const state = await page.evaluate(() => {
-      const imgs = [...document.images].filter(i => i.getBoundingClientRect().width > 40 && !i.closest("[aria-hidden='true'].cinematic-photo-reel"));
+      const imgs = [...document.images].filter(i => i.getBoundingClientRect().width > 40 && !i.closest("details:not([open])"));
       return {
         appearance: document.documentElement.dataset.appearance,
         overflow: document.documentElement.scrollWidth - window.innerWidth,
@@ -88,3 +88,6 @@ writeFileSync(join(out, "report.json"), JSON.stringify(report, null, 1));
 console.log(`pages ${report.pages.length}, problems ${report.problems.length}`);
 for (const p of report.problems) console.log(JSON.stringify(p).slice(0, 400));
 console.log(JSON.stringify(report.gallery));
+
+// Acceptance must fail the invoking command if any tested view fails.
+if (report.problems.length) process.exitCode = 1;

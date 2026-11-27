@@ -102,3 +102,7 @@ html[data-appearance="light"] .tool-page .glass-panel :is(strong,h2,h3,td,dd,b){
 html[data-appearance="light"] .tool-page .glass-panel :is(input,textarea,select){background:#fff;color:#102c24;border-color:#61776a}
 html[data-appearance="light"] .benchmark-form label>div{background:#fff;border-color:#61776a;color:#29463a}
 html[data-appearance="light"] .benchmark-form label>div input{background:none;border:0}
+
+/* A full Command Centre collection has one lead and four companion images. */
+@media(min-width:651px){.vista-editorial-grid:has(> :nth-child(5))>.vista-editorial-tile:last-child{grid-column:auto}}
+@media(max-width:650px){.vista-editorial-grid{grid-template-columns:minmax(0,1fr)}.vista-editorial-grid>.vista-editorial-tile:nth-child(n){grid-column:1;grid-row:auto}}
