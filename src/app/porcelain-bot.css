@@ -1,5 +1,5 @@
 /* Porcelain contrast layer: semantic foregrounds, retained dark showcase surfaces. */
-html[data-appearance="light"]{--text:#102c24;--ti-text:#102c24;--ti-subtext:#2b463a;--ti-metal:#40565b;--ti-emerald:#0b513c;--ti-signal:#10583f;--ti-line:#596f63;--ti-hairline:#84978a;--ti-focus:#104b36;--muted:#2b463a;--vista-quiet:#2b463a;--cv-violet:#4c287e;--cv-platinum:#394257;--gold:#634317;--line:#596f63;--ti-primary:#0d5b43;--ti-primary-ink:#fff}
+html[data-appearance="light"]{--text:#102c24;--ti-text:#102c24;--ti-subtext:#2b463a;--ti-metal:#3b5055;--ti-emerald:#0b513c;--ti-signal:#10583f;--ti-line:#596f63;--ti-hairline:#84978a;--ti-focus:#104b36;--muted:#2b463a;--vista-quiet:#2b463a;--cv-violet:#4c287e;--cv-platinum:#394257;--gold:#634317;--line:#596f63;--ti-primary:#0d5b43;--ti-primary-ink:#fff}
 html[data-appearance="light"] :is(.vital-card,.vista-cloud-entry){--ti-text:#f4f7f5;--ti-subtext:#c3d4cb;--ti-metal:#bed3cb;--ti-emerald:#a8e8c7;--cv-violet:#d1baff;--text:#f4f7f5;--muted:#c3d4cb;color:#f4f7f5}
 html[data-appearance="light"] .vital-card :is(span,small,footer,svg){color:#c3d4cb}
 html[data-appearance="light"] .vital-card strong{color:#fff;-webkit-text-fill-color:#fff}
@@ -52,7 +52,7 @@ html[data-appearance="light"] .scan-results .report-buttons .ghost-button{backgr
 
 /* Porcelain readability and wrap safety with the additive type scale. */
 html[data-appearance="light"] .rail-link small{background:#e8e0f5;color:#4c287e;border-color:#9274b7}
-html[data-appearance="light"] .rail-link svg{color:#40565b}
+html[data-appearance="light"] .rail-link svg{color:#3b5055}
 html[data-appearance="light"] .rail-link.active svg{color:#0b513c}
 html[data-appearance="light"] .command-trigger kbd{background:#e6ece7;color:#203e32;border-color:#84978a}
 html[data-appearance="light"] :is(.connector-engine,.connector-note,.method-note,.rail-caption,.hero-signature,.pearl-caption,.pearl-caption>span:last-child){color:#29463a}
