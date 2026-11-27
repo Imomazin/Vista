@@ -21,8 +21,11 @@ export async function POST(request: Request) {
     if (typeof url !== "string" || url.length > 2048) {
       return NextResponse.json({ error: "Enter a valid HTTPS website URL." }, { status: 400 });
     }
+    const retrievalStarted = performance.now();
     const page = await fetchPublicHtml(url);
+    const durationMs = Math.round(performance.now() - retrievalStarted);
     const report = analyseHtml(page.url, page.html, page.robots);
+    report.retrieval = { durationMs, htmlBytes: Buffer.byteLength(page.html, "utf8") };
     const discover = typeof data === "object" && data !== null && "discover" in data && data.discover === true;
     const $ = discover ? cheerio.load(page.html) : null;
     const result = $ ? { report, links: eligiblePages(page.url, $("a[href]").map((_,el)=>$(el).attr("href") || "").get()) } : report;

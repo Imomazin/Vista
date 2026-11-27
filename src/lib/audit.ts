@@ -14,6 +14,7 @@ export type AuditSignal = {
 
 export type AuditReport = {
   inspection?: SiteInspection;
+  retrieval?: { durationMs: number; htmlBytes: number };
   url: string;
   inspectedAt: string;
   title: string | null;

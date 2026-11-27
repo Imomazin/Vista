@@ -1,2 +1,4 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {analyseHtml} from './audit';import {auditCsv} from './audit-export';
 test('audit CSV retains evidence, recommendations and protects spreadsheet cells',()=>{const r=analyseHtml('https://example.com','<title>Example page</title>');r.signals[0].detail='=HYPERLINK("bad")';const csv=auditCsv(r);assert.ok(csv.includes('Next action'));assert.ok(csv.includes('"\'=HYPERLINK(""bad"")"'));assert.equal(csv.split('\r\n').length,r.signals.length+1);});
+
+test('audit CSV protects formulas preceded by whitespace and leading line breaks',()=>{const r=analyseHtml('https://example.com','<title>Example</title>');r.signals[0].detail='  =1+1';r.signals[1].detail='\n=1+1';const csv=auditCsv(r);assert.ok(csv.includes("\"'  =1+1\""));assert.ok(csv.includes("\"'\n=1+1\""));});
