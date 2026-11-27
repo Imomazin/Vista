@@ -1,8 +1,9 @@
 'use client';
 import Image from "next/image";
-import {useState} from "react";
+import {useState,type ComponentProps} from "react";
+import {commandPhotography,editorialPhotography,studioPhotography} from "@/lib/editorial-photos";
 import {ArrowLeft,ArrowRight,ArrowUpRight,Images,Layers3,Sparkles} from "lucide-react";
-import {categoryForEngine,cinematicVisuals,getEngineVisuals,selectedPhotography,visualAssets,type VisualCategory} from "@/lib/visual-assets";
+import {categoryForEngine,getEngineVisuals,selectedPhotography,type VisualCategory} from "@/lib/visual-assets";
 import type {EngineId} from "@/lib/engine-methods";
 import "./visual-stories.css";
 import "./visual-immersive.css";
@@ -23,11 +24,16 @@ const captions:Record<VisualCategory,string>={
 const studioIds:Partial<Record<VisualCategory,EngineId>>={
  "search":1,"impact":2,"site":3,"content":4,"authority":5,"reputation":6,"agency":7,"analytics":8,"ai-exposure":9
 };
+function EditorialImage({fallback,...props}:ComponentProps<typeof Image>&{fallback?:string}){
+ const [failed,setFailed]=useState(false);
+ return <Image {...props} src={failed&&fallback?fallback:props.src} alt={failed&&fallback&&props.alt? "Illustrative marketing intelligence":props.alt} onError={fallback&&!failed?()=>setFailed(true):props.onError}/>;
+}
+
 const primeStories=[
- {file:"../editorial/marketing-team.jpg",category:"cinematic" as const,title:"Bring evidence to the table",detail:"Connect the team around decisions that matter.",engine:8 as EngineId},
- {file:"artificial-intelligence-radiant-network.jpg",category:"ai-exposure" as const,title:"AI visibility, reimagined",detail:"Follow prompts, responses and real citations.",engine:9 as EngineId},
- {file:"holographic-growth-dashboard.jpg",category:"impact" as const,title:"Turn insights into impact",detail:"Move from findings to measured decisions.",engine:2 as EngineId},
- {file:"../editorial/creative-collaboration.jpg",category:"content" as const,title:"Create with intelligence",detail:"Connect editorial craft to evidence.",engine:4 as EngineId}
+ {file:"../editorial/marketing-team.jpg",category:"cinematic" as const,title:"Bring evidence to the table",detail:"Connect the team around decisions that matter.",engine:8 as EngineId,photo:commandPhotography},
+ {file:"artificial-intelligence-radiant-network.jpg",category:"ai-exposure" as const,title:"AI visibility, reimagined",detail:"Follow prompts, responses and real citations.",engine:9 as EngineId,photo:studioPhotography[9]},
+ {file:"holographic-growth-dashboard.jpg",category:"impact" as const,title:"Turn insights into impact",detail:"Move from findings to measured decisions.",engine:2 as EngineId,photo:studioPhotography[2]},
+ {file:"../editorial/creative-collaboration.jpg",category:"content" as const,title:"Create with intelligence",detail:"Connect editorial craft to evidence.",engine:4 as EngineId,photo:studioPhotography[4]}
 ];
 
 export function AmbidextersLogo({compact=false}:{compact?:boolean}){
@@ -54,8 +60,8 @@ export function CommandEditorial({onNavigate}:{onNavigate:(engine:EngineId)=>voi
   <div className="vista-editorial-grid">{primeStories.map((s,i)=>{
    const src=s.file.startsWith("../editorial/")?"/web-images/editorial/"+s.file.split("/").pop():"/web-images/"+s.category+"/"+s.file;
    return <button key={s.file} className={"vista-editorial-tile"+(i===0?" editorial-lead":"")} onClick={()=>onNavigate(s.engine)}>
-    <Image src={src} alt={s.title+" — illustrative marketing technology photography"} fill sizes={i===0?"(max-width:800px) 100vw, 45vw":"(max-width:800px) 50vw, 25vw"} quality={82}/>
-    <span className="editorial-shade"/><span className="editorial-caption"><small>EXPLORE / {String(i+1).padStart(2,"0")}</small><strong>{s.title}</strong><span>{s.detail}</span></span><ArrowUpRight className="editorial-arrow" size={19}/>
+    <EditorialImage src={s.photo.path} fallback={src} alt={s.title+" — illustrative marketing technology photography"} fill sizes={i===0?"(max-width:800px) 100vw, 45vw":"(max-width:800px) 50vw, 25vw"} quality={82}/>
+    <span className="editorial-shade"/><span className="editorial-caption"><strong>{s.title}</strong><span>{s.detail}</span></span><ArrowUpRight className="editorial-arrow" size={19}/>
    </button>;
   })}</div>
   <p className="vista-editorial-disclaimer">Imagery illustrates the intelligence disciplines. Platform analytics and measurements are sourced separately from observed evidence.</p>
@@ -83,9 +89,9 @@ export function EngineVisualStory({engine,onAction}:{engine:EngineId;onAction:()
  return <section className={"vista-engine-story story-immersive engine-story-"+category} aria-label={captions[category]+" visual story"}>
   <div className="story-stage">
    <div className="story-stage-image">
-    <Image key={current.path} src={current.path} alt={current.title.replace(/-/g," ")+", illustrative visual for "+captions[category]} fill priority={false} sizes="(max-width:900px) 100vw, 65vw" quality={86}/>
+    <EditorialImage key={current.path} src={current.path} fallback={current.fallback} alt={current.title.replace(/-/g," ")+", illustrative visual for "+captions[category]} fill priority={false} sizes="(max-width:900px) 100vw, 65vw" quality={86}/>
     <span className="story-image-shade" aria-hidden="true"/>
-    <div className="story-image-label"><span>VisTa / {captions[category].toUpperCase()}</span><span>{String(active+1).padStart(2,"0")} / {String(selected.length).padStart(2,"0")}</span></div>
+    <div className="story-image-label"><span>VisTa / {captions[category].toUpperCase()}</span></div>
     <span className="story-image-caption">{current.title.replace(/-/g," ")}</span>
    </div>
    <div className="story-stage-copy">
@@ -94,7 +100,7 @@ export function EngineVisualStory({engine,onAction}:{engine:EngineId;onAction:()
     <p>{narrative.description}</p>
     <button className="story-main-action" type="button" onClick={onAction}>{narrative.label}<ArrowUpRight size={17}/></button>
     <div className="story-stage-navigation">
-     <span>SELECTED VISUAL STORIES</span>
+     <span>Explore the gallery</span>
      <div>
       <button type="button" aria-label="Previous visual" disabled={selected.length<2} onClick={()=>setActive(i=>(i+selected.length-1)%selected.length)}><ArrowLeft size={17}/></button>
       <button type="button" aria-label="Next visual" disabled={selected.length<2} onClick={()=>setActive(i=>(i+1)%selected.length)}><ArrowRight size={17}/></button>
@@ -104,9 +110,9 @@ export function EngineVisualStory({engine,onAction}:{engine:EngineId;onAction:()
   </div>
   {selected.length>1&&<div className="story-gallery" aria-label={"Explore selected "+captions[category]+" visuals"}>
    {selected.map((pic,i)=><button type="button" key={pic.path} className={"story-gallery-card"+(active===i?" active":"")} onClick={()=>setActive(i)} aria-pressed={active===i} aria-label={"Show "+pic.title.replace(/-/g," ")}>
-    <Image src={pic.path} alt="" fill sizes="(max-width:640px) 75vw, (max-width:1050px) 42vw, 28vw" quality={79}/>
+    <EditorialImage src={pic.path} fallback={pic.fallback} alt="" fill sizes="(max-width:640px) 75vw, (max-width:1050px) 42vw, 28vw" quality={79}/>
     <span className="story-gallery-tint"/>
-    <span className="story-gallery-copy"><small>VISUAL {String(i+1).padStart(2,"0")}</small><strong>{pic.title.replace(/-/g," ")}</strong></span>
+    <span className="story-gallery-copy"><strong>{pic.title.replace(/-/g," ")}</strong></span>
     <ArrowUpRight className="story-gallery-arrow" size={17}/>
    </button>)}
   </div>}
@@ -115,14 +121,15 @@ export function EngineVisualStory({engine,onAction}:{engine:EngineId;onAction:()
 }
 
 export function VisualAtlas({onChoose}:{onChoose:(engine:EngineId)=>void}){
- const groups=[...new Set(selectedPhotography.map(a=>a.folder))];
+ const collection=[...selectedPhotography,...editorialPhotography];
+ const groups=[...new Set(collection.map(a=>a.folder))];
  return <details className="vista-visual-atlas" id="vista-visual-atlas">
-  <summary><span className="atlas-summary-icon"><Images size={23}/></span><span><small>THE CURATED VISUAL COLLECTION</small><strong>Explore the entire VisTa Visual Atlas</strong><em>{selectedPhotography.length} selected photographs across our nine intelligence elements and cinematic universe.</em></span><Layers3 size={22}/></summary>
+  <summary><span className="atlas-summary-icon"><Images size={23}/></span><span><small>THE CURATED VISUAL COLLECTION</small><strong>Explore the entire VisTa Visual Atlas</strong><em>{collection.length} selected photographs across our nine intelligence elements and cinematic universe.</em></span><Layers3 size={22}/></summary>
   <div className="atlas-body"><p>The selected images illustrate the fields VisTa covers. They do not depict connected analytics, measured marketing results or verified client work.</p>
    {groups.map(group=><section className="atlas-group" key={group}>
-    <h3>{captions[group]} <span>{selectedPhotography.filter(a=>a.folder===group).length} visuals</span></h3>
-    <div className="atlas-grid">{visualAssets.filter(a=>a.folder===group).map(pic=><article key={pic.path} className="atlas-card">
-     <div className="atlas-photo"><Image src={pic.path} fill alt={pic.title} sizes="(max-width:600px) 45vw, (max-width:1000px) 25vw, 18vw" quality={75}/></div>
+    <h3>{captions[group]} <span>{collection.filter(a=>a.folder===group).length} visuals</span></h3>
+    <div className="atlas-grid">{collection.filter(a=>a.folder===group).map(pic=><article key={pic.path} className="atlas-card">
+     <div className="atlas-photo"><EditorialImage src={pic.path} fallback={"fallback" in pic?pic.fallback:undefined} fill alt={pic.title} sizes="(max-width:600px) 45vw, (max-width:1000px) 25vw, 18vw" quality={75}/></div>
      <p>{pic.title.replace(/-/g," ")}</p>{studioIds[group]&&<button onClick={()=>onChoose(studioIds[group]!)}>Open studio <ArrowUpRight size={12}/></button>}
     </article>)}</div>
    </section>)}
