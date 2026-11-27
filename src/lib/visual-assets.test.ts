@@ -70,9 +70,9 @@ test("source, photographer, licence and description metadata are complete and re
 });
 test("premium photographs stay within the agreed allocation for each application area",()=>{
  for(const area of Object.keys(requiredAllocation) as PhotoArea[])
-  assert.ok(photosFor(area).length<=requiredAllocation[area],area);
+  assert.equal(photosFor(area).length,requiredAllocation[area],area);
 });
-test("every application area holds its full premium allocation",{todo:"26 of the 40 photographs are awaiting supply; see photosFor() counts"},()=>{
+test("every application area holds its full premium allocation",()=>{
  const missing=(Object.keys(requiredAllocation) as PhotoArea[]).map(a=>[a,requiredAllocation[a]-photosFor(a).length] as const).filter(([,n])=>n>0);
  assert.deepEqual(missing,[]);
  assert.equal(premiumPhotography.length,40);
@@ -84,7 +84,7 @@ test("each of the nine intelligence studios has a distinct local lead and a gall
   assert.ok(categoryForEngine[engine]);
   const gallery=getEngineVisuals(engine);
   assert.equal(gallery[0].path,studioPhotography[engine].path);
-  assert.ok(gallery.length>=1&&gallery.length<=6,"engine "+engine+" has "+gallery.length);
+  assert.ok(gallery.length===3||gallery.length===4,"engine "+engine+" has "+gallery.length);
   assert.ok(gallery.every(g=>g.path.startsWith("/web-images/")),"engine "+engine+" must not hot-link images");
  }
  assert.ok(!editorialPhotography.some(p=>atlasOnlyPhotography.includes(p)),"retired handshake must stay in the atlas");
