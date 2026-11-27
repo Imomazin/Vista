@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {existsSync,readFileSync,readdirSync,statSync} from "node:fs";
 import {join} from "node:path";
-import {atlasOnlyPhotography,commandPhotography,editorialPhotography,studioPhotography} from "./editorial-photos";
+import {architecturePhotography,atlasOnlyPhotography,commandPhotography,editorialPhotography,studioPhotography} from "./editorial-photos";
 import {allEditorialAssets,photosFor,premiumPhotography,requiredAllocation,type PhotoArea} from "./premium-photography";
 import {categoryForEngine,cinematicVisuals,fullSelectionCount,getEngineVisuals,parentBrandVisuals,selectedPhotography,visualAssets,workingPagePhotos} from "./visual-assets";
 
@@ -116,4 +116,14 @@ test("every local image reference in the source resolves to a file and nothing i
   assert.doesNotMatch(text,/images\.unsplash\.com\/photo-/,file+" hot-links Unsplash");
   for(const [ref] of text.matchAll(/\/web-images\/[a-z0-9\/-]+\.(?:jpg|png|webp)/g))assert.ok(existsSync(pub(ref)),file+" references missing "+ref);
  }
+});
+
+test("all nine architecture cards use distinct local photographs from their corresponding engine",()=>{
+ const photos=engines.map(id=>architecturePhotography[id]);
+ assert.equal(photos.length,9);
+ assert.equal(new Set(photos.map(p=>p.thumb)).size,9);
+ for(const id of engines){const p=architecturePhotography[id];assert.equal(p.section,categoryForEngine[id]);assert.ok(existsSync(pub(p.thumb)));assert.ok(getEngineVisuals(id).some(g=>g.id===p.id));}
+ const matrix=readFileSync(join(process.cwd(),"src/app/engine-matrix.tsx"),"utf8");
+ assert.match(matrix,/architecturePhotography\[engine\.id\]/);
+ assert.match(matrix,/className="vte-matrix-photo"/);
 });

@@ -1,5 +1,7 @@
 'use client';
 import {useEffect,useState} from "react";
+import Image from "next/image";
+import {architecturePhotography} from "@/lib/editorial-photos";
 import {Activity,ArrowUpRight,BookOpen,Layers3,RadioTower,ScanLine,Search,ShieldCheck,Sparkles,Target} from "lucide-react";
 import type {Workspace} from "@/lib/workspace";
 import type {EngineId} from "@/lib/engine-methods";
@@ -21,8 +23,10 @@ export default function EngineMatrix({workspace,onSelect}:{workspace:Workspace;o
   <div className="vte-matrix-grid">
    {engineMethods.map((engine,i)=>{
     const Icon=icons[i],summary=engineSummary(engine.id,workspace),manual=countEngineEvidence(ledger,engine.id);
+    const photo=architecturePhotography[engine.id];
     const state=engine.id===3?"SITE AUDITS LIVE":engine.id===4||engine.id===7||engine.id===8||engine.id===9?"PARTIAL TOOLS":"SOURCE NOT CONNECTED";
     return <button key={engine.id} onClick={()=>onSelect(engine.id)} aria-label={"Open "+engine.name+" engine"} className="vte-matrix-cell">
+     <span className="vte-matrix-photo" aria-hidden="true"><Image src={photo.thumb} alt="" fill sizes="(max-width:650px) 100vw, (max-width:1080px) 50vw, 33vw" loading="lazy" style={{objectPosition:photo.objectPosition??"50% 50%"}}/></span>
      <div className="vte-matrix-cell-top"><span className="vte-matrix-icon"><Icon size={19}/></span><span>{String(engine.id).padStart(2,"0")} / {engine.pillar}</span><ArrowUpRight size={15}/></div>
      <h3>{engine.name}</h3><p>{engine.short}</p>
      <div className="vte-matrix-progress"><span>{summary.value===null?"—":summary.value}</span><span>{summary.value===null?"Connected measurements":summary.label}</span></div>

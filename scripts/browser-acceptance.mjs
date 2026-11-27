@@ -54,7 +54,9 @@ for (const theme of themes) for (const [vpName, viewport] of Object.entries(view
         numbered: (document.body.innerText.match(/\b(Selected\s+)?(Visual|Image)\s*0\d\b/gi) || []),
       };
     });
-    const entry = { theme, viewport: vpName, name, ...state, failedRequests: [...failures] };
+    const matrix = name==="command" ? await page.locator(".vte-matrix-cell").evaluateAll(cards=>cards.map(card=>{const img=card.querySelector(".vte-matrix-photo img");return {label:card.getAttribute("aria-label"),src:img?.currentSrc,loaded:!!img?.complete&&img.naturalWidth>0,visible:!!img&&img.getBoundingClientRect().height>0};})) : undefined;
+    if(matrix&&(matrix.length!==9||new Set(matrix.map(p=>p.src)).size!==9||matrix.some(p=>!p.loaded||!p.visible)))report.problems.push({theme,viewport:vpName,name,matrix});
+    const entry = { theme, viewport: vpName, name, ...state, matrix, failedRequests: [...failures] };
     report.pages.push(entry);
     if (state.overflow > 1 || state.broken.length || failures.length || state.numbered.length || state.appearance !== theme)
       report.problems.push(entry);

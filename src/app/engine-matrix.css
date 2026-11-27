@@ -24,3 +24,14 @@
 @media(max-width:1080px){.vte-matrix-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.vte-matrix-grid{grid-template-columns:1fr}.vte-matrix-cell{min-height:185px;padding:18px}.vte-matrix-heading{flex-direction:column;align-items:start}}
 @media(prefers-reduced-motion:reduce){.vte-matrix-cell{transition:none!important}}
+
+/* Full-width editorial preview on every architecture card; metrics stay on the themed surface. */
+.vte-matrix-cell{--matrix-inset:21px;isolation:isolate}
+.vte-matrix-photo{position:relative;display:block;align-self:stretch;flex:none;aspect-ratio:16 / 8;min-height:100px;margin:calc(-1 * var(--matrix-inset)) calc(-1 * var(--matrix-inset)) 7px;overflow:hidden;border-bottom:1px solid var(--ti-hairline,#a9bdb0);background:var(--ti-raised,#172027)}
+.vte-matrix-photo img{object-fit:cover;transition:transform .35s ease}
+.vte-matrix-cell:hover .vte-matrix-photo img,.vte-matrix-cell:focus-visible .vte-matrix-photo img{transform:scale(1.035)}
+.vte-matrix-cell:focus-visible{outline:3px solid var(--ti-focus,#145a42);outline-offset:3px}
+html[data-appearance="light"] .vte-matrix-cell :is(p,small,.vte-matrix-cell-top>span:nth-child(2),.vte-matrix-progress>span:last-child,.vte-matrix-bottom>span){color:#29463a}
+html[data-appearance="light"] .vte-matrix-cell-top>svg{color:#15583f}
+@media(max-width:650px){.vte-matrix-cell{--matrix-inset:18px}.vte-matrix-photo{aspect-ratio:16 / 8}}
+@media(prefers-reduced-motion:reduce){.vte-matrix-photo img{transition:none!important;transform:none!important}}

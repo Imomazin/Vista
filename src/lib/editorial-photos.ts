@@ -16,3 +16,16 @@ export const commandPhotography = studioLeads.command;
 /** Retired from the studio leads and kept in the secondary Visual Atlas. */
 export const atlasOnlyPhotography: VistaEditorialAsset[] = [studioLeads.authority];
 export const editorialPhotography: VistaEditorialAsset[] = [...Object.values(studioPhotography), commandPhotography];
+
+/** Distinct previews of each corresponding studio, not additional unrelated placements. */
+export const architecturePhotography: Record<1|2|3|4|5|6|7|8|9, VistaEditorialAsset> = {
+  1: photoById("search-google-laptop-phone"),
+  2: photoById("impact-decision-conversation"),
+  3: photoById("site-developer-inspection"),
+  4: photoById("content-cinema-camera-creative"),
+  5: photoById("authority-knowledge-at-work"),
+  6: photoById("reputation-broadcast-camera"),
+  7: photoById("agency-collaborative-planning"),
+  8: photoById("analytics-audience-chart-review"),
+  9: photoById("ai-chatgpt-phone"),
+};
