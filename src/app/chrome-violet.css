@@ -109,12 +109,12 @@ html[data-appearance] .vista-pricing{--pricing-chrome:var(--cv-chrome)}
 }
 .pricing-teaser:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#BFC3DE,var(--cv-violet),var(--ti-emerald))}
 .pricing-teaser .eyebrow{color:var(--cv-violet)}
-.pricing-teaser h2{font-size:clamp(22px,2.7vw,35px);letter-spacing:-.05em;font-weight:550;color:var(--ti-text);margin:13px 0 8px}
-.pricing-teaser p{color:var(--ti-subtext);font-size:12px;margin:0;line-height:1.6}
-.pricing-teaser button{display:inline-flex;align-items:center;gap:14px;white-space:nowrap;background:linear-gradient(110deg,#8D6ACB,#6A4BA7);border:1px solid #BFA8E9;border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:15px 18px}
+.pricing-teaser h2{font-size:calc(clamp(22px,2.7vw,35px) + 2pt);letter-spacing:-.05em;font-weight:550;color:var(--ti-text);margin:13px 0 8px}
+.pricing-teaser p{color:var(--ti-subtext);font-size:calc(12px + 2pt);margin:0;line-height:1.6}
+.pricing-teaser button{display:inline-flex;align-items:center;gap:14px;white-space:nowrap;background:linear-gradient(110deg,#8D6ACB,#6A4BA7);border:1px solid #BFA8E9;border-radius:10px;color:#fff;font-size:calc(12px + 2pt);font-weight:700;padding:15px 18px}
 .pricing-teaser button:hover{background:linear-gradient(110deg,#9B75DC,#7455B2)}
-.entrance-pricing-link{border:1px solid color-mix(in srgb,var(--cv-violet),transparent 42%);border-radius:8px;background:color-mix(in srgb,var(--cv-violet),transparent 89%);color:var(--ti-text);padding:10px 14px;font-size:11px;font-weight:700;white-space:nowrap}
+.entrance-pricing-link{border:1px solid color-mix(in srgb,var(--cv-violet),transparent 42%);border-radius:8px;background:color-mix(in srgb,var(--cv-violet),transparent 89%);color:var(--ti-text);padding:10px 14px;font-size:calc(11px + 2pt);font-weight:700;white-space:nowrap}
 .entrance-pricing-link:hover{border-color:var(--cv-violet);color:var(--cv-violet)}
-@media(max-width:730px){.pricing-teaser{flex-direction:column;align-items:stretch;padding:23px}.pricing-teaser button{justify-content:center}.entrance-pricing-link{padding:8px;font-size:10px}}
-@media(max-width:480px){.entrance-pricing-link{font-size:9px;padding:7px}}
+@media(max-width:730px){.pricing-teaser{flex-direction:column;align-items:stretch;padding:23px}.pricing-teaser button{justify-content:center}.entrance-pricing-link{padding:8px;font-size:calc(10px + 2pt)}}
+@media(max-width:480px){.entrance-pricing-link{font-size:calc(9px + 2pt);padding:7px}}
 @media(prefers-reduced-motion:reduce){.pricing-teaser button,.entrance-pricing-link{transition:none!important}}
