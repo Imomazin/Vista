@@ -11,10 +11,10 @@ export const visualIdentity = {
   light: {
     name: "Porcelain Titanium",
     background: "#F8F7F2", surface: "#FFFFFF",
-    foreground: "#19332D", secondary: "#526F64",
-    titanium: "#85969A", platinum: "#E6ECE8",
-    emerald: "#136C50", onEmerald: "#FFFFFF",
-    champagne: "#967243",
+    foreground: "#102C24", secondary: "#2B463A",
+    titanium: "#40565B", platinum: "#E6ECE8",
+    emerald: "#0B513C", onEmerald: "#FFFFFF",
+    champagne: "#634317",
   }
 } as const;
 
