@@ -3,6 +3,8 @@ import https from "node:https";
 import { BlockList, isIP } from "node:net";
 
 const blocked = new BlockList();
+/** True when an IPv4 address is private, reserved or otherwise not a public destination. */
+export function blockedAddress(address: string): boolean { return isIP(address) !== 4 || blocked.check(address, "ipv4"); }
 for (const [range, prefix] of [
   ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10],
   ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12],
