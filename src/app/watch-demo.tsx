@@ -1,4 +1,5 @@
 'use client';
+import {EditorialBand} from './visual-stories';
 import {useRef,useState} from "react";
 import {ArrowRight,BookOpen,CheckCircle2,Clock3,ExternalLink,FileText,Film,Play,ShieldCheck} from "lucide-react";
 import "./watch-demo.css";
@@ -26,12 +27,15 @@ export default function WatchDemo(){
  const [videoError,setVideoError]=useState(false);
  function jump(index:number){setActive(index);if(video.current){video.current.currentTime=chapters[index].time;void video.current.play().catch(()=>{});}}
  return <section className="demo-theatre">
+  <div className="editorial-heading-row band-wide">
   <header className="demo-head">
    <span className="demo-kicker"><Film size={16}/> VISTA / THE CLIENT EXPERIENCE</span>
    <h1>Watch the <em>demo.</em></h1>
    <p>A guided, ten-minute introduction to VisTa’s nine-engine marketing intelligence ecosystem. See what works today, the evidence behind it and the integrations planned next.</p>
    <div className="demo-facts"><span><Clock3 size={15}/> 10-minute video</span><span><CheckCircle2 size={15}/> Real website findings</span><span><ShieldCheck size={15}/> Limitations stated openly</span></div>
   </header>
+  <EditorialBand area="demo"/>
+  </div>
   <div className="demo-columns">
    <div className="demo-primary">
     <div className="demo-player-frame">
