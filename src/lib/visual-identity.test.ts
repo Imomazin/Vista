@@ -18,3 +18,11 @@ test("emerald remains distinguishable against each canvas",()=>{
  assert.ok(contrastRatio(visualIdentity.dark.emerald,visualIdentity.dark.background)>=3);
  assert.ok(contrastRatio(visualIdentity.light.emerald,visualIdentity.light.background)>=3);
 });
+
+test("Porcelain strengthened foreground pairs remain legible on light surfaces",()=>{
+ for(const bg of ["#FFFFFF","#F8F7F2","#F0F2ED"]){
+  for(const fg of ["#102C24","#2B463A","#3b5055","#0B513C","#4C287E","#344E40"])assert.ok(contrastRatio(fg,bg)>=7,fg+" on "+bg);
+  assert.ok(contrastRatio("#61776A",bg)>=3);
+ }
+ assert.ok(contrastRatio("#FFFFFF","#0D5B43")>=7);
+});

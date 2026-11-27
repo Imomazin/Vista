@@ -52,7 +52,7 @@ html[data-appearance="light"] .appearance-track-icon{color:#9aa99b}
 html[data-appearance="light"] .appearance-track-icon.current{color:#14583d}
 html[data-appearance="light"] .vista-appearance-switch{background:linear-gradient(140deg,#ffffff,#f2f6f0);border-color:#32584236;color:#2b5a47;box-shadow:0 5px 15px #254e3410}
 html[data-appearance="light"] .vista-appearance-switch:hover{background:#eaf4e9;border-color:#397d60}
-.appearance-name{font-size:8px;letter-spacing:1.15px;font-weight:650}
+.appearance-name{font-size:calc(8px + 2pt);letter-spacing:1.15px;font-weight:650}
 .experience-header-actions{display:flex;align-items:center;gap:12px;position:relative;z-index:9}
 .experience-header-actions .vista-appearance-switch{backdrop-filter:blur(18px)}
 @media(max-width:760px){.topbar-actions .vista-appearance-switch{padding:6px;min-height:33px}.topbar-actions .appearance-name{display:none}.experience-header-actions{gap:6px}.experience-header-actions .appearance-name{display:none}.experience-header-actions .vista-appearance-switch{padding:7px 5px}}
