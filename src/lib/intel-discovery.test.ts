@@ -406,3 +406,13 @@ test("AI labels are trimmed at word boundaries and overlapping segments merge", 
   assert.ok(!sameSegment("NHS laboratories", "NHS and private laboratory professionals"), "employers and their staff are different buyers");
   assert.ok(!sameSegment("Developers", "Businesses and organizations"));
 });
+
+test("the direct-competitor round names concrete searches for the leading offerings", async () => {
+  const { competitorPrompt } = await import("./intel/discovery-ai");
+  const q = { brand: "LabMed Academy", website: origin + "/", industry: "Education and training", offerings: ["Histology Training", "Microbiology Training", "Biochemistry Training", "Phlebotomy Course"], segments: [], markets: ["United Kingdom"], exclude: ["ox.ac.uk"], directOnly: true };
+  const text = competitorPrompt(q);
+  assert.match(text, /"histology training provider in United Kingdom"/);
+  assert.ok(!text.includes("phlebotomy course provider"), "at most three searches");
+  assert.match(text, /already been reviewed; do not list them again: ox\.ac\.uk/);
+  assert.ok(!competitorPrompt({ ...q, directOnly: false, exclude: [] }).includes("Run separate searches"), "the first round is unchanged");
+});
