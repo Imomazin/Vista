@@ -157,10 +157,16 @@ function fakeOpenAi(req, res, body) {
     }));
   }
   if (format === "competitors") {
-    const host = (String(body.input).match(/\((https?:\/\/([^/:)]+)[^)]*)\)/) || [])[2] || "";
-    return reply(JSON.stringify({ competitors: (rivals[host] || []).map(([name, website]) => ({ name, website, reason: name + " offers comparable products to similar customers.", offerings: [], markets: ["United Kingdom"], sources: [website] })) }));
+    // Extraction step: only organisations listed in the research notes.
+    const found = [...String(body.input).matchAll(/^\d+\. (.+?) — (https?:\/\/\S+)/gm)].map(m => ({ name: m[1], website: m[2], reason: m[1] + " offers comparable products to similar customers.", offerings: [], markets: ["United Kingdom"], sources: [m[2]] }));
+    return reply(JSON.stringify({ competitors: [...found, { name: "Invented Rival", website: "https://invented-rival.example/", reason: "Not in the notes.", offerings: [], markets: [], sources: [] }] }));
   }
   const prompt = String(body.input);
+  if (/compete directly with/.test(prompt)) {
+    const host = (prompt.match(/\((https?:\/\/([^/:)]+)[^)]*)\)/) || [])[2] || "";
+    const list = rivals[host] || [];
+    return reply(list.map(([name, website], i) => (i + 1) + ". " + name + " — " + website + " — offers comparable products to similar customers.").join("\n") || "No comparable organisations were found.", list.map(([name, website]) => ({ type: "url_citation", url: website, title: name })));
+  }
   if (/boot|tent|hiking|outdoor/i.test(prompt)) return reply("1. Ridgeline Supply — wide range of hiking boots and tents.\n2. Summit Outfitters — specialist outdoor equipment.\nCompare delivery terms before buying.", [{ type: "url_citation", url: "http://127.0.0.16:4810/collections/boots", title: "Ridgeline boots" }, { type: "url_citation", url: "https://outdoor-review.example/best-boots", title: "Review" }]);
   if (/histology|haematology|laborator|biomedical|phlebotomy/i.test(prompt)) return reply("1. BioMed Skills — histology and haematology courses in Manchester.\n2. Hospital trust training schemes.\nCheck accreditation before enrolling.", [{ type: "url_citation", url: "http://127.0.0.21:4810/courses", title: "BioMed Skills courses" }, { type: "url_citation", url: "https://www.ibms.org/education/", title: "IBMS" }]);
   return reply("Several providers offer this. Compare credentials, pricing and reviews.", [{ type: "url_citation", url: "https://guide.example/providers", title: "Guide" }]);

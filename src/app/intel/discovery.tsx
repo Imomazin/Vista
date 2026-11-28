@@ -126,7 +126,7 @@ export default function IntelligentDiscovery(props: Props) {
       const d = await r.json() as Discovery & { error?: string };
       if (!r.ok) failure = d.error || 'HTTP ' + r.status; else { home = d.home; failure = d.homeFailure?.message || null; }
     } catch (e) { failure = (e as Error).message; }
-    const assessed = assessCompetitor(run.profile, offeringVocabulary(run.profile), { name: url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''), website: url, reason: 'Added by you', offerings: [], markets: [], sources: [] }, ['commercial'], home, failure);
+    const assessed = assessCompetitor(run.profile, offeringVocabulary(run.profile, run.pages), { name: url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''), website: url, reason: 'Added by you', offerings: [], markets: [], sources: [] }, ['commercial'], home, failure);
     const current = runRef.current || run;
     const competitors = [...current.competitors.filter(c => c.website !== url).map(c => c.id === replaceId ? { ...c, selected: false } : c), { ...assessed, selected: assessed.verified, recommended: assessed.recommended }];
     update({ ...current, competitors, competitorHomes: home ? { ...current.competitorHomes, [url]: home } : current.competitorHomes });

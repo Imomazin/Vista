@@ -1,5 +1,5 @@
 import { CloudError } from "@/lib/cloud";
-import { aiAllowance, competitorPrompt, competitorSchema, parseJson, responses, sanitiseCandidates } from "@/lib/intel/discovery-ai";
+import { aiAllowance, competitorExtraction, competitorPrompt, competitorSchema, parseJson, responses, sanitiseCandidates } from "@/lib/intel/discovery-ai";
 import { normaliseWebsite } from "@/lib/intel/discovery-competitors";
 import { intelligenceRoute, stringList } from "@/lib/intel/route-kit";
 
@@ -16,9 +16,12 @@ export async function POST(request: Request) {
     const brand = field(body.brand, 80);
     const offerings = stringList(body.offerings, 8, 100).map(o => o.replace(/[\r\n]+/g, " "));
     if (!website || !brand || !offerings.length) throw new CloudError("Website, brand and at least one offering are required.");
-    const cfg = await aiAllowance(request, "competitors");
+    const cfg = await aiAllowance(request, "competitors", 2);
     const query = { brand, website, industry: field(body.industry, 120), offerings, segments: stringList(body.segments, 6, 80), markets: stringList(body.markets, 4, 60) };
-    const result = await responses(cfg, { input: competitorPrompt(query), schema: { name: "competitors", schema: competitorSchema }, webSearch: true, maxTokens: 3500 });
-    return { candidates: sanitiseCandidates(parseJson(result.text), website, result.citations), citations: result.citations, model: result.model, usedSearch: result.usedSearch, collectedAt: new Date().toISOString(), methodology: "One OpenAI Responses API call" + (result.usedSearch ? " with the web_search tool" : " without web search") + "; candidates are verified by fetching each website before they are recommended." };
+    // Structured output suppresses web search, so research and extraction are separate calls.
+    const research = await responses(cfg, { input: competitorPrompt(query), webSearch: true, maxTokens: 2500 });
+    const notes = research.text.slice(0, 20000) + "\n\nCited URLs:\n" + research.citations.map(c => c.url).join("\n");
+    const extraction = await responses(cfg, { instructions: competitorExtraction, input: "Research notes:\n" + notes, schema: { name: "competitors", schema: competitorSchema }, maxTokens: 2500 });
+    return { candidates: sanitiseCandidates(parseJson(extraction.text), website, research.citations, notes), citations: research.citations, model: research.model, usedSearch: research.usedSearch, collectedAt: new Date().toISOString(), methodology: "OpenAI Responses API research call" + (research.usedSearch ? " with the web_search tool" : " without web search") + ", then a structured extraction limited to organisations and URLs in the research notes; candidates are verified by fetching each website before they are recommended." };
   });
 }
