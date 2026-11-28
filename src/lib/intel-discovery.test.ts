@@ -416,3 +416,72 @@ test("the direct-competitor round names concrete searches for the leading offeri
   assert.match(text, /already been reviewed; do not list them again: ox\.ac\.uk/);
   assert.ok(!competitorPrompt({ ...q, directOnly: false, exclude: [] }).includes("Run separate searches"), "the first round is unchanged");
 });
+
+test("VisTa Lexicon: transparent opportunity scores, page mapping, topics and no invented demand", async () => {
+  const { buildLexicon, lexiconDiff } = await import("./intel/lexicon");
+  const { buildProfile } = await import("./intel/discovery-profile");
+  const { keywordUniverse } = await import("./intel/discovery-keywords");
+  const pages = Object.entries(site).map(([path, html]) => record(origin + path, html));
+  const profile = buildProfile(pages, null, origin);
+  const biomedHome = record("https://biomed-skills.example/", competitorHtml["https://biomed-skills.example/"]);
+  const competitors = [{ id: "c1", name: "BioMed Skills", website: "https://biomed-skills.example/", kinds: ["commercial"], verified: true, recommended: true, selected: true, confidence: "high", reason: "", overlap: {}, sources: [], evidence: [], verification: "" }] as never;
+  const keywords = keywordUniverse({ profile, pages, competitorHomes: [biomedHome], competitors, website: origin + "/" });
+  const input = { keywords, profile, pages, competitorPages: { "https://biomed-skills.example/": [biomedHome] }, competitors, at: "2026-11-28T00:00:00.000Z" };
+  const lex = buildLexicon(input);
+  // Every keyword has an entry with a factor breakdown that sums to the score.
+  assert.equal(lex.entries.length, keywords.length);
+  for (const e of lex.entries) {
+    assert.equal(e.score, Math.min(100, e.factors.reduce((n, f) => n + f.points, 0)), e.keyword);
+    assert.ok(e.factors.every(f => f.points >= 0 && f.points <= f.max));
+    const demand = e.factors.find(f => f.id === "demand")!;
+    assert.equal(demand.basis, "unavailable", "no demand without Search Console or an authorised source");
+    assert.equal(demand.points, 0);
+  }
+  assert.ok(lex.unavailable.some(u => /Search Console is not connected/.test(u)));
+  assert.ok(lex.unavailable.some(u => /search volume and CPC: not measured/.test(u)));
+  // Page mapping: the histology course page targets "histology training"; a phrase on no page is a gap.
+  const histology = lex.entries.find(e => e.keyword === "histology training")!;
+  assert.equal(histology.coverage, "targeted");
+  assert.equal(histology.target!.url, origin + "/courses/histology-training");
+  assert.equal(histology.action.kind, "defend");
+  const gap = lex.entries.find(e => e.coverage === "none" && e.action.kind === "create");
+  assert.ok(gap, "at least one content gap is identified");
+  assert.equal(gap!.factors.find(f => f.id === "gap")!.basis, "observed");
+  // Competitor use is observed on the verified competitor's pages.
+  assert.equal(histology.competitorUse.of, 1);
+  assert.deepEqual(histology.competitorUse.sites, ["https://biomed-skills.example/"]);
+  // Topics: category synonyms and modifiers do not split a topic; distinct disciplines stay separate.
+  const topicOf = (k: string) => lex.entries.find(e => e.keyword === k)?.topic;
+  const variants = lex.entries.filter(e => /histology/.test(e.keyword) && !/haematology|phlebotomy|labmed/.test(e.keyword)).map(e => e.topic);
+  assert.ok(variants.length >= 2 && new Set(variants).size === 1, JSON.stringify(lex.entries.filter(e => /histology/.test(e.keyword)).map(e => e.keyword + " → " + e.topic)));
+  assert.notEqual(topicOf("histology training"), topicOf("haematology training"));
+  const topic = lex.topics.find(t => t.id === topicOf("histology training"))!;
+  assert.equal(topic.label, "histology training");
+  // Deterministic: the same evidence gives identical scores, topics and mapping.
+  const again = buildLexicon(input);
+  assert.deepEqual(again, lex);
+  // Measured Search Console demand is used only when present, and labelled as measured.
+  const withGsc = buildLexicon({ ...input, keywords: keywords.map(k => k.keyword === "histology training" ? { ...k, metrics: { impressions: 900, clicks: 12, position: 7.2, source: "Google Search Console (authorised)", collectedAt: "2026-11-27" } } : k) });
+  const measured = withGsc.entries.find(e => e.keyword === "histology training")!.factors.find(f => f.id === "demand")!;
+  assert.equal(measured.basis, "measured");
+  assert.ok(measured.points > 5 && /striking distance/.test(measured.detail));
+  assert.ok(withGsc.coverage.searchConsole);
+  // History between runs.
+  const diff = lexiconDiff({ ...lex, entries: lex.entries.slice(1), computedAt: "2026-11-01T00:00:00.000Z" }, lex);
+  assert.deepEqual(diff.added, [lex.entries[0].keyword]);
+  assert.equal(diff.since, "2026-11-01T00:00:00.000Z");
+});
+
+test("discovery computes the Lexicon in the keyword stage and keeps competitor service pages", async () => {
+  const svc = fakeService({ ai: true });
+  const run = await runDiscovery(newDiscovery("p1", origin, settings()), { signal: new AbortController().signal, fetcher: svc.fetcher, capabilities: { discoveryAi: "public", search: null } });
+  assert.ok(run.lexicon, "lexicon computed");
+  assert.equal(run.lexicon!.entries.length, run.keywords.length);
+  assert.ok(run.lexicon!.coverage.clientPages >= 5);
+  assert.ok(run.lexicon!.coverage.competitorSites >= 1, "verified competitor pages are used");
+  assert.ok(run.competitorPages!["https://biomed-skills.example/"]?.length >= 1);
+  assert.match(run.stages.find(s => s.id === "keywords")!.note, /topics · \d+ content gaps/);
+  const reset = resetFrom(run, "keywords");
+  assert.equal(reset.lexicon, undefined);
+  assert.ok(Object.keys(resetFrom(run, "competitors").competitorPages || {}).length === 0);
+});

@@ -61,6 +61,19 @@ export default function IntelligentDiscovery(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id]);
 
+  // The previous discovery of the same website (VisTa Lexicon history).
+  const [previousLexicon, setPreviousLexicon] = useState<DiscoveryRun['lexicon'] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!project || !run?.lexicon) { setPreviousLexicon(null); return; }
+    listDiscoveries(project.id).then(list => {
+      if (cancelled) return;
+      const prior = list.filter(r => r.id !== run.id && r.website === run.website && r.lexicon && r.createdAt < run.createdAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      setPreviousLexicon(prior?.lexicon || null);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [project, run?.id, run?.website, run?.createdAt, run?.lexicon]);
+
   const update = useCallback((next: DiscoveryRun) => { setRun(next); saveDiscovery(next).catch(() => {}); }, []);
 
   const execute = useCallback(async (target: DiscoveryRun) => {
@@ -165,7 +178,7 @@ export default function IntelligentDiscovery(props: Props) {
       {run.gaps.length > 0 && !running && <section className="partial-banner" role="note"><div><strong>Limitations of this discovery</strong><ul>{run.gaps.map(g => <li key={g}>{g}</li>)}</ul></div></section>}
       <ProfileSection profile={run.profile} onChange={profile => update({ ...run, profile })}/>
       {(run.competitors.length > 0 || ['complete', 'partial'].includes(run.stages.find(s => s.id === 'competitors')!.status)) && <CompetitorSection run={run} busy={running} onChange={competitors => update({ ...run, competitors })} onAdd={addCompetitor}/>}
-      {run.keywords.length > 0 && <KeywordSection run={run} onChange={keywords => update({ ...run, keywords })}/>}
+      {run.keywords.length > 0 && <KeywordSection run={run} previous={previousLexicon} onChange={keywords => update({ ...run, keywords })}/>}
       {run.prompts.length > 0 && <PromptSection run={run} onChange={prompts => update({ ...run, prompts })} budget={run.scope?.aiPromptBudget ?? auditModes.deep.aiPrompts} maxBudget={auditModes[run.scope?.mode || 'deep'].aiPrompts} onBudget={n => run.scope && update({ ...run, scope: { ...run.scope, aiPromptBudget: n } })}/>}
       {run.priorityPages.length > 0 && <PagesSection run={run} onChange={priorityPages => update({ ...run, priorityPages })}/>}
       {run.scope && <ScopeSection scope={run.scope} member={props.member} recommended={recommendScope(run, run.profile.model.value).mode} onChange={scope => update({ ...run, scope })}/>}

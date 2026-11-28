@@ -161,6 +161,9 @@ const intentFor: Record<PageType, Intent> = { home: "navigational", about: "navi
 
 export function analysePage(input: PageInput): PageRecord {
   const $ = load(input.html);
+  // Line breaks and block boundaries separate words ("training<br>that comes" is "training that comes").
+  $("body br").replaceWith(" ");
+  $("body").find("p,div,li,dt,dd,td,th,h1,h2,h3,h4,h5,h6,section,article,header,footer,nav,aside,blockquote,figcaption,label,option").append(" ");
   const base = new URL(input.finalUrl);
   const meta = (selector: string) => clean($(selector).first().attr("content"), 500) || null;
   const title = clean($("head title").first().text() || $("title").first().text(), 300) || null;

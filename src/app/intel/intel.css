@@ -370,6 +370,24 @@ a.rec-value{text-decoration:none}a.rec-value:hover{text-decoration:underline}
 .group-primary{color:var(--iv-emerald)}.group-secondary{color:var(--iv-info,var(--iv-sub))}.group-emerging{color:var(--iv-violet)}.group-branded{color:var(--iv-warn)}
 .priority-bar{display:inline-block;width:42px;height:5px;border-radius:3px;background:var(--iv-track,rgba(127,127,127,.2));margin-right:6px;vertical-align:middle;overflow:hidden}.priority-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--iv-emerald),var(--iv-violet))}
 .not-measured{color:var(--iv-sub);cursor:help}
+/* VisTa Lexicon */
+.lex-badge{font-size:calc(10px + 2pt);font-weight:600;color:var(--iv-violet);border:1px solid color-mix(in srgb,var(--iv-violet) 45%,transparent);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+.lex-coverage,.lex-history,.topic-related{margin:6px 0 0;color:var(--iv-sub);font-size:calc(11px + 2pt);line-height:1.5}.lex-history{color:var(--iv-text)}
+.lex-method{margin:10px 0 0;color:var(--iv-sub)}
+.topic-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.topic-chips .filter-chip{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.kw-table th[scope=row]{display:flex;flex-direction:column;gap:4px;min-width:180px}.kw-table th[scope=row] .kw-groups{min-width:0;font-weight:400}
+.lex-score summary{cursor:pointer;white-space:nowrap;list-style:none}.lex-score summary::-webkit-details-marker{display:none}.lex-score[open] summary{color:var(--iv-emerald)}
+.lex-factors{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:220px;max-width:320px}
+.lex-factors li{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:calc(10.5px + 2pt)}.lex-factors li strong{font-variant-numeric:tabular-nums}
+.factor-basis{grid-column:1/-1;justify-self:start;font-size:calc(9.5px + 2pt);font-weight:600;padding:0 6px;border:1px solid var(--iv-line);border-radius:999px}
+.factor-detail{grid-column:1/-1;color:var(--iv-sub);line-height:1.35}
+.basis-estimate{color:var(--iv-warn);border-color:color-mix(in srgb,var(--iv-warn) 45%,transparent)}.basis-unavailable{color:var(--iv-sub)}
+.coverage-chip{display:inline-flex;padding:1px 8px;border-radius:999px;font-size:calc(10px + 2pt);font-weight:600;border:1px solid var(--iv-line);white-space:nowrap}
+.coverage-targeted{color:var(--iv-emerald);border-color:color-mix(in srgb,var(--iv-emerald) 45%,transparent)}.coverage-headings,.coverage-body{color:var(--iv-info,var(--iv-sub))}
+.coverage-none{color:var(--iv-warn);border-color:color-mix(in srgb,var(--iv-warn) 45%,transparent)}
+.kw-target{display:block;color:var(--iv-text);font-size:calc(10.5px + 2pt);overflow-wrap:anywhere;margin-top:3px}.kw-action{display:block;color:var(--iv-sub);font-size:calc(10px + 2pt);line-height:1.35;margin-top:2px;max-width:240px}
+.group-long-tail-opportunity{color:var(--iv-violet)}
+@media (max-width:640px){.kw-table th:nth-child(3),.kw-table td:nth-child(3),.kw-table th:nth-child(4),.kw-table td:nth-child(4),.kw-table th:nth-child(9),.kw-table td:nth-child(9){display:none}.kw-table th[scope=row]{min-width:150px}}
 .budget-slider{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;font-size:calc(12px + 2pt)}.budget-slider input{flex:1 1 200px;accent-color:var(--iv-emerald)}
 .prompt-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
 .prompt-group h4,.page-role h4{margin:0 0 6px;display:flex;gap:6px;align-items:center}.prompt-group h4 em{font-style:normal;color:var(--iv-sub);font-weight:400}
