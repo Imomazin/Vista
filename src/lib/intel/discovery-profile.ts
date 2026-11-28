@@ -83,6 +83,9 @@ export function humaniseSlug(url: string): string | null {
   } catch { return null; }
 }
 const jaccard = (a: string, b: string) => { const x = new Set(tokens(a)), y = new Set(tokens(b)); if (!x.size || !y.size) return 0; let n = 0; for (const t of x) if (y.has(t)) n += 1; return n / (x.size + y.size - n); };
+/** Segments: plurals and -ise/-ize spellings compared, and a one-word segment merges into a longer phrase containing it. */
+const segmentKey = (v: string) => new Set(tokens(v).map(t => t.replace(/iz/g, "is").replace(/(ies)$/, "y").replace(/s$/, "")));
+export const sameSegment = (a: string, b: string) => { if (same(a, b)) return true; const x = segmentKey(a), y = segmentKey(b); const [small, large] = x.size <= y.size ? [x, y] : [y, x]; return small.size === 1 && large.size > 1 && [...small].every(t => large.has(t)); };
 const same = (a: string, b: string) => { if (a.toLowerCase() === b.toLowerCase() || jaccard(a, b) >= 0.75) return true; const x = new Set(tokens(a)), y = new Set(tokens(b)); const [small, large] = x.size <= y.size ? [x, y] : [y, x]; return small.size >= 2 && [...small].every(t => large.has(t)); };
 /** Things a site promotes that are not products or services. */
 const notOffering = /\b(scholarships?|bursar(y|ies)|discounts?|vouchers?|gift cards?|sale|newsletter|blog|faqs?|testimonials?|reviews?|careers? at|vacancies|jobs at|privacy|cookies?)\b|^\d+%/i;
@@ -406,9 +409,9 @@ export function mergeAiProfile(profile: BusinessProfile, ai: AiProfile, pages: P
     const stated = basisHint === "stated" && g.share >= 0.6;
     return rec(prefix, v, "model", g.share >= 0.6 ? "medium" : "low", g.valid.map(url => ({ url, detail: stated ? "Stated on this page (AI-extracted)" : "AI interpretation of this page" })), g.share >= 0.6 ? undefined : "Interpretation; the wording is not stated directly on the cited pages.", false);
   };
-  const mergeList = (base: Rec[], extra: (Rec | null)[], max: number, selectNew: boolean) => {
+  const mergeList = (base: Rec[], extra: (Rec | null)[], max: number, selectNew: boolean, eq: (a: string, b: string) => boolean = same) => {
     const out = [...base];
-    for (const r of extra) if (r && !out.some(x => same(x.value, r.value)) && out.length < max) out.push({ ...r, selected: selectNew && r.confidence !== "low" });
+    for (const r of extra) if (r && !out.some(x => eq(x.value, r.value)) && out.length < max) out.push({ ...r, selected: selectNew && r.confidence !== "low" });
     return out;
   };
   // AI-suggested aliases must use the brand, appear on the site, and must not be a heading, navigation label or title segment.
@@ -420,7 +423,7 @@ export function mergeAiProfile(profile: BusinessProfile, ai: AiProfile, pages: P
   const mergedOfferings = mergeList(strong, ai.offerings.filter(o => !generic.has(o.name.toLowerCase().trim()) && !notOffering.test(o.name) && !/^(other|all|more)\b/i.test(o.name.trim())).map(o => modelRec("offering", o.name, o.evidence, undefined, 0.5)), 16, true);
   const offeringsAll = mergeList(mergedOfferings, weak, 16, false);
   const offerings = offeringsAll.map((o, i) => ({ ...o, selected: i < 8 && o.confidence !== "low" }));
-  const segments = mergeList(profile.segments, ai.segments.map(s => { const r = modelRec("segment", s.name, s.evidence, s.basis); return r ? { ...r, tag: roleOf(s.name.toLowerCase()) } : null; }), 8, true);
+  const segments = mergeList(profile.segments, ai.segments.map(s => { const r = modelRec("segment", s.name, s.evidence, s.basis); return r ? { ...r, tag: roleOf(s.name.toLowerCase()) } : null; }), 8, true, sameSegment);
   const markets = mergeList(profile.markets, ai.markets.map(m => { const name = countryName(m.name.replace(/\s*\(.*\)$/, "")); return name ? modelRec("market", name, m.evidence, m.basis, 0) : null; }), 6, false);
   const differentiators = mergeList(profile.differentiators, ai.differentiators.map(d => modelRec("diff", d.value, d.evidence, undefined, 0.5)), 10, false);
   const vp = modelRec("vp", ai.valueProposition.value, ai.valueProposition.evidence, undefined, 0.5);

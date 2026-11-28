@@ -70,7 +70,13 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
   const declared = pagesSeen.flatMap(p => p.business?.names.filter(n => /Structured data name|og:site_name|legalName|alternateName/.test(n.source)).map(n => n.value) || []);
   // "KPMG International | Home" → "KPMG International".
   const cleanOrg = (v: string) => v.split(/\s[|–—:-]\s/).map(x => x.trim()).find(x => x && !/^(home|homepage|welcome|official site|official website)$/i.test(x)) || v;
-  const name = cleanOrg(declared[0] || candidate.name || hostLabel(candidate.website));
+  // A candidate known only by its domain (cited sources, search results) takes its name from the page title:
+  // the title segment naming the domain, otherwise the last segment ("Page | Organisation").
+  const hostLike = !candidate.name || /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(candidate.name.trim());
+  const titleParts = (first?.title || "").split(/\s[|–—:-]\s/).map(x => x.trim()).filter(x => x && x.split(/\s+/).length <= 8 && !/^(home|homepage|welcome|official site|official website)$/i.test(x));
+  const domainKey_ = compactName(hostLabel(candidate.website));
+  const titleName = titleParts.find(x => domainKey_.length >= 3 && compactName(x).includes(domainKey_)) || titleParts.at(-1);
+  const name = cleanOrg(declared[0] || (hostLike && titleName ? titleName : candidate.name) || hostLabel(candidate.website));
   const evidence: EvidenceRef[] = candidate.sources.slice(0, 4).map(url => ({ url, detail: "Source consulted by AI web search", method: "AI web search citation" }));
   const base = { id: recId("competitor", siteKey(hostOf(candidate.website))), name, website: candidate.website, kinds, sources: candidate.sources };
   if (!first) {
@@ -105,8 +111,12 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
   // unless the client is one of them.
   const clientAcademic = profile.subsectors.some(x => /Higher education/i.test(x.value)) || /universit|college/i.test(profile.brand.value);
   const types = pagesSeen.flatMap(p => p.schema.types);
+  // Names the site declares, its titles and the candidate name all count: a body cited by domain alone is still a body.
+  const allNames = [name, candidate.name || "", ...declared, ...pagesSeen.map(p => p.title || "")].join(" · ");
   const academic = !clientAcademic && (types.some(t => /^(CollegeOrUniversity|School)$/.test(t)) || /\.(ac\.uk|edu|ac\.[a-z]{2})$/.test(hostOf(first.finalUrl)) || /\buniversity\b/i.test(name));
-  const body = types.some(t => /^(GovernmentOrganization|NGO)$/.test(t)) || (/\b(institute|society|association|council|federation|chartered|royal college|board)\b/i.test(name) && /\.org(\.[a-z]{2})?$/.test(hostOf(first.finalUrl)));
+  const bodyName = /\b(institute|society|association|council|federation|chartered|royal college|college of|board)\b/i;
+  const clientBody = bodyName.test(profile.brand.value);
+  const body = !clientBody && (types.some(t => /^(GovernmentOrganization|NGO)$/.test(t)) || (bodyName.test(allNames) && /\.org(\.[a-z]{2})?$/.test(hostOf(first.finalUrl))));
   // Publishers cover a market without competing in it.
   const publisher = home_.schema.types.some(t => /^(NewsMediaOrganization|NewsArticle)$/.test(t)) || /(^|\.)(news|times|herald|gazette|magazine|journal|chronicle|insider|daily)[a-z-]*\./.test(hostOf(home_.finalUrl));
   const level: Confidence = coreMatched.length === 0 && core.length > 0 ? "low" : share >= 0.45 && marketOk ? "high" : share >= 0.25 && marketOk ? "medium" : "low";
