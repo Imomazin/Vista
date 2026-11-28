@@ -16,11 +16,12 @@ import { Authority, Cockpit, Competitors, Content, SearchAnalytics, Technical } 
 import GeoPanel from './studio-geo';
 import { DecisionsPanel, FindingsPanel } from './studio-decisions';
 import ExecutiveStudio from './executive-studio';
+import PulseMonitor from './studio-pulse';
 import VistaChart from './vista-chart';
 import './intel.css';
 
 export const studioTabs = [
-  ['brief', 'Brief'], ['cockpit', 'Cockpit'], ['technical', 'Technical SEO'], ['content', 'Content'], ['authority', 'Authority & trust'], ['competitors', 'Competitors'], ['geo', 'GEO & AI search'], ['search', 'Search & analytics'], ['findings', 'Findings'], ['decisions', 'Decision Room'], ['executive', 'Executive Studio'], ['portfolio', 'Portfolio'],
+  ['brief', 'Brief'], ['cockpit', 'Cockpit'], ['technical', 'Technical SEO'], ['content', 'Content'], ['authority', 'Authority & trust'], ['competitors', 'Competitors'], ['geo', 'GEO & AI search'], ['search', 'Search & analytics'], ['findings', 'Findings'], ['monitoring', 'Monitoring'], ['decisions', 'Decision Room'], ['executive', 'Executive Studio'], ['portfolio', 'Portfolio'],
 ] as const;
 export type StudioTab = typeof studioTabs[number][0];
 
@@ -202,6 +203,7 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
         {tab === 'geo' && <GeoPanel inv={inv} analysis={analysis} canSample={session.owner} organisationId={session.owner ? session.organisationId : null} onChange={persist}/>}
         {tab === 'search' && <SearchAnalytics inv={inv} analysis={analysis} goMeasurements={goMeasurements}/>}
         {tab === 'findings' && <FindingsPanel inv={inv} analysis={analysis}/>}
+        {tab === 'monitoring' && <PulseMonitor history={history} current={inv}/>}
         {tab === 'decisions' && <DecisionsPanel inv={inv} analysis={analysis} onChange={persist}/>}
         {tab === 'executive' && <ExecutiveStudio inv={inv} analysis={analysis} projectName={project?.name || inv.brief.brand}/>}
       </> : inv && !inv.pages.length && !running ? <p className="empty-copy">This investigation has no page evidence yet. Resume or retry it above, or start a new investigation.</p> : null}
