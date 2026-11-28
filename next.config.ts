@@ -6,7 +6,11 @@ const nextConfig: NextConfig = {
   // VisTa Spider renders with open-source Playwright and Chromium: keep them out of the bundle and
   // ship the compressed Chromium build with the page-crawling route.
   serverExternalPackages: ["@sparticuz/chromium", "playwright-core"],
-  outputFileTracingIncludes: { "/api/intel/pages": ["./node_modules/@sparticuz/chromium/bin/**"] },
+  // playwright-core also reads data files (browsers.json) at runtime, so the whole package is traced.
+  outputFileTracingIncludes: {
+    "/api/intel/pages": ["./node_modules/@sparticuz/chromium/bin/**", "./node_modules/playwright-core/**"],
+    "/api/spider/worker": ["./node_modules/@sparticuz/chromium/bin/**", "./node_modules/playwright-core/**"],
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [480, 640, 828, 1080, 1280, 1600, 1920],
