@@ -74,13 +74,15 @@ async function providerJson(url:string,init:RequestInit){
  try{return JSON.parse(raw);}catch{throw new CloudError("Provider returned invalid JSON.",502);}
 }
 function required(s:string|undefined,label:string){if(!s)throw new CloudError("Configure "+label+" in the deployment environment.",503);return s;}
-export async function googleSearchConsole(request?:Request){
+export async function googleSearchConsole(request?:Request,input:Record<string,unknown>={}){
+ const byPage=input.dimension==="page";
  const site=required(process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL,"GOOGLE_SEARCH_CONSOLE_SITE_URL");
  if(!(site.startsWith("sc-domain:")||/^https:\/\/[^ ]+\/$/.test(site)))throw new CloudError("Invalid Search Console property scope.",503);
  const token=await googleToken("https://www.googleapis.com/auth/webmasters.readonly",request);
  const end=new Date(Date.now()-2*86400000),start=new Date(end.getTime()-27*86400000);
  const period={startDate:start.toISOString().slice(0,10),endDate:end.toISOString().slice(0,10)};
- const data=await providerJson("https://www.googleapis.com/webmasters/v3/sites/"+encodeURIComponent(site)+"/searchAnalytics/query",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({...period,dimensions:["query"],rowLimit:25})});
+ const data=await providerJson("https://www.googleapis.com/webmasters/v3/sites/"+encodeURIComponent(site)+"/searchAnalytics/query",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({...period,dimensions:[byPage?"page":"query"],rowLimit:byPage?1000:25})});
+ if(byPage)return {source:"Google Search Console API",site,period,observedAt:new Date().toISOString(),dimension:"page",rows:(data.rows||[]).map((x:any)=>({page:String(x.keys?.[0]||""),clicks:Number(x.clicks||0),impressions:Number(x.impressions||0)})),note:"Pages with search impressions in the period (page inventory), up to 1,000 rows."};
  return {source:"Google Search Console API",site,period,observedAt:new Date().toISOString(),rows:(data.rows||[]).map((x:any)=>({query:String(x.keys?.[0]||""),clicks:Number(x.clicks||0),impressions:Number(x.impressions||0),ctr:Number(x.ctr||0),position:Number(x.position||0)})),note:"Property-scoped Google query sample, not a ranking prediction."};
 }
 export function googleReportOptions(input:Record<string,unknown>={},now=new Date()){

@@ -4,7 +4,7 @@ import type { StageState } from '@/lib/intel/model';
 
 export type PulseProps = {
   title: string;
-  status: 'idle' | 'running' | 'paused' | 'cancelled' | 'complete' | 'failed';
+  status: 'idle' | 'running' | 'paused' | 'cancelled' | 'complete' | 'partial' | 'failed';
   stages: StageState[];
   activity: string;
   elapsedMs: number;
@@ -14,6 +14,9 @@ export type PulseProps = {
   onCancel?: () => void;
   onResume?: () => void;
   onRetry?: () => void;
+  onRetryFailed?: () => void;
+  retryableCount?: number;
+  gaps?: string[];
   compact?: boolean;
 };
 
@@ -23,7 +26,7 @@ export function formatElapsed(ms: number) {
   return m ? m + 'm ' + String(s % 60).padStart(2, '0') + 's' : s + 's';
 }
 
-const statusLabel: Record<PulseProps['status'], string> = { idle: 'Ready', running: 'Processing', paused: 'Paused', cancelled: 'Cancelled', complete: 'Complete', failed: 'Needs attention' };
+const statusLabel: Record<PulseProps['status'], string> = { idle: 'Ready', running: 'Processing', paused: 'Paused', cancelled: 'Cancelled', complete: 'Complete', partial: 'Partially complete', failed: 'Needs attention' };
 
 /**
  * VisTa Intelligence Pulse: a liquid energy-stream progress experience. Percentages come only
@@ -39,7 +42,7 @@ export default function IntelligencePulse(props: PulseProps) {
     <header className="ipulse-head">
       <div><span className="ipulse-eyebrow"><i className="ipulse-dot"/>VisTa Intelligence Pulse</span><h3>{props.title}</h3></div>
       <div className="ipulse-stats">
-        <span className={'ipulse-chip chip-' + status}>{running ? <Loader2 size={13} className="ipulse-spin"/> : status === 'complete' ? <Check size={13}/> : status === 'failed' ? <AlertTriangle size={13}/> : status === 'paused' ? <Pause size={13}/> : null}{statusLabel[status]}</span>
+        <span className={'ipulse-chip chip-' + status}>{running ? <Loader2 size={13} className="ipulse-spin"/> : status === 'complete' ? <Check size={13}/> : status === 'failed' || status === 'partial' ? <AlertTriangle size={13}/> : status === 'paused' ? <Pause size={13}/> : null}{statusLabel[status]}</span>
         <span title="Elapsed processing time"><Clock3 size={13}/>{formatElapsed(props.elapsedMs)}</span>
         {props.counts?.map(c => <span key={c.label}><Layers size={13}/>{c.value.toLocaleString('en-GB')} {c.label}</span>)}
       </div>
@@ -66,14 +69,16 @@ export default function IntelligencePulse(props: PulseProps) {
         </div>
       </li>)}
     </ol>
+    {status === 'partial' && props.gaps?.length ? <div className="ipulse-gaps" role="note"><strong>Partial investigation — evidence is incomplete</strong><span>{props.gaps.length} evidence {props.gaps.length === 1 ? 'gap' : 'gaps'} · {props.gaps[0]}{props.gaps.length > 1 ? ' The full list is in the Cockpit.' : ''}</span></div> : null}
     {errors.length > 0 && <details className="ipulse-errors" open={status === 'failed'}>
       <summary><AlertTriangle size={14}/>{errors.length} source {errors.length === 1 ? 'issue' : 'issues'} explained</summary>
       <ul>{errors.slice(0, 12).map((e, i) => <li key={i}><strong>{e.stage} — {e.source.slice(0, 90)}</strong><span>{e.message}</span>{e.retryable && <em>Retryable</em>}</li>)}</ul>
     </details>}
-    {(props.onCancel || props.onResume || props.onRetry) && <footer className="ipulse-actions">
+    {(props.onCancel || props.onResume || props.onRetry || props.onRetryFailed) && <footer className="ipulse-actions">
       {running && props.onCancel && <button className="ipulse-button" onClick={props.onCancel}><Square size={14}/>Cancel</button>}
       {(status === 'paused' || status === 'cancelled') && props.onResume && <button className="ipulse-button primary" onClick={props.onResume}><Play size={14}/>Resume</button>}
       {status === 'failed' && props.onRetry && <button className="ipulse-button primary" onClick={props.onRetry}><RotateCcw size={14}/>Retry from the failed stage</button>}
+      {(status === 'partial' || status === 'complete' || status === 'failed') && props.onRetryFailed && (props.retryableCount || 0) > 0 && <button className="ipulse-button" onClick={props.onRetryFailed}><RotateCcw size={14}/>Retry {props.retryableCount} failed page{props.retryableCount === 1 ? '' : 's'}</button>}
     </footer>}
   </section>;
 }

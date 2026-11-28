@@ -1,8 +1,9 @@
 /** Server-side crawl primitives. Each call is bounded so it fits a single serverless request. */
-import { crawlerUserAgent, explainFailure, FetchFailure, fetchPublic, validatePublicUrl, type FailureKind, type Hop } from "./http";
+import { crawlerUserAgent, explainFailure, FetchFailure, fetchPublic, resourcePolicy, validatePublicUrl, type FailureKind, type Hop } from "./http";
 import { analysePage, siteKey, type PageRecord } from "./page";
 import { parseRobots, robotsDecision, type RobotsPolicy } from "./robots";
 import { parseSitemap } from "./sitemap";
+import { renderConfig, renderPage } from "./render";
 
 export type PageFailure = { url: string; depth: number; kind: FailureKind | "http-error" | "robots" | "off-site-redirect"; status?: number; message: string; chain: Hop[] };
 export type SitemapSummary = { url: string; status: number | null; kind: "urlset" | "index" | "invalid" | "unreachable"; entries: number; truncated: boolean; error?: string };
@@ -25,7 +26,7 @@ export async function loadRobots(origin: string): Promise<{ policy: RobotsPolicy
   if (cached && cached.until > Date.now()) return cached;
   let result: { policy: RobotsPolicy; status: number | null };
   try {
-    const response = await fetchPublic(origin + "/robots.txt", { accept: "text/plain,*/*;q=0.5", bodyTypes: /text\/|application\/octet-stream/i, maxBytes: 512_000, timeoutMs: 8000 });
+    const response = await fetchPublic(origin + "/robots.txt", { accept: "text/plain,*/*;q=0.5", bodyTypes: /text\/|application\/octet-stream/i, maxBytes: 512_000, allowTruncate: true, timeoutMs: 8000 });
     if (response.status >= 200 && response.status < 300) result = { policy: { state: "found", ...parseRobots(response.body) }, status: response.status };
     else if (response.status >= 400 && response.status < 500) result = { policy: { state: "missing", groups: [], sitemaps: [], bytes: 0 }, status: response.status };
     else result = { policy: { state: "unavailable", groups: [], sitemaps: [], bytes: 0 }, status: response.status };
@@ -48,17 +49,23 @@ function failure(url: string, depth: number, error: unknown): PageFailure {
 }
 
 /** Fetch and analyse one page, respecting robots.txt for the VisTa user agent. */
-export async function crawlPage(url: string, depth: number, keywords: string[] = [], deadline = Date.now() + 15000): Promise<{ page?: PageRecord; failure?: PageFailure }> {
+export async function crawlPage(url: string, depth: number, keywords: string[] = [], deadline = Date.now() + 15000, options: { render?: boolean } = {}): Promise<{ page?: PageRecord; failure?: PageFailure }> {
   let origin: string;
   try { origin = new URL(url).origin; } catch { return { failure: { url, depth, kind: "invalid-url", message: explainFailure("invalid-url"), chain: [] } }; }
   try {
     validatePublicUrl(url);
     const robots = await loadRobots(origin);
     if (!robotsDecision(robots.policy, url, crawlerUserAgent).allowed) return { failure: { url, depth, kind: "robots", message: robots.policy.state === "unavailable" ? "robots.txt could not be retrieved (server error), so crawling is paused for this site as RFC 9309 requires." : explainFailure("robots"), chain: [] } };
-    const response = await fetchPublic(url, { timeoutMs: Math.max(3000, Math.min(12000, deadline - Date.now())) });
+    const response = await fetchPublic(url, { reduce: true, timeoutMs: Math.max(3000, Math.min(resourcePolicy().timeoutMs, deadline - Date.now())), retries: deadline - Date.now() > 20000 ? undefined : 0 });
     if (siteKey(new URL(response.finalUrl).hostname) !== siteKey(new URL(url).hostname)) return { failure: { url, depth, kind: "off-site-redirect", message: "The URL redirects to another website (" + new URL(response.finalUrl).hostname + ").", chain: response.chain } };
     if (response.status < 200 || response.status >= 300) return { failure: { url, depth, kind: "http-error", status: response.status, message: explainFailure("http-error", response.status), chain: response.chain } };
-    const page = analysePage({ url, finalUrl: response.finalUrl, status: response.status, chain: response.chain, headers: response.headers, html: response.body, fetchedAt: new Date().toISOString(), durationMs: response.durationMs, depth, keywords });
+    const page = analysePage({ url, finalUrl: response.finalUrl, status: response.status, chain: response.chain, headers: response.headers, html: response.body, fetchedAt: new Date().toISOString(), durationMs: response.durationMs, depth, keywords, retrieval: response.retrieval });
+    if (options.render && page.jsDependent && renderConfig() && deadline - Date.now() > 12000) {
+      try {
+        const rendered = await renderPage(response.finalUrl, resourcePolicy().maxHtmlBytes, Math.min(25000, deadline - Date.now() - 2000));
+        return { page: analysePage({ url, finalUrl: response.finalUrl, status: response.status, chain: response.chain, headers: response.headers, html: rendered.html, fetchedAt: new Date().toISOString(), durationMs: response.durationMs, depth, keywords, retrieval: { ...response.retrieval, truncated: rendered.truncated }, rendered: true }) };
+      } catch { /* The server-rendered evidence is kept; rendering is best effort. */ }
+    }
     return { page };
   } catch (error) { return { failure: failure(url, depth, error) }; }
 }
@@ -125,8 +132,8 @@ export type LinkStatus = { url: string; status: number | null; finalUrl: string 
 export async function checkLinks(urls: string[]): Promise<LinkStatus[]> {
   return pool(urls, 5, async url => {
     try {
-      let response = await fetchPublic(url, { method: "HEAD", readBody: false, timeoutMs: 7000, maxRedirects: 5 });
-      if ([405, 501, 403].includes(response.status)) response = await fetchPublic(url, { method: "GET", readBody: false, timeoutMs: 7000, maxRedirects: 5 });
+      let response = await fetchPublic(url, { method: "HEAD", readBody: false, timeoutMs: 7000, maxRedirects: 5, retries: 0 });
+      if ([405, 501, 403].includes(response.status)) response = await fetchPublic(url, { method: "GET", readBody: false, timeoutMs: 7000, maxRedirects: 5, retries: 0 });
       return { url, status: response.status, finalUrl: response.finalUrl, redirects: response.chain.length - 1 };
     } catch (error) {
       const kind = error instanceof FetchFailure ? error.kind : "connection";

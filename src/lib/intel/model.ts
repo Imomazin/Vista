@@ -47,9 +47,9 @@ export type Finding = {
 
 export type AuditMode = "quick" | "deep" | "enterprise";
 export const auditModes: Record<AuditMode, { label: string; purpose: string; pages: number; competitorPages: number; linkChecks: number; performancePages: number; aiPrompts: number }> = {
-  quick: { label: "Quick Scan", purpose: "Initial assessment of priority pages", pages: 12, competitorPages: 2, linkChecks: 40, performancePages: 1, aiPrompts: 6 },
-  deep: { label: "Deep Intelligence", purpose: "Extensive website and marketing analysis", pages: 50, competitorPages: 5, linkChecks: 150, performancePages: 3, aiPrompts: 18 },
-  enterprise: { label: "Enterprise Investigation", purpose: "Comprehensive, multi-source strategic assessment", pages: 150, competitorPages: 10, linkChecks: 400, performancePages: 6, aiPrompts: 36 },
+  quick: { label: "Quick Scan", purpose: "Initial assessment of priority pages", pages: 25, competitorPages: 3, linkChecks: 60, performancePages: 1, aiPrompts: 6 },
+  deep: { label: "Deep Intelligence", purpose: "Extensive website and marketing analysis", pages: 250, competitorPages: 6, linkChecks: 400, performancePages: 3, aiPrompts: 18 },
+  enterprise: { label: "Enterprise Investigation", purpose: "Comprehensive, multi-source strategic assessment", pages: 5000, competitorPages: 12, linkChecks: 2000, performancePages: 6, aiPrompts: 36 },
 };
 
 export type Brief = {
@@ -71,7 +71,18 @@ export type Brief = {
   performancePages: number;
   aiPromptBudget: number;
   includeExternalLinks: boolean;
+  /** Pages to inspect in addition to discovered links (also used when the home page cannot be analysed). */
+  seedUrls?: string[];
+  /** Re-render JavaScript-dependent pages through the configured rendering service (bounded). */
+  renderJs?: boolean;
 };
+
+/** Deployment page caps per tier and entitlement (signed-in organisation members unlock Enterprise). */
+export function tierCap(mode: AuditMode, member: boolean, env: Record<string, string | undefined> = typeof process !== "undefined" ? process.env : {}): number {
+  const cap = (key: string, fallback: number) => { const n = Number(env[key]); return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback; };
+  const limits = { quick: cap("NEXT_PUBLIC_VISTA_MAX_PAGES_QUICK", 25), deep: cap("NEXT_PUBLIC_VISTA_MAX_PAGES_DEEP", 250), enterprise: cap("NEXT_PUBLIC_VISTA_MAX_PAGES_ENTERPRISE", 5000) };
+  return mode === "enterprise" && !member ? limits.deep : limits[mode];
+}
 
 export type CompetitorSnapshot = { website: string; name: string; discovery: Pick<Discovery, "origin" | "robots" | "sitemaps" | "collectedAt"> & { sitemapCount: number }; pages: PageRecord[]; failures: PageFailure[]; performance?: PerformanceResult };
 
@@ -121,6 +132,8 @@ export type Investigation = {
   firstParty: FirstPartyData;
   job: JobState;
   settings?: InvestigationSettings;
+  /** Present on summaries loaded without page records. */
+  pageCount?: number;
 };
 
 export type InvestigationSettings = {
@@ -136,14 +149,16 @@ export type InvestigationSettings = {
 export type StageStatus = "pending" | "active" | "complete" | "partial" | "failed" | "skipped";
 export type StageState = { id: string; label: string; status: StageStatus; done: number; total: number | null; note: string; startedAt?: string; finishedAt?: string; errors: { source: string; message: string; retryable: boolean }[] };
 export type JobState = {
-  status: "idle" | "running" | "paused" | "cancelled" | "complete" | "failed";
+  status: "idle" | "running" | "paused" | "cancelled" | "complete" | "partial" | "failed";
   stages: StageState[];
   activity: string;
   startedAt: string | null;
   elapsedMs: number;
   frontier: { url: string; depth: number }[];
   visited: string[];
-  counts: { pages: number; records: number; sources: number };
+  counts: { pages: number; records: number; sources: number; discovered?: number; queued?: number; processed?: number; failed?: number; restricted?: number };
+  /** Plain-language list of evidence gaps when the investigation is partial. */
+  gaps?: string[];
 };
 
 export const websiteStages: [string, string][] = [

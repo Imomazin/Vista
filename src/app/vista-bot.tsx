@@ -4,7 +4,7 @@ import {Bot,ArrowUpRight,X,Send,Compass,ChevronRight,RotateCcw} from 'lucide-rea
 import {contextGuide,guides,matchGuide,safeGuide,guideTarget,type Guide} from '@/lib/bot-guide';
 import {answerFromEvidence,evidenceContext,type BotAction,type EvidenceContext} from '@/lib/intel/bot-evidence';
 import {computeAnalysis} from '@/lib/intel/analysis';
-import {listInvestigations} from '@/lib/intel/store';
+import {latestPerProject} from '@/lib/intel/store';
 import {preferredProject} from '@/lib/workspace';
 const evidenceQuestions=['What findings should I present to the board?','Which interventions should the client fund first?','Why is the brand absent from AI recommendations?','Which competitor is outperforming the client?'];
 type Message={role:'user'|'assistant';text:string;guide?:Guide;actions?:BotAction[]};
@@ -12,7 +12,7 @@ export default function VistaBot({hash,onNavigate}:{hash:string;onNavigate:(hash
  const current=contextGuide(hash);const [open,setOpen]=useState(false),[input,setInput]=useState(''),[messages,setMessages]=useState<Message[]>([]),[busy,setBusy]=useState(false),[tour,setTour]=useState(false),[step,setStep]=useState(0);
  const [notice,setNotice]=useState('');
  const highlighted=useRef<HTMLElement|null>(null);const [authenticated,setAuthenticated]=useState(false);const bottom=useRef<HTMLDivElement>(null),field=useRef<HTMLInputElement>(null),launcher=useRef<HTMLButtonElement>(null);const request=useRef<AbortController|null>(null);const [evidence,setEvidence]=useState<EvidenceContext|null>(null);
- useEffect(()=>{if(!open)return;listInvestigations().then(list=>{const usable=list.filter(i=>i.pages.length);const chosen=usable.find(i=>i.projectId===preferredProject())||usable[0];setEvidence(chosen?evidenceContext(chosen,computeAnalysis(chosen),chosen.brief.brand||chosen.brief.website):null);}).catch(()=>setEvidence(null));},[open]);
+ useEffect(()=>{if(!open)return;latestPerProject().then(usable=>{const chosen=usable.find(i=>i.projectId===preferredProject())||usable[0];setEvidence(chosen?evidenceContext(chosen,computeAnalysis(chosen),chosen.brief.brand||chosen.brief.website):null);}).catch(()=>setEvidence(null));},[open]);
  useEffect(()=>{if(!open)return;field.current?.focus();const c=new AbortController();fetch('/api/cloud/session',{signal:c.signal,cache:'no-store'}).then(r=>r.json()).then(d=>setAuthenticated(Boolean(d.authenticated))).catch(()=>{});return()=>c.abort();},[open]);
  useEffect(()=>{bottom.current?.scrollIntoView({block:'nearest'});},[messages,busy]);useEffect(()=>{setStep(0);highlighted.current?.classList.remove('vb-highlight');highlighted.current=null;},[hash]);useEffect(()=>()=>{request.current?.abort();highlighted.current?.classList.remove('vb-highlight');},[]);
  function close(){setOpen(false);highlighted.current?.classList.remove('vb-highlight');highlighted.current=null;launcher.current?.focus();}

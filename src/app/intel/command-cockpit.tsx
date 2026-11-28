@@ -5,7 +5,7 @@ import { computeAnalysis } from '@/lib/intel/analysis';
 import * as charts from '@/lib/intel/charts';
 import { engineStatus } from '@/lib/intel/engine-status';
 import type { Investigation } from '@/lib/intel/model';
-import { listInvestigations } from '@/lib/intel/store';
+import { latestPerProject } from '@/lib/intel/store';
 import { preferredProject, type Workspace } from '@/lib/workspace';
 import VistaChart from './vista-chart';
 import { EvidenceBadge, Metric } from './studio-ui';
@@ -15,8 +15,7 @@ function useLatest(data: Workspace) {
   const [latest, setLatest] = useState<Investigation | null>(null);
   const [all, setAll] = useState<Investigation[]>([]);
   useEffect(() => {
-    const load = () => listInvestigations().then(list => {
-      const usable = list.filter(i => i.pages.length && data.projects.some(p => p.id === i.projectId));
+    const load = () => latestPerProject(data.projects.map(p => p.id)).then(usable => {
       setAll(usable);
       const preferred = preferredProject();
       setLatest(usable.find(i => i.projectId === preferred) || usable[0] || null);
@@ -53,7 +52,7 @@ export function EngineDashboard({ engine, data, openStudio, openMeasurements }: 
   const specs = !latest || !analysis ? [] : ({
     1: [charts.gscOpportunity(latest), charts.kpiBullets(latest, analysis.site)],
     2: [charts.ga4Channels(latest)],
-    3: [charts.crawlFunnel(latest, analysis.site), charts.issueHeatmap(latest), charts.responseSankey(latest)],
+    3: [charts.crawlFunnel(latest, analysis.site), charts.issueHeatmap(latest), charts.pageHealthTreemap(latest), charts.depthBars(analysis.site)],
     4: [charts.contentTreemap(analysis.site), charts.readinessScatter(latest, analysis.site)],
     5: [charts.entityNetwork(latest)],
     6: [],
