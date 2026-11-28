@@ -8,11 +8,12 @@ import { resetFrom, runDiscovery } from '@/lib/intel/discovery-runner';
 import { briefFromDiscovery, recommendScope } from '@/lib/intel/discovery-scope';
 import { auditModes, type AiObservation, type Brief } from '@/lib/intel/model';
 import type { Discovery } from '@/lib/intel/crawl';
-import { listDiscoveries, saveDiscovery } from '@/lib/intel/store';
+import { listDiscoveries, listObservations, saveDiscovery, saveObservations } from '@/lib/intel/store';
+import { compareObservations, pageKey, type Comparison } from '@/lib/intel/observations';
 import type { Project } from '@/lib/workspace';
 import IntelligencePulse from './intelligence-pulse';
 import VistaChart from './vista-chart';
-import { CompetitorSection, KeywordSection, PagesSection, ProfileSection, PromptSection, RegenerateMenu, ScopeSection } from './discovery-sections';
+import { CompetitorSection, IndexSection, KeywordSection, PagesSection, ProfileSection, PromptSection, RegenerateMenu, ScopeSection } from './discovery-sections';
 import type { Capabilities } from './studio';
 
 type Props = {
@@ -73,6 +74,23 @@ export default function IntelligentDiscovery(props: Props) {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [project, run?.id, run?.website, run?.createdAt, run?.lexicon]);
+
+  // VisTa Index (browser): keep this run's observations and compare priority pages with earlier VisTa observations.
+  const [history, setHistory] = useState<Comparison[]>([]);
+  const [storedObservations, setStoredObservations] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const idx = run?.index;
+    if (!run || !idx || running) { setHistory([]); return; }
+    const current = idx.observations.filter(o => o.source === 'vista');
+    const keys = [...new Set([pageKey(run.website), ...run.priorityPages.filter(p => p.selected).map(p => pageKey(p.url))])].filter(k => current.some(o => o.key === k)).slice(0, 8);
+    listObservations(keys).then(prior => {
+      if (cancelled) return;
+      setHistory(keys.map(k => { const now = current.find(o => o.key === k)!; const before = prior.find(o => o.key === k && o.source === 'vista' && o.observedAt < run.createdAt); return before ? compareObservations(before, now) : null; }).filter((c): c is Comparison => Boolean(c)));
+      return saveObservations(idx.observations).then(() => { if (!cancelled) setStoredObservations(idx.observations.length); });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [run?.id, run?.index, running]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = useCallback((next: DiscoveryRun) => { setRun(next); saveDiscovery(next).catch(() => {}); }, []);
 
@@ -181,6 +199,7 @@ export default function IntelligentDiscovery(props: Props) {
       {run.keywords.length > 0 && <KeywordSection run={run} previous={previousLexicon} onChange={keywords => update({ ...run, keywords })}/>}
       {run.prompts.length > 0 && <PromptSection run={run} onChange={prompts => update({ ...run, prompts })} budget={run.scope?.aiPromptBudget ?? auditModes.deep.aiPrompts} maxBudget={auditModes[run.scope?.mode || 'deep'].aiPrompts} onBudget={n => run.scope && update({ ...run, scope: { ...run.scope, aiPromptBudget: n } })}/>}
       {run.priorityPages.length > 0 && <PagesSection run={run} onChange={priorityPages => update({ ...run, priorityPages })}/>}
+      {run.index && <IndexSection index={run.index} history={history} stored={storedObservations}/>}
       {run.scope && <ScopeSection scope={run.scope} member={props.member} recommended={recommendScope(run, run.profile.model.value).mode} onChange={scope => update({ ...run, scope })}/>}
       {charts.length > 0 && <section className="studio-section" aria-label="Discovery visual intelligence"><div className="discovery-head"><h3>Visual intelligence</h3><p className="section-note">Drawn from the evidence above; each chart has a data table and export.</p></div><div className="studio-charts">{charts.map(spec => <VistaChart key={spec.id} spec={spec} height={spec.id === 'discovery-network' ? 380 : 320}/>)}</div></section>}
       {ready && <div className="discovery-launch"><p>{summary}</p><button className="mint-button" onClick={launch} disabled={running || props.busy}><Rocket size={16}/>Launch investigation with this scope</button></div>}

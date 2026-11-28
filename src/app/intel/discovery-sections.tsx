@@ -4,6 +4,8 @@ import { Check, ExternalLink, Pencil, Plus, RefreshCcw, Replace, X } from 'lucid
 import { basisLabel, competitorKindLabel, keywordGroupLabel, pageRoleLabel, recId, type Basis, type BusinessProfile, type CompetitorRec, type DiscoveryRun, type EvidenceRef, type KeywordGroup, type PageRole, type PromptRec, type Rec, type ScopeRec } from '@/lib/intel/discovery-model';
 import { promptCategories } from '@/lib/intel/geo';
 import { lexiconDiff, type Coverage, type FactorBasis, type Lexicon } from '@/lib/intel/lexicon';
+import type { DiscoveryIndex } from '@/lib/intel/discovery-index';
+import type { Comparison } from '@/lib/intel/observations';
 import { auditModes, tierCap, type AuditMode, type PromptCategory } from '@/lib/intel/model';
 
 const shortBasis: Record<Basis, string> = { observed: 'Stated', inferred: 'Inference', model: 'AI interpretation', measured: 'Measured', 'first-party': 'First-party', provider: 'Provider data', user: 'Added by you' };
@@ -173,6 +175,30 @@ export function ScopeSection({ scope, onChange, member, recommended }: { scope: 
     <ul className="scope-rationale">{scope.rationale.map(r => <li key={r}>{r}</li>)}</ul>
     <div className="scope-tables"><div><h4>Data sources</h4><div className="table-scroll"><table className="studio-table"><tbody>{scope.sources.map(s => <tr key={s.name}><th scope="row">{s.name}</th><td><span className={'source-status status-' + s.status}>{{ active: 'Active', available: 'Available', 'requires-sign-in': 'Owner sign-in', 'not-configured': 'Not configured' }[s.status]}</span></td><td><small>{s.note}</small></td></tr>)}</tbody></table></div></div>
       <div><h4>Resources and cost</h4><div className="table-scroll"><table className="studio-table"><tbody>{scope.resources.map(r => <tr key={r.label}><th scope="row">{r.label}</th><td>{r.value}</td><td><small>{r.note}</small></td></tr>)}</tbody></table></div></div></div>
+  </section>;
+}
+
+const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'date unknown';
+function ComparisonCard({ c, beforeLabel }: { c: Comparison; beforeLabel: string }) {
+  const failed = c.changes.some(x => x.field === 'error');
+  return <li className={'index-compare' + (c.unchanged ? ' same' : '')}>
+    <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" className="rec-value">{shortUrl(c.url)}</a>
+    <small>{beforeLabel}{c.before.crawl ? ' ' + c.before.crawl : ''}, {fmtDate(c.before.at)} → live, {fmtDate(c.after.at)}{c.similarity !== null ? ' · content similarity ' + Math.round(c.similarity * 100) + '%' : ''}</small>
+    {failed ? <small className="rec-note">{c.changes[0].after}</small> : c.unchanged ? <small className="index-same">No change detected</small> :
+      <ul>{c.changes.slice().sort((a, b) => Number(b.major) - Number(a.major)).map(x => <li key={x.field}><strong className={x.major ? 'major' : ''}>{x.label}</strong><span>{x.before.slice(0, 140)}</span><span aria-hidden="true">→</span><span>{x.after.slice(0, 140)}</span></li>)}</ul>}
+  </li>;
+}
+
+export function IndexSection({ index, history, stored }: { index: DiscoveryIndex; history: Comparison[]; stored: number }) {
+  const a = index.archive;
+  return <section className="studio-section" aria-label="Website history"><div className="discovery-head"><h3>Website history <small className="lex-badge">VisTa Index</small></h3><p className="section-note">Dated observations of the website from VisTa's crawler and the Common Crawl open web archive. VisTa keeps derived observations only (titles, headings, word counts, links, structured data types and content fingerprints), never copies of pages. Archived evidence is historical and dated by its capture.</p></div>
+    {a.skipped ? <p className="rec-note">{a.skipped}</p> : a.error ? <p className="rec-note">Web archive unavailable: {a.error}</p> :
+      <div className="table-scroll"><table className="studio-table"><thead><tr><th scope="col">Common Crawl crawl</th><th scope="col">Archived URLs</th><th scope="col">Captured</th></tr></thead><tbody>{a.crawls.map(c => <tr key={c.crawl}><th scope="row">{c.crawl}</th><td>{c.error ? <span className="not-measured">{c.error}</span> : c.capturedUrls.toLocaleString('en-GB') + (c.truncated ? '+ (bounded sample)' : '')}</td><td>{c.first ? fmtDate(c.first) + (c.last.slice(0, 10) !== c.first.slice(0, 10) ? ' to ' + fmtDate(c.last) : '') : '—'}</td></tr>)}</tbody></table></div>}
+    {a.notInInventory.length > 0 && <details className="rec-evidence"><summary>{a.notInInventory.length} archived URL{a.notInInventory.length === 1 ? '' : 's'} not found in the sitemap or the sampled links</summary><ul>{a.notInInventory.map(u => <li key={u}><a href={u} target="_blank" rel="noopener noreferrer nofollow">{shortUrl(u)}</a></li>)}</ul></details>}
+    {index.comparisons.length > 0 && <><h4 className="index-h">Archived versus live</h4><ul className="index-compares">{index.comparisons.map(c => <ComparisonCard key={c.url} c={c} beforeLabel="Common Crawl"/>)}</ul></>}
+    {!a.skipped && !a.error && !index.comparisons.length && <p className="rec-note">None of the priority pages has an archived HTML capture in these crawls, so no archived-versus-live comparison was possible.</p>}
+    {history.length > 0 && <><h4 className="index-h">Since VisTa last observed these pages</h4><ul className="index-compares">{history.map(c => <ComparisonCard key={'h' + c.url} c={c} beforeLabel="VisTa"/>)}</ul></>}
+    <p className="lex-coverage">{a.limitation || 'Common Crawl is a sample of the public web.'} {stored ? stored + ' page observations are kept in this browser for future comparisons.' : ''} <a href={a.terms} target="_blank" rel="noopener noreferrer">Common Crawl terms of use</a>.</p>
   </section>;
 }
 

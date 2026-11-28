@@ -62,6 +62,10 @@ function fakeService(opts: { ai?: boolean; search?: boolean } = {}) {
       assert.ok(t?.sample, "only sampleable templates are sent");
       return json({ prompt: renderTemplate(body.template, body.slots), category: t.category, provider: "OpenAI", model: "test-model", response: "1. BioMed Skills — histology and haematology courses.\n2. Another provider.\nSee also the IBMS guidance.", citations: [{ url: "https://biomed-skills.example/courses", title: "Courses" }, { url: "https://www.ibms.org/education/", title: "IBMS" }], collectedAt: new Date().toISOString(), methodology: "test", limitations: "test" });
     }
+    if (path === "/api/intel/archive") {
+      if (body.domain) return json({ crawls: [{ crawl: "CC-MAIN-2026-47", captures: [{ url: origin + "/", timestamp: "20261117130655", status: 200, mime: "text/html", digest: "X", length: 5000, offset: 10, filename: "crawl-data/CC-MAIN-2026-47/segments/1.2/warc/a.warc.gz", crawl: "CC-MAIN-2026-47" }, { url: origin + "/old-campaign", timestamp: "20261117130655", status: 200, mime: "text/html", digest: "Y", length: 5000, offset: 20, filename: "crawl-data/CC-MAIN-2026-47/segments/1.2/warc/a.warc.gz", crawl: "CC-MAIN-2026-47" }], uniqueUrls: 2, truncated: false, requests: 17, first: "2026-11-17T13:06:55Z", last: "2026-11-17T13:06:55Z" }, { crawl: "CC-MAIN-2026-30", captures: [], uniqueUrls: 0, truncated: false, requests: 16, first: "", last: "" }], method: "test", limitation: "Common Crawl is a sample of the public web.", terms: "https://commoncrawl.org/terms-of-use" });
+      if (body.capture) return json({ page: analysePage({ url: origin + "/", finalUrl: origin + "/", status: 200, chain: [], headers: {}, html: page("Laboratory Training in London", "Laboratory training for graduates", "Histology training in London."), fetchedAt: "2026-11-17T13:06:55Z", durationMs: 0, depth: 0 }), capturedAt: "2026-11-17T13:06:55Z", crawl: "CC-MAIN-2026-47" });
+    }
     if (path === "/api/intel/discovery/search") {
       if (!opts.search) return json({ configured: false, provider: null, metrics: [], serp: [], note: "No provider" });
       return json({ configured: true, provider: "DataForSEO", collectedAt: new Date().toISOString(), note: "", metrics: (body.keywords as string[]).slice(0, 3).map((k, i) => ({ keyword: k, volume: 100 * (i + 1), cpc: 1.2, difficulty: 30 })), serp: (body.serpKeywords as string[]).map(k => ({ keyword: k, results: [{ url: "https://biomed-skills.example/courses", position: 1 }, { url: origin + "/courses/histology-training", position: 3 }, { url: "https://www.findcourses.example/x", position: 4 }] })) });
@@ -484,4 +488,29 @@ test("discovery computes the Lexicon in the keyword stage and keeps competitor s
   const reset = resetFrom(run, "keywords");
   assert.equal(reset.lexicon, undefined);
   assert.ok(Object.keys(resetFrom(run, "competitors").competitorPages || {}).length === 0);
+});
+
+test("VisTa Index in discovery: archive history, archived-versus-live comparison and inventory beyond the sitemap", async () => {
+  const svc = fakeService({ ai: true });
+  const run = await runDiscovery(newDiscovery("p1", origin, settings()), { signal: new AbortController().signal, fetcher: svc.fetcher, capabilities: { discoveryAi: "public", search: null } });
+  const index = run.index!;
+  assert.ok(index, "index computed");
+  assert.equal(index.archive.crawls[0].crawl, "CC-MAIN-2026-47");
+  assert.equal(index.archive.crawls[0].capturedUrls, 2);
+  assert.deepEqual(index.archive.notInInventory, [origin + "/old-campaign"], "archived URLs missing from the sitemap and links");
+  const home = index.comparisons.find(c => c.url === origin + "/")!;
+  assert.equal(home.before.source, "common-crawl");
+  assert.equal(home.before.at, "2026-11-17T13:06:55Z");
+  assert.ok(home.changes.some(c => c.field === "title" && c.major), "the title changed since the capture");
+  assert.ok(index.observations.some(o => o.source === "common-crawl") && index.observations.filter(o => o.source === "vista").length === run.pages.length);
+  assert.match(run.stages.find(s => s.id === "pages")!.note, /2 archived URLs \(CC-MAIN-2026-47\), 1 compared with the live site/);
+  assert.ok(!run.gaps.some(g => /Web archive/.test(g)));
+  assert.equal(resetFrom(run, "pages").index, undefined);
+});
+
+test("the web archive is not consulted for addresses that are not public domain names", async () => {
+  const { archiveIndex } = await import("./intel/discovery-index");
+  let called = false;
+  const r = await archiveIndex({ ...newDiscovery("p1", "http://127.0.0.17:4810/", settings()), pages: [] }, async () => { called = true; throw new Error("no"); });
+  assert.ok(!called && r.archive.skipped && !r.archive.error);
 });
