@@ -301,3 +301,18 @@ test("JavaScript application shells still yield an offering and industry from th
   assert.ok(profile.offerings.some(o => o.value === "Whiteboard" && o.evidence[0].detail === "Home page title"));
   assert.equal(profile.industry.value, "Technology and software");
 });
+
+test("descriptive aliases do not strip category words from keywords or the offer vocabulary", async () => {
+  const { buildProfile } = await import("./intel/discovery-profile");
+  const { keywordUniverse } = await import("./intel/discovery-keywords");
+  const { offeringVocabulary } = await import("./intel/discovery-competitors");
+  const pages = Object.entries(site).map(([path, html]) => record(origin + path, html));
+  const profile = buildProfile(pages, null, origin);
+  profile.aliases.push({ id: "alias-x", value: "LabMed Academy Laboratory Training", basis: "model", confidence: "medium", evidence: [], selected: true });
+  const vocabulary = offeringVocabulary(profile, pages);
+  assert.ok(vocabulary.includes("training") || vocabulary.includes("laboratory"), vocabulary.join(","));
+  const keywords = keywordUniverse({ profile, pages, competitorHomes: [], competitors: [], website: origin });
+  assert.ok(keywords.some(k => k.keyword === "histology training"), keywords.slice(0, 10).map(k => k.keyword).join(" | "));
+  assert.ok(!keywords.some(k => /^other /.test(k.keyword)));
+  assert.ok(!profile.aliases.some(a => /^About /.test(a.value)));
+});

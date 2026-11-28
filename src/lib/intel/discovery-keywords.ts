@@ -24,6 +24,7 @@ function normalise(raw: string, brandTokens: Set<string>, keepBrand = false): st
   // "clinical laboratory course 12" → "clinical laboratory course": numbered variants are one search topic.
   if (words.length >= 3 && /^\d{1,3}$/.test(words[words.length - 1])) words.pop();
   const phrase = words.join(" ").replace(/\s*-\s*/g, " ").trim();
+  if (/^(other|all|more|view|see|browse|explore)\b/.test(phrase)) return null;
   if (/\b(cart|basket|checkout|refunds?|returns?|exchanges?|policy|policies|gift cards?|sign in|log in|login|newsletter|cookies?|account|wishlist|shipping|subscribe|unsubscribe|added to|filters?|sort by|skip to)\b/.test(phrase)) return null;
   if (phrase.length < 3 || words.length > 7 || genericPhrase.test(phrase) || !tokens(phrase).length || /^\d+( \d+)*$/.test(phrase)) return null;
   return phrase;
@@ -34,7 +35,10 @@ export type KeywordInput = { profile: BusinessProfile; pages: PageRecord[]; comp
 export function keywordUniverse(input: KeywordInput): KeywordRec[] {
   const { profile, pages } = input;
   const brandNames = [profile.brand.value, ...profile.aliases.filter(a => a.selected).map(a => a.value)].map(s => s.toLowerCase());
-  const brandTokens = new Set(brandNames.flatMap(n => tokens(n)).filter(t => t.length > 2 && !/^(com|co|uk|org|net|www)$/.test(t)));
+  // Brand tokens come from the brand name and domain only: aliases often contain descriptive words ("… Laboratory Training")
+  // that must stay in keywords. Aliases still mark a keyword as branded when the whole alias appears.
+  const domainLabel = (() => { try { return new URL(input.website).hostname.replace(/^www\./, "").split(".")[0]; } catch { return ""; } })();
+  const brandTokens = new Set([...tokens(profile.brand.value), domainLabel].filter(t => t.length > 2 && !/^(com|co|uk|org|net|www)$/.test(t)));
   const isBranded = (k: string) => brandNames.some(b => b.length > 2 && k.includes(b)) || tokens(k).some(t => brandTokens.has(t));
   const markets = profile.markets.filter(m => m.selected).map(m => m.value);
   const marketTerms = markets.map(m => shortMarket[m] || m.toLowerCase());

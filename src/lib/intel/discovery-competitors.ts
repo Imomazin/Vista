@@ -31,7 +31,8 @@ export function offeringVocabulary(profile: BusinessProfile, pages: PageRecord[]
   for (const e of profile.industry.evidence) { const m = e.detail.match(/“([^”]+)”/); if (m) bump(m[1], 2); }
   // Only terms that recur across pages and also belong to the offer vocabulary are reinforced (e.g. "shoes" across product pages).
   for (const [t, n] of spread) if (counts.has(t) && n >= Math.max(2, pages.length * 0.25) && !genericOffering.has(t)) counts.set(t, (counts.get(t) || 0) + n);
-  const brand = new Set([...tokens(profile.brand.value), ...profile.aliases.flatMap(a => tokens(a.value))]);
+  // Only the brand name itself is excluded; aliases often add descriptive words ("… Laboratory Training").
+  const brand = new Set(tokens(profile.brand.value));
   return [...counts.entries()].filter(([t]) => !brand.has(t)).sort((a, b) => b[1] - a[1]).slice(0, 14).map(([t]) => t);
 }
 

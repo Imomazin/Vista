@@ -267,7 +267,7 @@ export function buildProfile(pages: PageRecord[], site: Discovery | null, websit
   const brandValue = chosen?.value || label.charAt(0).toUpperCase() + label.slice(1);
   const brand = rec("brand", brandValue, chosen ? "observed" : "inferred", chosen ? "high" : "low", chosen ? [{ url: chosen.url, detail: chosen.source }] : [{ url: website, detail: "Derived from the domain name" }]);
   const aliasValues = new Map<string, EvidenceRef>();
-  for (const n of names) if (n.value.toLowerCase() !== brandValue.toLowerCase() && !generic.has(n.value.toLowerCase()) && n.value.length <= 40 && (/alternateName|legalName|og:site_name|application-name/.test(n.source) || jaccard(n.value, brandValue) > 0.3 || n.value.toLowerCase().replace(/\s/g, "") === label)) aliasValues.set(n.value, { url: n.url, detail: n.source });
+  for (const n of names) if (n.value.toLowerCase() !== brandValue.toLowerCase() && !generic.has(n.value.toLowerCase()) && n.value.length <= 40 && !/^(about|contact|home|welcome|blog|news|our|the|meet|join|why)\b/i.test(n.value) && (/alternateName|legalName|og:site_name|application-name/.test(n.source) || jaccard(n.value, brandValue) > 0.3 || n.value.toLowerCase().replace(/\s/g, "") === label)) aliasValues.set(n.value, { url: n.url, detail: n.source });
   const ipHost = /^[\d.:]+$/.test(host.split(":")[0]);
   if (!ipHost && label && label !== brandValue.toLowerCase().replace(/\s/g, "")) aliasValues.set(label, { url: website, detail: "Domain label" });
   if (!ipHost) aliasValues.set(host, { url: website, detail: "Website domain" });
@@ -357,7 +357,7 @@ export function mergeAiProfile(profile: BusinessProfile, ai: AiProfile, pages: P
     for (const r of extra) if (r && !out.some(x => same(x.value, r.value)) && out.length < max) out.push({ ...r, selected: selectNew && r.confidence !== "low" });
     return out;
   };
-  const aliases = mergeList(profile.aliases, ai.aliases.filter(a => a && all.includes(a.toLowerCase())).map(a => rec("alias", a.slice(0, 60), "model", "medium", [{ url: pages[0].finalUrl, detail: "Name appears on the website (AI-identified)" }])), 8, true);
+  const aliases = mergeList(profile.aliases, ai.aliases.filter(a => a && all.includes(a.toLowerCase()) && !/^(about|contact|home|welcome|blog|news|our|the|meet|join|why)\b/i.test(a)).map(a => rec("alias", a.slice(0, 60), "model", "medium", [{ url: pages[0].finalUrl, detail: "Name appears on the website (AI-identified)" }])), 8, true);
   const subsectors = mergeList(profile.subsectors, [ai.industry, ...ai.subsectors].map(s => { const g = ground(s, pages.map(p => p.finalUrl)); return g.share >= 0.5 ? rec("subsector", s.slice(0, 80), "model", "medium", [{ url: pages[0].finalUrl, detail: "AI classification grounded in site vocabulary" }]) : null; }), 5, true);
   const strong = profile.offerings.filter(o => o.confidence === "high"), weak = profile.offerings.filter(o => o.confidence !== "high");
   const mergedOfferings = mergeList(strong, ai.offerings.filter(o => !generic.has(o.name.toLowerCase().trim()) && !/^(other|all|more)\b/i.test(o.name.trim())).map(o => modelRec("offering", o.name, o.evidence, undefined, 0.5)), 16, true);
