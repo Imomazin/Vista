@@ -17,7 +17,7 @@ Last updated: 28 November 2026 (production `vista.ambidexters.com`).
 | GEO answer sampling (API surface, template prompts) | 9 | Live-tested | LabMedExpert: brand mentioned in 3 of 4 sampled answers, citations recorded | Versioned prompt panels and repeated observations (R4) |
 | Keyword volume, difficulty, CPC, SERP rankings, organic competitors (DataForSEO) | 1 | Fixture-tested | Adapter tests with recorded response shapes | **Blocked:** DataForSEO account and credentials (`DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD`) |
 | Live web results (Brave Search) | 1 | Fixture-tested | Adapter tests | Optional: `BRAVE_SEARCH_API_KEY` |
-| PageSpeed Insights (mobile/desktop) | 3 | Deployed with a known gap | Key configured; LabMedExpert tests exceeded the 55 s request limit; route extended to 120 s (PR 30) | Live verification after PR 30; Vercel plan must allow 120 s functions |
+| PageSpeed Insights (mobile/desktop) | 3 | Live-tested | 28 Nov 2026, production: ambidexters.com desktop returned a lab result in 18 s (score 100, LCP 0.61 s, Lighthouse 13.6.0). labmedexpert.com: Google's Lighthouse returned "Something went wrong" for the home and contact pages (mobile, 65–81 s) and the desktop home test exceeded 110 s; the investigation reports this provider error as an evidence gap. Route allows 120 s (accepted by the Vercel plan). | Site-specific: Lighthouse cannot complete on labmedexpert.com; retest later or with a rendering service |
 | Chrome UX Report API | 3 | Not started | PageSpeed responses include CrUX field data where available | Separate CrUX key if needed |
 | JavaScript rendering | 3 | Implemented | `src/lib/intel/render.ts` (Browserless-compatible) | **Blocked:** rendering service (`VISTA_RENDER_ENDPOINT`, `VISTA_RENDER_TOKEN`) |
 | Search Console (single property, service account) | 1, 8 | Implemented | Owner-only routes; configured flag true | Live owner test; **tenant OAuth (R1) not started**: Google OAuth client and consent screen |
@@ -56,7 +56,7 @@ Prices change; confirm each figure on the official page before purchase. Third-p
 
 | Release | Exit gate | Status |
 |---|---|---|
-| R0 Discovery quality | Live LabMedExpert discovery returns grounded recommendations and clearly scoped gaps; PageSpeed verified; DataForSEO wired | In progress: code complete (PR 30); live re-verification pending; DataForSEO awaiting credentials |
+| R0 Discovery quality | Live LabMedExpert discovery returns grounded recommendations and clearly scoped gaps; PageSpeed verified; DataForSEO wired | Deployed (PR 30). PageSpeed live-tested; DataForSEO wired and fixture-tested, awaiting credentials for a live test |
 | R1 Search activation | Tenant GSC OAuth, rank tracking, WordPress or repository change flow on an owned test site | Not started: needs Google OAuth client and an owned test site |
 | R2 Revenue activation | HubSpot OAuth, lead ingestion, task/deal creation, GA4 + CRM outcomes | Not started: needs HubSpot app and sandbox |
 | R3 Campaign activation | Google Ads and Meta paused creation, approval, review, pause/resume | Not started: needs developer access and test ad accounts |

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const offerings = stringList(body.offerings, 8, 100).map(o => o.replace(/[\r\n]+/g, " "));
     if (!website || !brand || !offerings.length) throw new CloudError("Website, brand and at least one offering are required.");
     const cfg = await aiAllowance(request, "competitors", 2);
-    const query = { brand, website, industry: field(body.industry, 120), offerings, segments: stringList(body.segments, 6, 80), markets: stringList(body.markets, 4, 60) };
+    const query = { brand, website, industry: field(body.industry, 120), offerings, segments: stringList(body.segments, 6, 80), markets: stringList(body.markets, 4, 60), model: field(body.model, 120) };
     // Structured output suppresses web search, so research and extraction are separate calls.
     const research = await responses(cfg, { input: competitorPrompt(query), webSearch: true, maxTokens: 2500 });
     const notes = research.text.slice(0, 20000) + "\n\nCited URLs:\n" + research.citations.map(c => c.url).join("\n");

@@ -338,3 +338,18 @@ test("competitor checks separate retrieval, identity and relevance", async () =>
   assert.equal(failed.checks!.retrieval.status, "failed");
   assert.equal(failed.checks!.relevance.status, "unknown");
 });
+
+test("identity checks accept short organisation names and clean page-title suffixes", async () => {
+  const { assessCompetitor, offeringVocabulary } = await import("./intel/discovery-competitors");
+  const { buildProfile } = await import("./intel/discovery-profile");
+  const pages = Object.entries(site).map(([path, html]) => record(origin + path, html));
+  const profile = buildProfile(pages, null, origin);
+  const vocab = offeringVocabulary(profile, pages);
+  const ey = record("https://www.ey.com/en_uk", `<html><head><title>EY UK | Building a better working world</title><meta property="og:site_name" content="EY UK"></head><body><h1>Histology and haematology laboratory training</h1></body></html>`);
+  const a = assessCompetitor(profile, vocab, { name: "EY (Ernst & Young)", website: "https://www.ey.com/", reason: "", offerings: [], markets: [], sources: [] }, ["commercial"], ey, null);
+  assert.equal(a.checks!.identity.status, "verified");
+  const kpmg = record("https://kpmg.com/xx/en.html", `<html><head><title>KPMG International | Home</title><meta property="og:site_name" content="KPMG International | Home"></head><body><h1>Histology training</h1></body></html>`);
+  const k = assessCompetitor(profile, vocab, { name: "KPMG", website: "https://kpmg.com/", reason: "", offerings: [], markets: [], sources: [] }, ["commercial"], kpmg, null);
+  assert.equal(k.name, "KPMG International");
+  assert.equal(k.checks!.identity.status, "verified");
+});
