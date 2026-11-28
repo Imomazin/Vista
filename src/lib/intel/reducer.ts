@@ -9,6 +9,7 @@ export type ReductionStats = { inlineScriptBytes: number; strippedBytes: number;
 const STRIP = new Set(["script", "style", "svg", "template"]);
 const MAX_PENDING = 256 * 1024;
 const MAX_JSONLD = 1_000_000;
+const dataUri = /(=\s*)(["'])data:[^"']{48,}\2/gi;
 
 function tagEnd(s: string, from: number): number {
   let quote = "";
@@ -26,6 +27,10 @@ export class HtmlReducer {
   private size = 0;
   private pending = "";
   private mode: { tag: string; keep: boolean; kept: number } | null = null;
+  /** Inside an oversized data: URI attribute value (skipped until its closing quote). */
+  private skip: { quote: string; name: string } | null = null;
+  /** After a skipped data: URI value, still inside the tag `name` until its closing ">". */
+  private tail: string | null = null;
   readonly stats: ReductionStats = { inlineScriptBytes: 0, strippedBytes: 0, jsonLdBytes: 0, dataUris: 0, truncated: false };
 
   constructor(private readonly maxRetained: number) {}
@@ -55,6 +60,28 @@ export class HtmlReducer {
     this.pending = "";
     let i = 0;
     while (i < s.length) {
+      if (this.skip) {
+        const q = s.indexOf(this.skip.quote, i);
+        if (q < 0) { this.stats.strippedBytes += s.length - i; return; }
+        this.stats.strippedBytes += q - i;
+        this.emit(this.skip.quote);
+        this.tail = this.skip.name; this.skip = null;
+        i = q + 1;
+        continue;
+      }
+      if (this.tail !== null) {
+        const gt = tagEnd(s, i);
+        if (gt < 0) {
+          if (s.length - i > MAX_PENDING) { this.stats.strippedBytes += s.length - i; return; }
+          this.pending = s.slice(i); return;
+        }
+        const rest = s.slice(i, gt + 1).replace(dataUri, (_m, eq: string, q: string) => { this.stats.dataUris += 1; return eq + q + "data:," + q; });
+        this.emit(rest);
+        const name = this.tail; this.tail = null;
+        i = gt + 1;
+        if (STRIP.has(name) && !/\/\s*>$/.test(rest)) this.mode = { tag: name, keep: false, kept: 0 };
+        continue;
+      }
       if (this.mode) {
         const close = this.mode.tag === "!--" ? "-->" : "</" + this.mode.tag;
         const j = lower.indexOf(close, i);
@@ -80,12 +107,25 @@ export class HtmlReducer {
       if (s.length - lt < 4 && !s.slice(lt).includes(">")) { this.pending = s.slice(lt); return; }
       const gt = tagEnd(s, lt + 1);
       if (gt < 0) {
-        if (s.length - lt > MAX_PENDING) { this.emit("&lt;"); i = lt + 1; continue; }
+        if (s.length - lt > MAX_PENDING) {
+          // A tag too long to hold is almost always a base64 data: URI (inline images and fonts): keep the
+          // tag as "data:," and stream past the value, instead of letting the data become page text.
+          const open = /=\s*(["'])data:/i.exec(s.slice(lt, lt + MAX_PENDING));
+          const tagName = /^<\s*([a-zA-Z][a-zA-Z0-9-]*)/.exec(s.slice(lt, lt + 64))?.[1]?.toLowerCase();
+          if (open && tagName) {
+            this.emit(s.slice(lt, lt + open.index + open[0].length) + ",");
+            this.stats.dataUris += 1;
+            this.skip = { quote: open[1], name: tagName };
+            i = lt + open.index + open[0].length;
+            continue;
+          }
+          this.emit("&lt;"); i = lt + 1; continue;
+        }
         this.pending = s.slice(lt);
         return;
       }
       let tag = s.slice(lt, gt + 1);
-      if (tag.includes("data:")) tag = tag.replace(/(=\s*)(["'])data:[^"']{48,}\2/gi, (_m, eq: string, q: string) => { this.stats.dataUris += 1; return eq + q + "data:," + q; });
+      if (tag.includes("data:")) tag = tag.replace(dataUri, (_m, eq: string, q: string) => { this.stats.dataUris += 1; return eq + q + "data:," + q; });
       const name = /^<\s*([a-zA-Z][a-zA-Z0-9-]*)/.exec(tag)?.[1]?.toLowerCase();
       this.emit(tag);
       i = gt + 1;
@@ -97,7 +137,7 @@ export class HtmlReducer {
   }
 
   finish(): { html: string; stats: ReductionStats } {
-    if (this.pending) { if (this.mode) this.inside(this.pending); else this.emit(this.pending); this.pending = ""; }
+    if (this.pending) { if (this.mode) this.inside(this.pending); else if (this.tail === null) this.emit(this.pending); this.pending = ""; }
     return { html: this.out.join(""), stats: this.stats };
   }
 }

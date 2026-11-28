@@ -18,7 +18,23 @@ function Spark({ points }: { points: Signal['points'] }) {
 }
 
 /** VisTa Pulse: monitoring across a client's investigations (baselines, anomalies and changes). */
-export default function PulseMonitor({ history, current }: { history: Investigation[]; current: Investigation }) {
+function Scheduling({ current, enabled, organisationId }: { current: Investigation; enabled: boolean; organisationId: string | null }) {
+  const [state, setState] = useState('');
+  const urls = [current.brief.website, ...(current.brief.seedUrls || [])].filter(Boolean).slice(0, 10);
+  async function schedule() {
+    setState('Scheduling…');
+    try {
+      const r = await fetch('/api/spider/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ organisationId, urls, everyDays: 7 }) });
+      const d = await r.json();
+      setState(r.ok ? d.scheduled + ' page' + (d.scheduled === 1 ? '' : 's') + ' will be recrawled every ' + d.everyDays + ' days by VisTa Spider.' : d.error || 'Scheduling failed.');
+    } catch { setState('Scheduling failed.'); }
+  }
+  if (!enabled) return <p className="rec-note">Scheduled monitoring is not active on this deployment. The owner enables it by applying <code>database/index.sql</code> and <code>database/spider.sql</code> in Supabase and setting <code>CRON_SECRET</code> and <code>VISTA_SUPABASE_SERVICE_ROLE_KEY</code> in Vercel; VisTa Spider then recrawls watched pages on a schedule. Until then Pulse updates whenever an investigation runs.</p>;
+  if (!organisationId) return <p className="rec-note">Sign in to an organisation to schedule recrawls of this client&apos;s priority pages.</p>;
+  return <div className="pulse-schedule"><button className="ghost-button" onClick={schedule}>Monitor {urls.length} priority page{urls.length === 1 ? '' : 's'} weekly</button>{state && <small role="status">{state}</small>}</div>;
+}
+
+export default function PulseMonitor({ history, current, scheduling = false, organisationId = null }: { history: Investigation[]; current: Investigation; scheduling?: boolean; organisationId?: string | null }) {
   const [full, setFull] = useState<Investigation[] | null>(null);
   const ids = useMemo(() => history.filter(h => ['complete', 'partial'].includes(h.job.status) && h.createdAt <= current.createdAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8).map(h => h.id), [history, current.createdAt]);
   useEffect(() => {
@@ -36,7 +52,7 @@ export default function PulseMonitor({ history, current }: { history: Investigat
   const alerts = signals.filter(s => s.status === 'anomaly' || (s.status === 'changed' && s.direction === 'worse'));
   const kinds = [...new Set(changes.map(c => c.kind))];
   return <>
-    <section className="studio-section" aria-label="VisTa Pulse monitoring"><div className="discovery-head"><h3>Monitoring <small className="lex-badge">VisTa Pulse</small></h3><p className="section-note">Compares this client's investigations over time: {ordered.length} investigation{ordered.length === 1 ? '' : 's'}{ordered.length ? ' from ' + ordered[0].createdAt.slice(0, 10) + ' to ' + ordered[ordered.length - 1].createdAt.slice(0, 10) : ''}. Each metric is judged against the median of the earlier runs; a baseline needs {minHistory} earlier investigations. Scheduled monitoring runs on the server once the owner enables the queue and cron worker; until then Pulse updates whenever an investigation is run.</p></div>
+    <section className="studio-section" aria-label="VisTa Pulse monitoring"><div className="discovery-head"><h3>Monitoring <small className="lex-badge">VisTa Pulse</small></h3><p className="section-note">Compares this client's investigations over time: {ordered.length} investigation{ordered.length === 1 ? '' : 's'}{ordered.length ? ' from ' + ordered[0].createdAt.slice(0, 10) + ' to ' + ordered[ordered.length - 1].createdAt.slice(0, 10) : ''}. Each metric is judged against the median of the earlier runs; a baseline needs {minHistory} earlier investigations. </p></div>
       {alerts.length > 0 ? <p className="pulse-alert" role="status"><strong>{alerts.length} signal{alerts.length === 1 ? '' : 's'} need attention:</strong> {alerts.map(a => a.label).join(', ')}.</p> : <p className="lex-coverage" role="status">{signals.some(s => s.status !== 'insufficient') ? 'No anomalies against the baseline.' : 'Baselines are still being built; run further investigations of this client to enable anomaly detection.'}</p>}
       <div className="pulse-grid">{signals.map(s => <div key={s.id} className={'pulse-card pulse-' + s.status + (s.direction ? ' dir-' + s.direction : '')}>
         <div className="pulse-card-head"><span>{s.label}</span><small className={'factor-basis basis-' + s.basis}>{basisLabel[s.basis]}</small></div>
@@ -45,6 +61,7 @@ export default function PulseMonitor({ history, current }: { history: Investigat
         <small className="pulse-status">{statusLabel[s.status]}{s.direction && s.status !== 'insufficient' ? ' · ' + (s.direction === 'better' ? 'better' : s.direction === 'worse' ? 'worse' : 'different') : ''}</small>
         <small className="rec-note">{s.message}</small>
       </div>)}</div>
+      <Scheduling current={current} enabled={scheduling} organisationId={organisationId}/>
       <p className="lex-method"><small>{pulseMethod}</small></p>
     </section>
     <section className="studio-section" aria-label="Changes since the previous investigation"><div className="discovery-head"><h3>Changes since the previous investigation</h3><p className="section-note">{previous ? 'Pages observed in both the ' + previous.createdAt.slice(0, 10) + ' and ' + latest.createdAt.slice(0, 10) + ' investigations (observed evidence).' : 'Run a second investigation of this client to see what changed.'}</p></div>

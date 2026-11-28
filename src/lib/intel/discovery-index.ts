@@ -46,10 +46,10 @@ export async function archiveIndex(run: DiscoveryRun, post: Post, maxComparisons
   for (const key of targets) {
     const cap = byKey.get(key)!;
     try {
-      const r = await post<{ page: PageRecord; capturedAt: string; crawl: string }>("/api/intel/archive", { capture: { filename: cap.filename, offset: cap.offset, length: cap.length, url: cap.url, crawl: cap.crawl } });
+      const r = await post<{ page: PageRecord; capturedAt: string; crawl: string; truncated?: boolean }>("/api/intel/archive", { capture: { filename: cap.filename, offset: cap.offset, length: cap.length, url: cap.url, crawl: cap.crawl } });
       const archived = observe(r.page, "common-crawl", cap.crawl);
       index.observations.push(archived);
-      index.comparisons.push(compareObservations(archived, observe(live.get(key)!, "vista")));
+      index.comparisons.push(compareObservations(archived, observe(live.get(key)!, "vista"), { beforePartial: Boolean(r.truncated) }));
     } catch (error) {
       index.comparisons.push({ url: cap.url, before: { at: "", source: "common-crawl", crawl: cap.crawl }, after: { at: live.get(key)!.fetchedAt, source: "vista" }, similarity: null, unchanged: false, changes: [{ field: "error", label: "Archived copy unavailable", before: "", after: (error as Error).message, major: false }] });
     }

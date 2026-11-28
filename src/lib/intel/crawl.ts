@@ -3,7 +3,7 @@ import { crawlerUserAgent, explainFailure, FetchFailure, fetchPublic, resourcePo
 import { analysePage, siteKey, type PageRecord } from "./page";
 import { parseRobots, robotsDecision, type RobotsPolicy } from "./robots";
 import { parseSitemap } from "./sitemap";
-import { renderConfig, renderPage } from "./render";
+import { renderAllowance, renderAvailable, renderPage } from "./render";
 
 export type PageFailure = { url: string; depth: number; kind: FailureKind | "http-error" | "robots" | "off-site-redirect"; status?: number; message: string; chain: Hop[] };
 export type SitemapSummary = { url: string; status: number | null; kind: "urlset" | "index" | "invalid" | "unreachable"; entries: number; truncated: boolean; error?: string };
@@ -60,8 +60,9 @@ export async function crawlPage(url: string, depth: number, keywords: string[] =
     if (siteKey(new URL(response.finalUrl).hostname) !== siteKey(new URL(url).hostname)) return { failure: { url, depth, kind: "off-site-redirect", message: "The URL redirects to another website (" + new URL(response.finalUrl).hostname + ").", chain: response.chain } };
     if (response.status < 200 || response.status >= 300) return { failure: { url, depth, kind: "http-error", status: response.status, message: explainFailure("http-error", response.status), chain: response.chain } };
     const page = analysePage({ url, finalUrl: response.finalUrl, status: response.status, chain: response.chain, headers: response.headers, html: response.body, fetchedAt: new Date().toISOString(), durationMs: response.durationMs, depth, keywords, retrieval: response.retrieval });
-    if (options.render && page.jsDependent && renderConfig() && deadline - Date.now() > 12000) {
+    if (options.render && page.jsDependent && renderAvailable() && deadline - Date.now() > 12000) {
       try {
+        if (!(await renderAllowance())) throw new Error("Daily rendering budget reached.");
         const rendered = await renderPage(response.finalUrl, resourcePolicy().maxHtmlBytes, Math.min(25000, deadline - Date.now() - 2000));
         return { page: analysePage({ url, finalUrl: response.finalUrl, status: response.status, chain: response.chain, headers: response.headers, html: rendered.html, fetchedAt: new Date().toISOString(), durationMs: response.durationMs, depth, keywords, retrieval: { ...response.retrieval, truncated: rendered.truncated }, rendered: true }) };
       } catch { /* The server-rendered evidence is kept; rendering is best effort. */ }

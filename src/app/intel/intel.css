@@ -394,6 +394,7 @@ a.rec-value{text-decoration:none}a.rec-value:hover{text-decoration:underline}
 .pulse-status{font-weight:600}.pulse-anomaly{border-color:color-mix(in srgb,var(--iv-bad) 55%,transparent)}.pulse-anomaly .pulse-status{color:var(--iv-bad)}
 .pulse-changed .pulse-status{color:var(--iv-warn)}.pulse-normal .pulse-status{color:var(--iv-emerald)}.pulse-insufficient .pulse-status{color:var(--iv-sub)}
 .dir-better .pulse-status{color:var(--iv-emerald)}.pulse-changed.dir-worse,.pulse-anomaly.dir-worse{border-color:color-mix(in srgb,var(--iv-bad) 55%,transparent)}
+.pulse-schedule{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}.pulse-schedule small{color:var(--iv-sub)}
 .pulse-spark{width:100%;height:30px}.pulse-spark path{fill:none;stroke:var(--iv-emerald);stroke-width:1.6;vector-effect:non-scaling-stroke}
 .pulse-alert{margin:8px 0 0;padding:8px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--iv-bad) 45%,transparent);color:var(--iv-text);font-size:calc(11.5px + 2pt)}
 .pulse-changes{display:flex;flex-direction:column;gap:8px}.pulse-changes summary{cursor:pointer;font-weight:600}.pulse-changes summary em{font-style:normal;color:var(--iv-sub);margin-left:4px}
