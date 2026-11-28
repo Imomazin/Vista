@@ -120,7 +120,9 @@ function wordpress(base) {
 // JavaScript-dependent single-page application.
 function spa(base) {
   const shell = route => `<!doctype html><html lang="en"><head><title>App ${route} | Single Page Co</title><meta name="viewport" content="width=device-width"><script src="/static/vendor.js"></script><script src="/static/runtime.js"></script><script src="/static/app.js"></script></head><body><div id="root"></div><noscript>You need to enable JavaScript to run this app.</noscript><a href="/pricing">Pricing</a><a href="/features">Features</a></body></html>`;
-  return { pages: { "/": shell("/"), "/pricing": shell("/pricing"), "/features": shell("/features") }, redirects: {}, sitemap: ["/", "/pricing", "/features"].map(p => base + p), robots: "User-agent: *\nDisallow:" };
+  // /probe tries to reach private and loopback addresses from the browser: the renderer must block them.
+  const probe = `<!doctype html><html><head><title>Probe | Single Page Co</title><script>fetch('http://10.1.2.3/secret').catch(function(){});fetch('http://localhost:3000/api/cloud/session').catch(function(){});var i=new Image();i.src='http://169.254.169.254/latest/meta-data/';</script></head><body><div id="root"></div></body></html>`;
+  return { pages: { "/": shell("/"), "/pricing": shell("/pricing"), "/features": shell("/features"), "/probe": probe }, redirects: {}, sitemap: ["/", "/pricing", "/features"].map(p => base + p), robots: "User-agent: *\nDisallow:" };
 }
 
 function labCompetitor(base) {
@@ -181,6 +183,8 @@ for (const [host, build] of sites) {
     const url = new URL(req.url, base);
     const path = url.pathname;
     if (path === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(site.robots); }
+    // The JavaScript-dependent app ships a real bundle that renders its content (VisTa Spider rendering).
+    if (host === "127.0.0.19" && path.startsWith("/static/") && path.endsWith(".js")) { res.writeHead(200, { "Content-Type": "application/javascript" }); return res.end(path === "/static/app.js" ? "document.addEventListener('DOMContentLoaded',function(){var r=document.getElementById('root');if(!r)return;r.innerHTML='<main><h1>Single Page Co analytics platform</h1><p>Real-time product analytics, dashboards and funnel reports for software teams. Start a free trial or book a demo with our team.</p><h2>Features</h2><ul><li>Event tracking</li><li>Funnels and retention</li><li>Team dashboards</li></ul></main>';});" : "/* " + path + " */"); }
     if (site.slow?.includes(path)) { setTimeout(() => { res.writeHead(200, { "Content-Type": "text/html" }); res.end("<html><title>Late</title></html>"); }, 40000); return; }
     if (site.bomb?.includes(path)) { res.writeHead(200, { "Content-Type": "text/html", "Content-Encoding": "gzip" }); return res.end(bomb); }
     if (site.hugeHome && path === "/") { res.writeHead(200, { "Content-Type": "text/html" }); res.write("<html><head><title>Big Blog</title></head><body>"); let sent = 0; const chunk = "<p>" + "x".repeat(65536) + "</p>"; const pump = () => { while (sent < 80 * 1024 * 1024) { sent += chunk.length; if (!res.write(chunk)) return res.once("drain", pump); } res.end("</body></html>"); }; res.on("error", () => {}); return pump(); }

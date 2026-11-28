@@ -87,3 +87,29 @@ test("observations: archived versus live comparison reports what changed", () =>
   assert.equal(pageKey("http://www.Example.com/about/"), pageKey("https://example.com/about"));
   assert.equal(similarity([], [1]), null);
 });
+
+test("reducer: a multi-megabyte inline data: URI does not become page text (word counts stay true)", async () => {
+  const { reduceHtml, HtmlReducer } = await import("./intel/reducer");
+  const b64 = "iVBORw0KGgoAAAANSUhEUgAA+/".repeat(120_000); // about 3 MB
+  const html = `<html><head><title>T</title><style>.a{}</style></head><body><h1>Laboratory training</h1><img alt="logo" src="data:image/png;base64,${b64}" width="10"><p>Histology and microbiology courses.</p><script>var x=1;</script><p>Apply now.</p></body></html>`;
+  const once = reduceHtml(html);
+  assert.ok(once.html.length < 2000, "data URI removed: " + once.html.length);
+  assert.ok(once.html.includes('<img alt="logo" src="data:," width="10">'), "the tag stays intact");
+  assert.ok(once.html.includes("<p>Histology and microbiology courses.</p>") && once.html.includes("<p>Apply now.</p>"));
+  assert.ok(!/iVBOR/.test(once.html));
+  assert.equal(once.stats.dataUris, 1);
+  // Streaming in small chunks gives the same result.
+  const r = new HtmlReducer(10_000_000);
+  for (let i = 0; i < html.length; i += 4096) r.feed(html.slice(i, i + 4096));
+  assert.equal(r.finish().html, once.html);
+  const page = analysePage({ url: "https://x.example/", finalUrl: "https://x.example/", status: 200, chain: [], headers: {}, html: once.html, fetchedAt: "2026-11-28T00:00:00Z", durationMs: 0, depth: 0 });
+  assert.ok(page.content.words < 20, String(page.content.words));
+});
+
+test("observations: an archive copy cut short is compared on head fields only", () => {
+  const p = (title: string, words: number) => analysePage({ url: "https://example.com/", finalUrl: "https://example.com/", status: 200, chain: [], headers: {}, html: html(title, "H", "word ".repeat(words)), fetchedAt: "2026-11-01T00:00:00Z", durationMs: 0, depth: 0 });
+  const c = compareObservations(observe(p("Old title", 50), "common-crawl"), observe(p("New title", 900), "vista"), { beforePartial: true });
+  assert.deepEqual(c.changes.map(x => x.field), ["title"], "word count is not compared against a truncated copy");
+  assert.equal(c.similarity, null);
+  assert.match(c.limitation!, /cut short/);
+});

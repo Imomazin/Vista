@@ -109,7 +109,7 @@ export function buildGraph(input: GraphInput): VistaGraph {
     const from = domainOf(page.finalUrl);
     for (const l of page.links.external) {
       const to = domainOf(l.url);
-      if (!to || to === from || utility.test(host(l.url))) continue;
+      if (!to || to === from || utility.test(host(l.url)) || /(^|\.)share\.google$/.test(host(l.url))) continue;
       const bySource = linkPages.get(to) || linkPages.set(to, new Map()).get(to)!;
       (bySource.get(from) || bySource.set(from, new Set()).get(from)!).add(page.finalUrl);
     }
@@ -125,7 +125,8 @@ export function buildGraph(input: GraphInput): VistaGraph {
 
   // Co-citation: domains linked from (or cited alongside) two or more of the client and its competitors.
   const citedBy = new Map<string, number>();
-  for (const c of input.citations) { const d = domainOf(c.url); if (d) citedBy.set(d, (citedBy.get(d) || 0) + 1); }
+  // Search engines, maps and share links are how answers link out, not sector sources.
+  for (const c of input.citations) { const h = host(c.url), d = domainOf(c.url); if (d && !utility.test(h) && !socialPlatform.test(h) && !/(^|\.)share\.google$/.test(h)) citedBy.set(d, (citedBy.get(d) || 0) + 1); }
   const actors = new Set([client, ...competitorDomains.keys()]);
   const coCitation = domainNodes.filter(d => !actors.has(d) && !socialPlatform.test(d)).map(d => {
     const linkedBy = [...(linkPages.get(d)?.keys() || [])].filter(s => actors.has(s)).map(s => s === client ? "client" : competitorDomains.get(s)!);

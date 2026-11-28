@@ -1,10 +1,12 @@
 /**
- * Optional JavaScript rendering through an external browser service (Browserless-compatible
- * `/content` contract: POST { url, gotoOptions } → rendered HTML). Rendering is off unless
- * VISTA_RENDER_ENDPOINT is configured; targets are validated as public before they are sent.
+ * JavaScript rendering. VisTa Spider renders in-platform with open-source Playwright and Chromium
+ * (render-local.ts). An optional external browser endpoint (Browserless-compatible `/content`
+ * contract) is used instead when VISTA_RENDER_ENDPOINT is configured. Targets are validated first.
  */
 import { testOrigins, validatePublicUrl } from "./http";
 import { reduceHtml } from "./reducer";
+import { localRenderAvailable, renderLocally } from "./render-local";
+import { requestLimit } from "../rate-limit";
 
 export type RenderConfig = { endpoint: string; token: string | undefined };
 
@@ -20,8 +22,23 @@ export function renderConfig(env: Record<string, string | undefined> = process.e
   } catch { return null; }
 }
 
+/** Rendering is available through a configured remote endpoint or VisTa Spider's in-platform renderer. */
+export function renderAvailable(env: Record<string, string | undefined> = process.env): boolean {
+  return Boolean(renderConfig(env)) || localRenderAvailable(env);
+}
+
+/** Deployment-wide daily rendering budget (VISTA_RENDER_DAILY, default 300 pages) to bound compute. */
+export async function renderAllowance(): Promise<boolean> {
+  const budget = Math.max(0, Math.floor(Number(process.env.VISTA_RENDER_DAILY) || 300));
+  const r = await requestLimit(new Request("https://vista.internal/", { headers: { "x-real-ip": "deployment" } }), "render-deployment", budget, 86400);
+  return r.allowed;
+}
+
 export async function renderPage(target: string, maxHtmlBytes: number, timeoutMs = 25000, config = renderConfig(), fetcher: typeof fetch = fetch): Promise<{ html: string; truncated: boolean; bytes: number }> {
-  if (!config) throw new Error("JavaScript rendering is not configured for this deployment.");
+  if (!config) {
+    if (!localRenderAvailable()) throw new Error("JavaScript rendering is not configured for this deployment.");
+    return renderLocally(target, maxHtmlBytes, timeoutMs);
+  }
   const url = validatePublicUrl(target).href;
   const response = await fetcher(config.endpoint, { method: "POST", cache: "no-store", signal: AbortSignal.timeout(timeoutMs), headers: { "Content-Type": "application/json", ...(config.token ? { Authorization: "Bearer " + config.token } : {}) }, body: JSON.stringify({ url, gotoOptions: { waitUntil: "networkidle2", timeout: timeoutMs - 3000 }, rejectResourceTypes: ["image", "media", "font"] }) });
   if (!response.ok) throw new Error("The rendering service returned HTTP " + response.status + ".");

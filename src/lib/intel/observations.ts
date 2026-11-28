@@ -13,7 +13,7 @@ export type Observation = {
   schemaTypes: string[]; canonical: string; indexable: boolean;
 };
 export type Change = { field: string; label: string; before: string; after: string; major: boolean };
-export type Comparison = { url: string; before: { at: string; source: ObservationSource; crawl?: string }; after: { at: string; source: ObservationSource }; similarity: number | null; unchanged: boolean; changes: Change[] };
+export type Comparison = { url: string; before: { at: string; source: ObservationSource; crawl?: string }; after: { at: string; source: ObservationSource }; similarity: number | null; unchanged: boolean; changes: Change[]; limitation?: string };
 
 /** Same page across http/https, www and trailing slashes. */
 export function pageKey(url: string): string {
@@ -40,7 +40,8 @@ export function similarity(a: number[], b: number[]): number | null {
   return same / n;
 }
 
-export function compareObservations(before: Observation, after: Observation): Comparison {
+/** `beforePartial`: the earlier copy is incomplete (an archive record cut short), so only head fields are compared. */
+export function compareObservations(before: Observation, after: Observation, opts: { beforePartial?: boolean } = {}): Comparison {
   const changes: Change[] = [];
   const text = (field: string, label: string, a: string, b: string, major = false) => { if (a.trim() !== b.trim()) changes.push({ field, label, before: a || "(none)", after: b || "(none)", major }); };
   if (before.status !== after.status) changes.push({ field: "status", label: "HTTP status", before: String(before.status), after: String(after.status), major: true });
@@ -49,12 +50,13 @@ export function compareObservations(before: Observation, after: Observation): Co
   text("h1", "H1", before.h1.join(" | "), after.h1.join(" | "), true);
   if (before.indexable !== after.indexable) changes.push({ field: "indexable", label: "Indexability", before: before.indexable ? "Indexable" : "Not indexable", after: after.indexable ? "Indexable" : "Not indexable", major: true });
   text("canonical", "Canonical", before.canonical, after.canonical, true);
-  const added = after.headings.filter(h => !before.headings.includes(h)), removed = before.headings.filter(h => !after.headings.includes(h));
+  const partial = Boolean(opts.beforePartial);
+  const added = partial ? [] : after.headings.filter(h => !before.headings.includes(h)), removed = partial ? [] : before.headings.filter(h => !after.headings.includes(h));
   if (added.length || removed.length) changes.push({ field: "headings", label: "Section headings", before: removed.length + " removed" + (removed.length ? ": " + removed.slice(0, 3).join("; ") : ""), after: added.length + " added" + (added.length ? ": " + added.slice(0, 3).join("; ") : ""), major: added.length + removed.length >= 3 });
-  if (before.words && Math.abs(after.words - before.words) / before.words >= 0.15) changes.push({ field: "words", label: "Word count", before: String(before.words), after: String(after.words), major: Math.abs(after.words - before.words) / before.words >= 0.4 });
-  if (Math.abs(after.internalLinks - before.internalLinks) >= Math.max(5, before.internalLinks * 0.25)) changes.push({ field: "internalLinks", label: "Internal links", before: String(before.internalLinks), after: String(after.internalLinks), major: false });
+  if (!partial && before.words && Math.abs(after.words - before.words) / before.words >= 0.15) changes.push({ field: "words", label: "Word count", before: String(before.words), after: String(after.words), major: Math.abs(after.words - before.words) / before.words >= 0.4 });
+  if (!partial && Math.abs(after.internalLinks - before.internalLinks) >= Math.max(5, before.internalLinks * 0.25)) changes.push({ field: "internalLinks", label: "Internal links", before: String(before.internalLinks), after: String(after.internalLinks), major: false });
   const schemaAdded = after.schemaTypes.filter(t => !before.schemaTypes.includes(t)), schemaRemoved = before.schemaTypes.filter(t => !after.schemaTypes.includes(t));
   if (schemaAdded.length || schemaRemoved.length) changes.push({ field: "schema", label: "Structured data types", before: schemaRemoved.join(", ") || "—", after: schemaAdded.join(", ") || "—", major: false });
-  const sim = before.textHash === after.textHash ? 1 : similarity(before.signature, after.signature);
-  return { url: after.url, before: { at: before.observedAt, source: before.source, ...(before.crawl ? { crawl: before.crawl } : {}) }, after: { at: after.observedAt, source: after.source }, similarity: sim === null ? null : Math.round(sim * 100) / 100, unchanged: before.textHash === after.textHash && !changes.length, changes };
+  const sim = partial ? null : before.textHash === after.textHash ? 1 : similarity(before.signature, after.signature);
+  return { ...(partial ? { limitation: "The archived copy was cut short by Common Crawl, so only the title, description, H1, canonical, status and indexability were compared." } : {}), url: after.url, before: { at: before.observedAt, source: before.source, ...(before.crawl ? { crawl: before.crawl } : {}) }, after: { at: after.observedAt, source: after.source }, similarity: sim === null ? null : Math.round(sim * 100) / 100, unchanged: !partial && before.textHash === after.textHash && !changes.length, changes };
 }

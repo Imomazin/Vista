@@ -26,7 +26,7 @@ export const studioTabs = [
 export type StudioTab = typeof studioTabs[number][0];
 
 type Session = { authenticated: boolean; organisationId: string | null; owner: boolean };
-export type Capabilities = { render: boolean; pagespeedKey: boolean; policy: { maxHtmlMb: number; maxTransferMb: number; maxDecodedMb: number }; discoveryAi?: string; search?: string | null } | null;
+export type Capabilities = { render: boolean; pagespeedKey: boolean; policy: { maxHtmlMb: number; maxTransferMb: number; maxDecodedMb: number }; discoveryAi?: string; search?: string | null; spider?: boolean } | null;
 
 export default function Studio({ data, tab, onTab, goMeasurements }: { data: Workspace; tab: StudioTab; onTab: (tab: StudioTab) => void; goMeasurements: () => void }) {
   const [projectId, setProjectId] = useState('');
@@ -203,7 +203,7 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
         {tab === 'geo' && <GeoPanel inv={inv} analysis={analysis} canSample={session.owner} organisationId={session.owner ? session.organisationId : null} onChange={persist}/>}
         {tab === 'search' && <SearchAnalytics inv={inv} analysis={analysis} goMeasurements={goMeasurements}/>}
         {tab === 'findings' && <FindingsPanel inv={inv} analysis={analysis}/>}
-        {tab === 'monitoring' && <PulseMonitor history={history} current={inv}/>}
+        {tab === 'monitoring' && <PulseMonitor history={history} current={inv} scheduling={Boolean(capabilities?.spider)} organisationId={session.authenticated ? session.organisationId : null}/>}
         {tab === 'decisions' && <DecisionsPanel inv={inv} analysis={analysis} onChange={persist}/>}
         {tab === 'executive' && <ExecutiveStudio inv={inv} analysis={analysis} projectName={project?.name || inv.brief.brand}/>}
       </> : inv && !inv.pages.length && !running ? <p className="empty-copy">This investigation has no page evidence yet. Resume or retry it above, or start a new investigation.</p> : null}

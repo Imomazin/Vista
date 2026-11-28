@@ -13,7 +13,7 @@ export const ccBase = "https://data.commoncrawl.org/";
 export const ccTerms = "https://commoncrawl.org/terms-of-use";
 export type CcCapture = { url: string; timestamp: string; status: number; mime: string; digest: string; length: number; offset: number; filename: string; crawl: string };
 export type CcDomainResult = { crawl: string; captures: CcCapture[]; uniqueUrls: number; truncated: boolean; requests: number; first: string; last: string };
-export type CcRecord = { html: string; capturedAt: string; targetUri: string; status: number; contentType: string };
+export type CcRecord = { html: string; capturedAt: string; targetUri: string; status: number; contentType: string; truncated: boolean };
 
 const crawlPattern = /^CC-MAIN-\d{4}-\d{2}$/;
 const warcPath = /^crawl-data\/CC-MAIN-\d{4}-\d{2}\/segments\/[0-9.]+\/(warc|crawldiagnostics)\/[A-Za-z0-9._-]+\.warc\.gz$/;
@@ -156,5 +156,6 @@ export async function fetchArchived(capture: Pick<CcCapture, "filename" | "offse
   const status = Number(http.split("\r\n")[0].split(" ")[1]) || 0;
   const contentType = header(http, "Content-Type");
   if (contentType && !/html/i.test(contentType)) throw new CcError("The archived record is not an HTML page.");
-  return { html: raw.subarray(httpEnd + 4).toString("utf8"), capturedAt: header(warc, "WARC-Date"), targetUri: header(warc, "WARC-Target-URI"), status, contentType };
+  // Common Crawl marks records it cut short ("WARC-Truncated: length"): content comparisons are then unreliable.
+  return { html: raw.subarray(httpEnd + 4).toString("utf8"), capturedAt: header(warc, "WARC-Date"), targetUri: header(warc, "WARC-Target-URI"), status, contentType, truncated: Boolean(header(warc, "WARC-Truncated")) };
 }

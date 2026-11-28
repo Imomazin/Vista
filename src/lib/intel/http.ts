@@ -108,7 +108,7 @@ export function validatePublicUrl(input: string, env: Record<string, string | un
   return url;
 }
 
-async function resolvePublic(url: URL, remaining: number): Promise<string | null> {
+export async function resolvePublic(url: URL, remaining: number): Promise<string | null> {
   if (testOrigins().has(url.origin)) return null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

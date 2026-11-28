@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         const target = record.targetUri && /^https?:\/\//.test(record.targetUri) ? record.targetUri : String(c.url || "");
         if (!/^https?:\/\//.test(target)) throw new CloudError("The archived record has no target address.");
         const page = analysePage({ url: target, finalUrl: target, status: record.status, chain: [{ url: target, status: record.status }], headers: {}, html: record.html.slice(0, 6_000_000), fetchedAt: record.capturedAt, durationMs: 0, depth: 0 });
-        return { page, capturedAt: record.capturedAt, crawl: typeof c.crawl === "string" ? c.crawl.slice(0, 20) : "", source: "Common Crawl", terms: ccTerms, method };
+        return { page, truncated: record.truncated, capturedAt: record.capturedAt, crawl: typeof c.crawl === "string" ? c.crawl.slice(0, 20) : "", source: "Common Crawl", terms: ccTerms, method };
       }
       const domain = typeof body.domain === "string" ? body.domain.trim().slice(0, 253) : "";
       if (!domain) throw new CloudError("A domain is required.");

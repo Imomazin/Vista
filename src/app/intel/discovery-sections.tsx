@@ -185,6 +185,7 @@ function ComparisonCard({ c, beforeLabel }: { c: Comparison; beforeLabel: string
   return <li className={'index-compare' + (c.unchanged ? ' same' : '')}>
     <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" className="rec-value">{shortUrl(c.url)}</a>
     <small>{beforeLabel}{c.before.crawl ? ' ' + c.before.crawl : ''}, {fmtDate(c.before.at)} → live, {fmtDate(c.after.at)}{c.similarity !== null ? ' · content similarity ' + Math.round(c.similarity * 100) + '%' : ''}</small>
+    {c.limitation && <small className="rec-note">{c.limitation}</small>}
     {failed ? <small className="rec-note">{c.changes[0].after}</small> : c.unchanged ? <small className="index-same">No change detected</small> :
       <ul>{c.changes.slice().sort((a, b) => Number(b.major) - Number(a.major)).map(x => <li key={x.field}><strong className={x.major ? 'major' : ''}>{x.label}</strong><span>{x.before.slice(0, 140)}</span><span aria-hidden="true">→</span><span>{x.after.slice(0, 140)}</span></li>)}</ul>}
   </li>;
