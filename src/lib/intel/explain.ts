@@ -9,7 +9,9 @@ export function explainFailure(kind: FailureKind | "http-error" | "robots" | "bu
     case "blocked-address": return "The domain resolves to a private or reserved network address. VisTa does not contact internal networks.";
     case "timeout": return "The server did not respond in time. Retrying later or reducing crawl depth may help.";
     case "connection": return "The connection failed before a response was received (refused, reset or TLS error).";
-    case "too-large": return "The document exceeds the inspection size limit and was not analysed.";
+    case "too-large": return "The response exceeds the transfer limit of the resource policy and was not analysed.";
+    case "decompression-limit": return "The decompressed response exceeds the processing limit (or expands suspiciously) and was stopped as a safety measure.";
+    case "decode": return "The response could not be decoded (corrupt or unsupported compression).";
     case "redirect-loop": return "The URL redirects in a loop, so no final page could be reached.";
     case "too-many-redirects": return "The redirect chain is too long to follow.";
     case "unsupported-type": return "The URL does not return an HTML document.";

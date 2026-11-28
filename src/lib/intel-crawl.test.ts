@@ -41,7 +41,7 @@ test("fetcher records redirect chains, detects loops, enforces type and size lim
     assert.deepEqual(chain.chain.map(h => h.status), [301, 302, 200]);
     await assert.rejects(fetchPublic(site.origin + "/loop1"), (e: FetchFailure) => e.kind === "redirect-loop" && e.chain.length === 2);
     await assert.rejects(fetchPublic(site.origin + "/json"), (e: FetchFailure) => e.kind === "unsupported-type");
-    await assert.rejects(fetchPublic(site.origin + "/big"), (e: FetchFailure) => e.kind === "too-large");
+    await assert.rejects(fetchPublic(site.origin + "/big", { policy: { maxTransferBytes: 1_000_000, maxDecodedBytes: 2_000_000, maxHtmlBytes: 1_000_000, maxCompressionRatio: 100, timeoutMs: 5000, retries: 0 } }), (e: FetchFailure) => e.kind === "too-large");
     const missing = await fetchPublic(site.origin + "/gone");
     assert.equal(missing.status, 404); assert.equal(missing.body, "");
 

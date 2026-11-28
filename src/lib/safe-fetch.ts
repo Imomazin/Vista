@@ -1,5 +1,3 @@
-import dns from "node:dns/promises";
-import https from "node:https";
 import { BlockList, isIP } from "node:net";
 
 const blocked = new BlockList();
@@ -15,8 +13,6 @@ for (const [range, prefix] of [
   blocked.addSubnet(range, prefix, "ipv4");
 }
 
-const maxBytes = 1024 * 1024;
-
 function validateUrl(input: string): URL {
   const url = new URL(input);
   if (url.protocol !== "https:" || url.port || url.username || url.password) {
@@ -28,93 +24,26 @@ function validateUrl(input: string): URL {
   return url;
 }
 
-async function responseFor(url: URL, deadline: number): Promise<{ status: number; body: string; location?: string; robots: string }> {
-  let dnsTimer:ReturnType<typeof setTimeout>|undefined;
-  const remaining=deadline-Date.now();if(remaining<=0)throw new Error('The website request timed out.');
-  const addresses = await Promise.race([dns.lookup(url.hostname, { family: 4, all: true }),new Promise<never>((_,reject)=>{dnsTimer=setTimeout(()=>reject(new Error('The hostname lookup timed out.')),Math.min(3000,remaining));})]).finally(()=>clearTimeout(dnsTimer));
-  if (!addresses.length || addresses.some(({ address }) => blocked.check(address, "ipv4"))) {
-    throw new Error("The hostname did not resolve to a permitted public address.");
-  }
-  const ip = addresses[0].address;
-  return await new Promise((resolve, reject) => {
-    const req = https.request(url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "VistaSiteIntelligence/0.1 (+https://ambidexters.com)",
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Encoding": "identity"
-      },
-      lookup: (_hostname, options, callback) => {
-        // Node 24 may request all address records for family auto-selection.
-        // Return the validated pinned address in the requested callback shape.
-        const deliver = callback as unknown as (...args: unknown[]) => void;
-        if (typeof options === "object" && options.all) {
-          deliver(null, [{ address: ip, family: 4 }]);
-        } else {
-          deliver(null, ip, 4);
-        }
-      },
-      timeout: 9000,
-      maxHeaderSize: 16384
-    }, (res) => {
-      const status = res.statusCode || 0;
-      const location = typeof res.headers.location === "string" ? res.headers.location : undefined;
-      const robots = typeof res.headers["x-robots-tag"] === "string" ? res.headers["x-robots-tag"] : "";
-      if (status >= 300 && status < 400) {
-        res.resume();
-        resolve({ status, body: "", location, robots });
-        return;
-      }
-      if (status < 200 || status >= 300) {
-        res.resume();
-        reject(new Error("The target returned HTTP " + status + "."));
-        return;
-      }
-      const contentType = String(res.headers["content-type"] || "");
-      if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) {
-        res.resume();
-        reject(new Error("The target is not an HTML page."));
-        return;
-      }
-      const chunks: Buffer[] = [];
-      let bytes = 0;
-      res.on("data", (chunk: Buffer) => {
-        bytes += chunk.length;
-        if (bytes > maxBytes) {
-          req.destroy(new Error("The page exceeds the 1 MB audit limit."));
-          return;
-        }
-        chunks.push(chunk);
-      });
-      res.on("end", () => resolve({ status, body: Buffer.concat(chunks).toString("utf8"), robots }));
-      res.on("error", reject);
-    });
-    const totalTimer=setTimeout(()=>req.destroy(new Error('The website request timed out.')),Math.max(1,deadline-Date.now()));
-    req.on('close',()=>clearTimeout(totalTimer));
-    req.on("error", reject);
-    req.on("timeout", () => req.destroy(new Error("The website request timed out.")));
-    req.end();
-  });
-}
-
-export async function fetchPublicHtml(rawInput: string): Promise<{ url: string; html: string; robots: string }> {
+/**
+ * Legacy single-page retrieval used by the public audit, the Deep Investigation page and the job
+ * worker. It applies the shared VisTa resource policy (streaming, compression, decoded and retained
+ * limits, HTML reduction and bounded retries) while keeping the stricter HTTPS-only rule.
+ */
+export async function fetchPublicHtml(rawInput: string): Promise<{ url: string; html: string; robots: string; truncated: boolean; decodedBytes: number }> {
   let url: URL;
   try {
     url = validateUrl(rawInput.trim());
   } catch {
     throw new Error("Use a valid public HTTPS address such as https://example.com.");
   }
-  const deadline=Date.now()+12000;
-  for (let hop = 0; hop < 4; hop += 1) {
-    const response = await responseFor(url,deadline);
-    if (response.status >= 300 && response.status < 400 && response.location) {
-      url = validateUrl(new URL(response.location, url).href);
-      continue;
-    }
-    if (response.status >= 300 && response.status < 400) {
-      throw new Error("The website returned an unsupported redirect.");
-    }
-    return { url: url.href, html: response.body, robots: response.robots };
+  const { fetchPublic, FetchFailure } = await import("./intel/http");
+  try {
+    const response = await fetchPublic(url.href, { reduce: true, maxRedirects: 4 });
+    if (response.chain.some(hop => !hop.url.startsWith("https:")) || !response.finalUrl.startsWith("https:")) throw new Error("The website redirected to a non-HTTPS address.");
+    if (response.status < 200 || response.status >= 300) throw new Error("The target returned HTTP " + response.status + ".");
+    return { url: response.finalUrl, html: response.body, robots: response.headers["x-robots-tag"] || "", truncated: response.retrieval.truncated, decodedBytes: response.retrieval.decodedBytes };
+  } catch (error) {
+    if (error instanceof FetchFailure) throw new Error(error.message);
+    throw error;
   }
-  throw new Error("The page redirects too many times.");
 }

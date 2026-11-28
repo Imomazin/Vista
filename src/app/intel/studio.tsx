@@ -4,8 +4,9 @@ import { History, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 import { computeAnalysis } from '@/lib/intel/analysis';
 import * as charts from '@/lib/intel/charts';
 import { jobProgress, newJob, type Brief, type Investigation } from '@/lib/intel/model';
-import { runInvestigation } from '@/lib/intel/runner';
-import { deleteInvestigation, listInvestigations, saveInvestigation, storageMode } from '@/lib/intel/store';
+import { isRetryable, prepareRetry, runInvestigation } from '@/lib/intel/runner';
+import { deleteInvestigation, getInvestigation, latestPerProject, listInvestigations, saveInvestigation, storageMode } from '@/lib/intel/store';
+import type { Analysis } from '@/lib/intel/analysis';
 import { emptyWorkspace, parseWorkspace, preferredProject, publicUrl, rememberProject, storageKey, type Workspace } from '@/lib/workspace';
 import IntelligencePulse from './intelligence-pulse';
 import BriefForm, { defaultBrief } from './studio-brief';
@@ -22,6 +23,7 @@ export const studioTabs = [
 export type StudioTab = typeof studioTabs[number][0];
 
 type Session = { authenticated: boolean; organisationId: string | null; owner: boolean };
+export type Capabilities = { render: boolean; pagespeedKey: boolean; policy: { maxHtmlMb: number; maxTransferMb: number; maxDecodedMb: number } } | null;
 
 export default function Studio({ data, tab, onTab, goMeasurements }: { data: Workspace; tab: StudioTab; onTab: (tab: StudioTab) => void; goMeasurements: () => void }) {
   const [projectId, setProjectId] = useState('');
@@ -31,7 +33,11 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
   const [session, setSession] = useState<Session>({ authenticated: false, organisationId: null, owner: false });
   const [newBrief, setNewBrief] = useState(false);
   const [portfolio, setPortfolio] = useState<Investigation[]>([]);
+  const [capabilities, setCapabilities] = useState<Capabilities>(null);
   const controller = useRef<AbortController | null>(null);
+  const invRef = useRef<Investigation | null>(null);
+  useEffect(() => { invRef.current = inv; }, [inv]);
+  const [previous, setPrevious] = useState<Analysis | null>(null);
   const project = data.projects.find(p => p.id === projectId);
 
   useEffect(() => { const preferred = preferredProject(); setProjectId(data.projects.some(p => p.id === preferred) ? preferred : data.projects[0]?.id || ''); }, [data.projects]);
@@ -40,25 +46,34 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
       const owner = s.memberships?.find(m => m.role === 'owner');
       setSession({ authenticated: !!s.authenticated, organisationId: owner?.organisation_id || s.memberships?.[0]?.organisation_id || null, owner: !!owner });
     }).catch(() => {});
+    fetch('/api/intel/capabilities', { cache: 'no-store' }).then(r => r.json()).then(setCapabilities).catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
     if (!projectId) { setHistory([]); setInv(null); return; }
     const list = await listInvestigations(projectId);
     setHistory(list);
-    setInv(current => {
-      if (running && current) return current;
-      const keep = current && list.find(i => i.id === current.id);
-      const chosen = keep || list[0] || null;
-      if (chosen && chosen.job.status === 'running') return { ...chosen, job: { ...chosen.job, status: 'paused', activity: 'Interrupted when the page closed. Resume to continue from the last saved step.' } };
-      return chosen;
-    });
+    if (running) return;
+    const current = invRef.current;
+    const target = list.find(i => i.id === current?.id) || list[0];
+    if (!target) { setInv(null); return; }
+    if (current && current.id === target.id && current.pages.length >= (target.pageCount ?? 0)) return;
+    const full = await getInvestigation(target.id);
+    if (full && full.job.status === 'running') full.job = { ...full.job, status: 'paused', activity: 'Interrupted when the page closed. Resume to continue from the last saved step.' };
+    setInv(full);
   }, [projectId, running]);
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { listInvestigations().then(setPortfolio); }, [history]);
+  useEffect(() => { latestPerProject(data.projects.map(p => p.id)).then(setPortfolio); }, [history, data.projects]);
 
-  const analysis = useMemo(() => (inv && inv.pages.length ? computeAnalysis(inv) : null), [inv]);
-  const previous = useMemo(() => { if (!inv) return null; const older = history.filter(h => h.id !== inv.id && h.createdAt < inv.createdAt && h.job.status === 'complete'); return older[0] ? computeAnalysis(older[0]) : null; }, [inv, history]);
+  // Dashboards are assembled once processing stops; large crawls stay responsive while running.
+  const analysis = useMemo(() => (inv && inv.pages.length && !running ? computeAnalysis(inv) : null), [inv, running]);
+  useEffect(() => {
+    let cancelled = false;
+    const older = inv && !running ? history.find(h => h.id !== inv.id && h.createdAt < inv.createdAt && ['complete', 'partial'].includes(h.job.status)) : undefined;
+    if (!older) { setPrevious(null); return; }
+    getInvestigation(older.id).then(full => { if (!cancelled) setPrevious(full && full.pages.length ? computeAnalysis(full) : null); });
+    return () => { cancelled = true; };
+  }, [inv?.id, inv?.createdAt, history, running]);
 
   async function persist(next: Investigation) { setInv(next); await saveInvestigation(next); }
 
@@ -89,6 +104,8 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
     run({ ...inv, job });
   }
 
+  function retryFailed() { if (inv) run(prepareRetry(inv)); }
+
   async function remove() {
     if (!inv || running || !window.confirm('Delete this investigation from this browser? This cannot be undone.')) return;
     await deleteInvestigation(inv.id);
@@ -97,7 +114,7 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
 
   const progress = inv ? jobProgress(inv.job) : { percent: 0, determinate: true };
   const showBrief = !inv || newBrief || tab === 'brief';
-  const pulse = inv && <IntelligencePulse title={'Website intelligence · ' + inv.brief.website.replace(/^https?:\/\//, '')} status={inv.job.status} stages={inv.job.stages} activity={inv.job.activity} elapsedMs={inv.job.elapsedMs} percent={progress.percent} determinate={progress.determinate} counts={[{ label: 'pages', value: inv.job.counts.pages }, { label: 'records', value: inv.job.counts.records }, { label: 'sources', value: inv.job.counts.sources }]} onCancel={() => controller.current?.abort()} onResume={() => run(inv)} onRetry={retry}/>;
+  const pulse = inv && <IntelligencePulse title={'Website intelligence · ' + inv.brief.website.replace(/^https?:\/\//, '')} status={inv.job.status} stages={inv.job.stages} activity={inv.job.activity} elapsedMs={inv.job.elapsedMs} percent={progress.percent} determinate={progress.determinate} counts={[{ label: 'discovered', value: inv.job.counts.discovered ?? inv.job.counts.pages }, { label: 'queued', value: inv.job.counts.queued ?? 0 }, { label: 'processed', value: inv.job.counts.processed ?? inv.job.counts.pages }, { label: 'succeeded', value: inv.pages.length }, { label: 'failed', value: inv.job.counts.failed ?? 0 }, ...(inv.job.counts.restricted ? [{ label: 'restricted', value: inv.job.counts.restricted }] : [])]} gaps={inv.job.gaps} retryableCount={inv.failures.filter(isRetryable).length} onRetryFailed={running ? undefined : retryFailed} onCancel={() => controller.current?.abort()} onResume={() => run(inv)} onRetry={retry}/>;
 
   if (!data.projects.length) return <div className="studio"><StudioHeader/><CreateClient/></div>;
 
@@ -105,7 +122,7 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
     <StudioHeader/>
     <div className="studio-bar">
       <label>Client<select value={projectId} onChange={e => { setProjectId(e.target.value); rememberProject(e.target.value); setInv(null); }}>{data.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-      <label><History size={14}/> Investigation<select value={inv?.id || ''} onChange={e => setInv(history.find(h => h.id === e.target.value) || null)} disabled={running}>{!history.length && <option value="">None yet</option>}{history.map(h => <option key={h.id} value={h.id}>{h.createdAt.slice(0, 16).replace('T', ' ')} · {h.brief.mode} · {h.job.status} · {h.pages.length} pages</option>)}</select></label>
+      <label><History size={14}/> Investigation<select value={inv?.id || ''} onChange={e => { getInvestigation(e.target.value).then(setInv); }} disabled={running}>{!history.length && <option value="">None yet</option>}{history.map(h => <option key={h.id} value={h.id}>{h.createdAt.slice(0, 16).replace('T', ' ')} · {h.brief.mode} · {h.job.status} · {h.pageCount ?? h.pages.length} pages</option>)}</select></label>
       <div className="studio-bar-actions">
         <button className="ghost-button" onClick={() => { setNewBrief(true); onTab('brief'); }} disabled={running}><Plus size={15}/>New investigation</button>
         {inv && inv.job.status === 'complete' && <button className="ghost-button" onClick={() => start({ ...inv.brief }, inv.job.stages.find(s => s.id === 'ai')?.status === 'complete')} disabled={running} title="Re-run with the same brief to track improvement"><RefreshCcw size={15}/>Re-run to track improvement</button>}
@@ -114,8 +131,8 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
     </div>
     {storageMode() === 'memory' && <p className="dependency-note">This browser blocks IndexedDB, so investigations are kept only until the page is closed.</p>}
     <nav className="studio-tabs" aria-label="Studio sections">{studioTabs.map(([id, label]) => <button key={id} className={tab === id || (id === 'brief' && showBrief && tab === 'brief') ? 'active' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => onTab(id)} disabled={id !== 'brief' && id !== 'portfolio' && !analysis}>{label}</button>)}</nav>
-    {inv && (running || ['paused', 'cancelled', 'failed'].includes(inv.job.status) || tab === 'cockpit') && pulse}
-    {tab === 'portfolio' ? Portfolio() : showBrief ? <BriefForm key={(project?.id || '') + (inv?.id || 'new') + String(newBrief)} project={project} initial={defaultBrief(project, newBrief || !inv ? undefined : inv.brief)} canSampleAi={session.owner} canConnect={session.owner} busy={running} onStart={start}/> :
+    {inv && (running || ['paused', 'cancelled', 'failed', 'partial'].includes(inv.job.status) || tab === 'cockpit') && pulse}
+    {tab === 'portfolio' ? Portfolio() : showBrief ? <BriefForm key={(project?.id || '') + (inv?.id || 'new') + String(newBrief)} project={project} initial={defaultBrief(project, newBrief || !inv ? undefined : inv.brief)} canSampleAi={session.owner} canConnect={session.owner} member={session.authenticated} capabilities={capabilities} busy={running} onStart={start}/> :
       inv && analysis ? <>
         {tab === 'cockpit' && <><Cockpit inv={inv} analysis={analysis} goTo={t => onTab(t as StudioTab)}/>{previous && charts.changeWaterfall(previous.index, analysis.index) && <section className="studio-section"><h3>Improvement since the previous investigation</h3><p className="section-note">Resolved findings: {previous.findings.filter(f => !analysis.findings.some(x => x.rule === f.rule)).length} · new findings: {analysis.findings.filter(f => !previous.findings.some(x => x.rule === f.rule)).length}</p><VistaChart spec={charts.changeWaterfall(previous.index, analysis.index)!} height={320}/></section>}</>}
         {tab === 'technical' && <Technical inv={inv} analysis={analysis}/>}

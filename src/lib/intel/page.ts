@@ -4,7 +4,7 @@
  * reproducible and testable. Only bounded excerpts are stored, never full page HTML.
  */
 import { load, type CheerioAPI } from "cheerio";
-import type { Hop } from "./http";
+import type { Hop, Retrieval } from "./http";
 
 export type PageType = "home" | "product" | "category" | "service" | "course" | "article" | "pricing" | "contact" | "about" | "legal" | "other";
 export type Intent = "navigational" | "informational" | "commercial" | "transactional";
@@ -44,6 +44,10 @@ export type PageRecord = {
   pageType: PageType;
   intent: Intent;
   dates: { modified?: string; published?: string; source: string } | null;
+  /** How the document was retrieved: sizes before and after reduction, encoding and truncation. */
+  retrieval: { transferBytes: number; decodedBytes: number; retainedBytes: number; encoding: string; truncated: boolean; inlineScriptBytes: number; attempts: number; rendered: boolean } | null;
+  /** Little server-rendered content and an application shell: content likely depends on JavaScript. */
+  jsDependent: boolean;
 };
 
 export type PageInput = {
@@ -57,6 +61,8 @@ export type PageInput = {
   durationMs: number;
   depth: number;
   keywords?: string[];
+  retrieval?: Retrieval;
+  rendered?: boolean;
 };
 
 const stopwords = new Set("a about above after again against all am an and any are as at be because been before being below between both but by can could did do does doing down during each few for from further had has have having he her here hers herself him himself his how i if in into is it its itself just me more most my myself no nor not now of off on once only or other our ours ourselves out over own same she should so some such than that the their theirs them themselves then there these they this those through to too under until up very was we were what when where which while who whom why will with you your yours yourself yourselves also get got our us may can will one two new use using used via per within without across more most every page home menu skip content cookie cookies accept privacy policy terms read learn click".split(" "));
@@ -242,8 +248,8 @@ export function analysePage(input: PageInput): PageRecord {
     const target = normaliseUrl($(el).attr("src") || $(el).attr("href") || "", input.finalUrl);
     if (target) { const h = new URL(target).hostname; if (siteKey(h) !== host) thirdParty.add(h); }
   });
-  let inlineScriptBytes = 0;
-  $("script:not([src])").each((_, el) => { inlineScriptBytes += $(el).text().length; });
+  let inlineScriptBytes = input.retrieval?.reduction?.inlineScriptBytes ?? 0;
+  $("script:not([src])").each((_, el) => { if ((el.attribs?.type || "").toLowerCase() !== "application/ld+json") inlineScriptBytes += $(el).text().length; });
 
   // Trust and security.
   const https = base.protocol === "https:";
@@ -329,12 +335,14 @@ export function analysePage(input: PageInput): PageRecord {
     },
     images: { count: imgs.length, missingAlt, emptyAlt, noDimensions, lazy, legacyFormat },
     schema: { blocks: ld.blocks, errors: ld.errors, types, organisation, authors, breadcrumb: types.includes("BreadcrumbList"), faq: types.includes("FAQPage"), offers, rating },
-    performance: { htmlBytes: input.html.length, renderBlockingScripts, headStylesheets: head.find("link[rel~='stylesheet']").length, scripts: $("script[src]").length, thirdPartyHosts: [...thirdParty].slice(0, 30), inlineScriptBytes, preconnect: $("link[rel~='preconnect']").length, preload: $("link[rel~='preload']").length },
+    performance: { htmlBytes: input.retrieval?.decodedBytes || input.html.length, renderBlockingScripts, headStylesheets: head.find("link[rel~='stylesheet']").length, scripts: $("script[src]").length, thirdPartyHosts: [...thirdParty].slice(0, 30), inlineScriptBytes, preconnect: $("link[rel~='preconnect']").length, preload: $("link[rel~='preload']").length },
     trust,
     accessibility: { langDeclared: Boolean(lang), unlabelledInputs, unnamedButtons, vagueLinks, emptyLinks, duplicateIds: [...ids.values()].filter(n => n > 1).length, iframesWithoutTitle: $("iframe:not([title])").length, skipLink: $('a[href^="#"]').filter((_, el) => /skip/i.test($(el).text())).length > 0, mainLandmark: $("main,[role=main]").length > 0 },
     keywords,
     pageType,
     intent: intentFor[pageType],
     dates,
+    retrieval: input.retrieval ? { transferBytes: input.retrieval.transferBytes, decodedBytes: input.retrieval.decodedBytes, retainedBytes: input.retrieval.retainedBytes, encoding: input.retrieval.encoding, truncated: input.retrieval.truncated, inlineScriptBytes, attempts: input.retrieval.attempts, rendered: Boolean(input.rendered) } : null,
+    jsDependent: !input.rendered && words.length < 120 && ($("script[src]").length >= 3 || inlineScriptBytes > 50_000 || $("#root,#app,#__next,#__nuxt,#svelte,[data-reactroot]").filter((_, el) => clean($(el).text()).length < 40).length > 0 || /enable javascript|requires javascript/i.test($("noscript").text())),
   };
 }

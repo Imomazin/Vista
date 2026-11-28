@@ -291,3 +291,7 @@ html[data-appearance="light"] .priority-score{color:#fff}
 .slide-preview-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr))}
 .slide-side .slide-metric{display:inline-block;width:calc(50% - .6cqw);margin:0 .6cqw .6cqw 0;vertical-align:top}
 .create-client input{min-height:40px;border-radius:10px;border:1px solid var(--iv-line);background:var(--iv-surface);color:var(--iv-text);padding:8px 11px;font:inherit;font-size:calc(12.5px + 2pt)}
+.chip-partial{color:var(--iv-warn)}
+.ipulse-partial .ipulse-fill{background:linear-gradient(90deg,var(--iv-emerald-deep),var(--iv-emerald) 50%,var(--iv-warn))}
+.ipulse-gaps{margin-top:14px;padding:12px 14px;border:1px solid var(--iv-warn);border-radius:14px;background:rgba(243,200,121,.06)}
+.ipulse-gaps strong{color:var(--iv-warn);font-size:calc(12px + 2pt)}.ipulse-gaps ul{margin:6px 0 0;padding-left:18px;font-size:calc(11px + 2pt);line-height:1.5}
