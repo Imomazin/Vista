@@ -1,7 +1,7 @@
 import { CloudError } from "@/lib/cloud";
 import { requestLimit } from "@/lib/rate-limit";
 import { intelligenceRoute, isMember, stringList } from "@/lib/intel/route-kit";
-import { keywordMetrics, searchConfig, serpResults } from "@/lib/intel/search-providers";
+import { keywordMetrics, searchConfig, serpResults, usage } from "@/lib/intel/search-providers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,8 +18,11 @@ export async function POST(request: Request) {
     const market = typeof body.market === "string" ? body.market.slice(0, 60) : "";
     const keywords = stringList(body.keywords, 100, 80);
     const serpKeywords = stringList(body.serpKeywords, 6, 80);
+    const before = usage.dataforseoUsd;
     const metrics = cfg.metrics ? await keywordMetrics(keywords, market) : [];
     const serp = await serpResults(serpKeywords, market);
-    return { configured: true, provider: cfg.provider, metrics, serp, collectedAt: new Date().toISOString(), note: cfg.metrics ? "" : cfg.provider + " provides live results only; search volume and difficulty need DataForSEO." };
+    const costUsd = Math.round((usage.dataforseoUsd - before) * 10000) / 10000;
+    console.info(JSON.stringify({ event: "vista.provider-usage", provider: cfg.provider, keywords: keywords.length, serpKeywords: serpKeywords.length, costUsd }));
+    return { configured: true, provider: cfg.provider, metrics, serp, costUsd, collectedAt: new Date().toISOString(), note: cfg.metrics ? "" : cfg.provider + " provides live results only; search volume and difficulty need DataForSEO." };
   });
 }

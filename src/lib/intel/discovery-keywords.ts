@@ -24,6 +24,7 @@ function normalise(raw: string, brandTokens: Set<string>, keepBrand = false): st
   // "clinical laboratory course 12" → "clinical laboratory course": numbered variants are one search topic.
   if (words.length >= 3 && /^\d{1,3}$/.test(words[words.length - 1])) words.pop();
   const phrase = words.join(" ").replace(/\s*-\s*/g, " ").trim();
+  if (/^(other|all|more|view|see|browse|explore)\b/.test(phrase)) return null;
   if (/\b(cart|basket|checkout|refunds?|returns?|exchanges?|policy|policies|gift cards?|sign in|log in|login|newsletter|cookies?|account|wishlist|shipping|subscribe|unsubscribe|added to|filters?|sort by|skip to)\b/.test(phrase)) return null;
   if (phrase.length < 3 || words.length > 7 || genericPhrase.test(phrase) || !tokens(phrase).length || /^\d+( \d+)*$/.test(phrase)) return null;
   return phrase;
@@ -34,7 +35,10 @@ export type KeywordInput = { profile: BusinessProfile; pages: PageRecord[]; comp
 export function keywordUniverse(input: KeywordInput): KeywordRec[] {
   const { profile, pages } = input;
   const brandNames = [profile.brand.value, ...profile.aliases.filter(a => a.selected).map(a => a.value)].map(s => s.toLowerCase());
-  const brandTokens = new Set(brandNames.flatMap(n => tokens(n)).filter(t => t.length > 2 && !/^(com|co|uk|org|net|www)$/.test(t)));
+  // Brand tokens come from the brand name and domain only: aliases often contain descriptive words ("… Laboratory Training")
+  // that must stay in keywords. Aliases still mark a keyword as branded when the whole alias appears.
+  const domainLabel = (() => { try { return new URL(input.website).hostname.replace(/^www\./, "").split(".")[0]; } catch { return ""; } })();
+  const brandTokens = new Set([...tokens(profile.brand.value), domainLabel].filter(t => t.length > 2 && !/^(com|co|uk|org|net|www)$/.test(t)));
   const isBranded = (k: string) => brandNames.some(b => b.length > 2 && k.includes(b)) || tokens(k).some(t => brandTokens.has(t));
   const markets = profile.markets.filter(m => m.selected).map(m => m.value);
   const marketTerms = markets.map(m => shortMarket[m] || m.toLowerCase());
@@ -132,15 +136,26 @@ export function keywordUniverse(input: KeywordInput): KeywordRec[] {
     if (v.emerging) groups.push("emerging");
     const priority = Math.min(100, Math.round(v.weight + (intent === "transactional" ? 18 : intent === "commercial" ? 14 : intent === "informational" ? 6 : 2) + Math.min(10, v.evidence.length * 3) + (v.metrics?.impressions ? Math.min(20, Math.log10(v.metrics.impressions + 1) * 6) : 0)));
     return { id: recId("kw", keyword), keyword, groups, intent, cluster: v.cluster, priority, sources: [...v.sources].slice(0, 4), evidence: v.evidence, basis: v.basis, metrics: v.metrics, selected: false } as KeywordRec;
-  }).sort((a, b) => b.priority - a.priority).slice(0, 160);
-  let primary = 0, secondary = 0;
+  }).sort((a, b) => b.priority - a.priority);
+  // Variants ("courses" / "course", "uk histology training" / "histology training uk") are one keyword: keep the strongest.
+  const variantKey = (k: string) => tokens(k).map(t => (t.length > 3 && t.endsWith("s") && !t.endsWith("ss") ? t.slice(0, -1) : t)).sort().join(" ");
+  const byVariant = new Map<string, KeywordRec>();
   for (const k of ranked) {
+    const key = variantKey(k.keyword);
+    const kept = byVariant.get(key);
+    if (!kept) { byVariant.set(key, k); continue; }
+    kept.sources = [...new Set([...kept.sources, ...k.sources])].slice(0, 5);
+    if (!kept.metrics && k.metrics) kept.metrics = k.metrics;
+  }
+  const deduped = [...byVariant.values()].slice(0, 160);
+  let primary = 0, secondary = 0;
+  for (const k of deduped) {
     if (k.groups.includes("branded") || k.groups.includes("emerging") || k.intent === "informational") continue;
     if (primary < 8) { k.groups.unshift("primary"); primary += 1; }
     else if (secondary < 20) { k.groups.unshift("secondary"); secondary += 1; }
   }
-  for (const k of ranked) k.selected = k.groups.includes("primary") || k.groups.includes("secondary") || (k.groups.includes("branded") && k.intent === "navigational");
-  return ranked;
+  for (const k of deduped) k.selected = k.groups.includes("primary") || k.groups.includes("secondary") || (k.groups.includes("branded") && k.intent === "navigational");
+  return deduped;
 }
 
 function headTerm(k: string): string {

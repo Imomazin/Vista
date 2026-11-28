@@ -139,6 +139,9 @@ Public intelligence endpoints require same-origin requests, bounded JSON bodies 
 
 ## External dependencies not yet active
 
+The full status of every capability, provider and release gate is maintained in [capability-register.md](capability-register.md).
+
+
 - Google Search Console and GA4 live retrieval require a successful authorised owner test in production (credentials are configured; live access is not verified by this release).
 - OpenAI API sampling requires an authorised owner session and a funded API key; consumer ChatGPT, Google AI Overviews / AI Mode, Gemini, Perplexity, Claude and Copilot are captured manually.
 - Search volume, keyword difficulty, CPC, rankings and organic competitors require a search data provider (DataForSEO, or Brave Search for live results only); none is configured.

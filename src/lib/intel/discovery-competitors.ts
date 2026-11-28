@@ -31,7 +31,8 @@ export function offeringVocabulary(profile: BusinessProfile, pages: PageRecord[]
   for (const e of profile.industry.evidence) { const m = e.detail.match(/“([^”]+)”/); if (m) bump(m[1], 2); }
   // Only terms that recur across pages and also belong to the offer vocabulary are reinforced (e.g. "shoes" across product pages).
   for (const [t, n] of spread) if (counts.has(t) && n >= Math.max(2, pages.length * 0.25) && !genericOffering.has(t)) counts.set(t, (counts.get(t) || 0) + n);
-  const brand = new Set([...tokens(profile.brand.value), ...profile.aliases.flatMap(a => tokens(a.value))]);
+  // Only the brand name itself is excluded; aliases often add descriptive words ("… Laboratory Training").
+  const brand = new Set(tokens(profile.brand.value));
   return [...counts.entries()].filter(([t]) => !brand.has(t)).sort((a, b) => b[1] - a[1]).slice(0, 14).map(([t]) => t);
 }
 
@@ -50,27 +51,51 @@ function candidateMarkets(home: PageRecord): string[] {
   return marketRecs([home], home.finalUrl).map(m => m.value);
 }
 
-export function assessCompetitor(profile: BusinessProfile, vocabulary: string[], candidate: Candidate, kinds: CompetitorKind[], home: PageRecord | null, failure: string | null): CompetitorRec {
-  const name = home?.business?.names.find(n => /Structured data name|og:site_name/.test(n.source))?.value || candidate.name || hostLabel(candidate.website);
-  const evidence: EvidenceRef[] = candidate.sources.slice(0, 4).map(url => ({ url, detail: "Source consulted by AI web search" }));
+const compactName = (v: string) => v.toLowerCase().normalize("NFKD").replace(/\b(ltd|limited|llp|plc|inc|llc|gmbh|uk|group|the|co)\b/g, "").replace(/[^a-z0-9]/g, "");
+
+/** Pages on a competitor's site whose navigation label or URL uses the client's offer vocabulary. */
+export function relevantLinks(home: PageRecord, vocabulary: string[], max = 2): string[] {
+  const key = siteKey(hostOf(home.finalUrl));
+  const links = [...(home.business?.nav || []), ...home.links.internal.map(l => ({ text: l.text, url: l.url }))];
+  const scored = links.map(l => ({ url: l.url.split("#")[0], score: vocabulary.filter(t => (l.text + " " + l.url).toLowerCase().includes(t)).length })).filter(l => l.score > 0 && l.url !== home.finalUrl && siteKey(hostOf(l.url)) === key);
+  return [...new Map(scored.sort((a, b) => b.score - a.score).map(l => [l.url, l])).keys()].slice(0, max);
+}
+
+export function assessCompetitor(profile: BusinessProfile, vocabulary: string[], candidate: Candidate, kinds: CompetitorKind[], home: PageRecord | null, failure: string | null, extra: PageRecord[] = []): CompetitorRec {
+  const pagesSeen = [...(home ? [home] : []), ...extra];
+  const first = pagesSeen[0] || null;
+  const declared = pagesSeen.flatMap(p => p.business?.names.filter(n => /Structured data name|og:site_name|legalName|alternateName/.test(n.source)).map(n => n.value) || []);
+  const name = declared[0] || candidate.name || hostLabel(candidate.website);
+  const evidence: EvidenceRef[] = candidate.sources.slice(0, 4).map(url => ({ url, detail: "Source consulted by AI web search", method: "AI web search citation" }));
   const base = { id: recId("competitor", siteKey(hostOf(candidate.website))), name, website: candidate.website, kinds, sources: candidate.sources };
-  if (!home) {
-    return { ...base, overlap: { offerings: null, markets: null, audiences: null, search: null, geo: null }, evidence, confidence: "low", verified: false, verification: failure || "The website could not be retrieved.", reason: "Suggested by " + kinds.join(" and ") + " evidence, but VisTa could not verify the website" + (failure ? ": " + failure : "."), recommended: false, selected: false };
+  if (!first) {
+    return { ...base, overlap: { offerings: null, markets: null, audiences: null, search: null, geo: null }, evidence, confidence: "low", verified: false, verification: failure || "The website could not be retrieved.",
+      checks: { retrieval: { status: "failed", detail: failure || "The website could not be retrieved." }, identity: { status: "unverified", detail: "Not checked: no page could be retrieved." }, relevance: { status: "unknown", detail: "Not measured: no page could be retrieved." } },
+      reason: "Suggested by " + kinds.join(" and ") + " evidence, but VisTa could not retrieve the website" + (failure ? ": " + failure : "."), recommended: false, selected: false };
   }
-  const text = pageCorpus(home);
+  // Identity: does the website present itself as the named organisation?
+  const candidateKey = compactName(candidate.name || "");
+  const domainKey = compactName(hostOf(candidate.website).split(".")[0]);
+  const siteNames = [...declared, ...pagesSeen.map(p => p.title || "")].map(compactName).filter(Boolean);
+  const nameMatch = candidateKey.length >= 3 && siteNames.some(n => n.includes(candidateKey) || (n.length >= 4 && candidateKey.includes(n)));
+  const domainMatch = candidateKey.length >= 3 && (domainKey.includes(candidateKey) || candidateKey.includes(domainKey));
+  const identity: "verified" | "unverified" | "mismatch" = !candidate.name || nameMatch || domainMatch ? "verified" : siteNames.length ? "mismatch" : "unverified";
+  const text = pagesSeen.map(pageCorpus).join(" \n ");
+  const home_ = first;
   const matched = vocabulary.filter(t => new RegExp("\\b" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b").test(text));
-  const theirs = candidateMarkets(home);
+  const theirs = candidateMarkets(home_);
   const ours = profile.markets.filter(m => m.selected).map(m => m.value);
   const sharedMarkets = theirs.filter(m => ours.includes(m));
   const ourAudience = new Set(profile.segments.filter(s => s.selected).flatMap(s => tokens(s.value)));
-  const sharedAudience = [...new Set((home.business?.audiences || []).flatMap(a => tokens(a.phrase)).filter(t => ourAudience.has(t)))];
-  evidence.unshift({ url: home.finalUrl, detail: "Home page fetched: “" + (home.title || home.finalUrl).slice(0, 90) + "”" });
+  const sharedAudience = [...new Set(pagesSeen.flatMap(p => p.business?.audiences || []).flatMap(a => tokens(a.phrase)).filter(t => ourAudience.has(t)))];
+  for (const p of pagesSeen.slice().reverse()) evidence.unshift({ url: p.finalUrl, detail: (p === home ? "Home page" : "Service page") + " fetched: “" + (p.title || p.finalUrl).slice(0, 90) + "”", excerpt: p.h1[0] || p.title || undefined, at: p.fetchedAt, method: "VisTa crawler (robots.txt respected)" });
   const share = vocabulary.length ? matched.length / vocabulary.length : 0;
   const marketOk = !ours.length || !theirs.length || sharedMarkets.length > 0;
   // Publishers cover a market without competing in it.
-  const publisher = home.schema.types.some(t => /^(NewsMediaOrganization|NewsArticle)$/.test(t)) || /(^|\.)(news|times|herald|gazette|magazine|journal|chronicle|insider|daily)[a-z-]*\./.test(hostOf(home.finalUrl));
-  const confidence: Confidence = publisher ? "low" : share >= 0.45 && marketOk ? "high" : share >= 0.25 && marketOk ? "medium" : "low";
-  const parts = [...(publisher ? ["Appears to be a news or media publisher rather than a competitor"] : []), matched.length + " of " + vocabulary.length + " offering terms appear on its home page (" + matched.slice(0, 6).join(", ") + (matched.length > 6 ? ", …" : "") + ")"];
+  const publisher = home_.schema.types.some(t => /^(NewsMediaOrganization|NewsArticle)$/.test(t)) || /(^|\.)(news|times|herald|gazette|magazine|journal|chronicle|insider|daily)[a-z-]*\./.test(hostOf(home_.finalUrl));
+  const confidence: Confidence = publisher || identity === "mismatch" ? "low" : share >= 0.45 && marketOk ? "high" : share >= 0.25 && marketOk ? "medium" : "low";
+  const where = pagesSeen.length > 1 ? "its home and service pages" : home ? "its home page" : "the cited page";
+  const parts = [...(publisher ? ["Appears to be a news or media publisher rather than a competitor"] : []), ...(identity === "mismatch" ? ["The website does not present itself as " + candidate.name] : []), matched.length + " of " + vocabulary.length + " offering terms appear on " + where + " (" + matched.slice(0, 6).join(", ") + (matched.length > 6 ? ", …" : "") + ")"];
   if (sharedMarkets.length) parts.push("serves " + sharedMarkets.join(", "));
   else if (theirs.length && ours.length) parts.push("market signals point to " + theirs.join(", ") + " rather than " + ours.join(", "));
   if (sharedAudience.length) parts.push("addresses the same audiences (" + sharedAudience.slice(0, 4).join(", ") + ")");
@@ -78,8 +103,13 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
   return {
     ...base,
     overlap: { offerings: { matched, total: vocabulary.length }, markets: { shared: sharedMarkets, theirs }, audiences: { shared: sharedAudience }, search: null, geo: null },
-    evidence, confidence, verified: true, verification: "Website retrieved (HTTP " + home.status + ") and analysed on " + home.fetchedAt.slice(0, 10) + ".",
-    reason: parts.join("; ") + ".", recommended: confidence !== "low", selected: confidence !== "low",
+    evidence, confidence, verified: identity !== "mismatch", verification: (home ? "Website retrieved (HTTP " + home.status + ")" : "Home page unavailable (" + (failure || "not retrieved") + "); cited page retrieved") + " and analysed on " + first.fetchedAt.slice(0, 10) + ".",
+    checks: {
+      retrieval: { status: "ok", detail: home ? "Home page retrieved (HTTP " + home.status + ")" + (extra.length ? " plus " + extra.length + " relevant page" + (extra.length === 1 ? "" : "s") : "") + "." : "Home page unavailable (" + (failure || "not retrieved") + "); assessed from " + extra.length + " cited page" + (extra.length === 1 ? "" : "s") + "." },
+      identity: { status: identity, detail: identity === "verified" ? (nameMatch ? "The site names itself " + (declared[0] || candidate.name) + "." : "The domain matches the organisation name.") : identity === "mismatch" ? "The site presents itself as " + (declared[0] || first.title || "another organisation") + ", not " + candidate.name + "." : "No organisation name is declared on the retrieved pages." },
+      relevance: { status: "measured", detail: matched.length + " of " + vocabulary.length + " offering terms on " + pagesSeen.length + " page" + (pagesSeen.length === 1 ? "" : "s") + (sharedMarkets.length ? "; shared market " + sharedMarkets.join(", ") : theirs.length ? "; market signals " + theirs.join(", ") : "; market not stated") + "." },
+    },
+    reason: parts.join("; ") + ".", recommended: confidence !== "low" && identity !== "mismatch", selected: confidence !== "low" && identity !== "mismatch",
   };
 }
 

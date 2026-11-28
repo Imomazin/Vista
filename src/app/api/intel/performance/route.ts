@@ -5,7 +5,8 @@ import { intelligenceRoute } from "@/lib/intel/route-kit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Lighthouse tests of large pages (several MB of HTML) regularly need more than a minute.
+export const maxDuration = 120;
 
 /** Stage 04: Lighthouse lab and Chrome UX Report field data through PageSpeed Insights. */
 export async function POST(request: Request) {

@@ -9,7 +9,7 @@ import type { AiObservation, StageState } from "./model";
 import type { PageRecord } from "./page";
 import { siteKey } from "./page";
 import { buildProfile, evidencePack, mergeAiProfile, type AiProfile } from "./discovery-profile";
-import { assessCompetitor, citationSources, geoEvidence, hostOf, isPlatform, offeringVocabulary, serpCompetitors, type Candidate } from "./discovery-competitors";
+import { assessCompetitor, citationSources, geoEvidence, hostOf, isPlatform, offeringVocabulary, relevantLinks, serpCompetitors, type Candidate } from "./discovery-competitors";
 import { keywordUniverse, promptRecs, promptTemplates } from "./discovery-keywords";
 import { priorityPages, recommendScope } from "./discovery-scope";
 import { marketPhrase, type CompetitorKind, type CompetitorRec, type DiscoveryRun, type KeywordRec } from "./discovery-model";
@@ -183,7 +183,16 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
         }
         catch (error) { if (error instanceof Cancelled) throw error; failure = (error as Error).message; }
         if (home) run.competitorHomes[item.candidate.website] = home;
-        const assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure);
+        let assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure);
+        // Look beyond the home page: relevant service pages when the home page is inconclusive, cited pages when it is blocked.
+        const key = siteKey(hostOf(item.candidate.website));
+        const extraUrls = home ? (assessed.confidence !== "high" ? relevantLinks(home, vocabulary) : []) : item.candidate.sources.filter(u => siteKey(hostOf(u)) === key && u.replace(/\/$/, "") !== item.candidate.website.replace(/\/$/, "")).slice(0, 2);
+        if (extraUrls.length) {
+          try {
+            const r = await post<{ pages: PageRecord[]; failures: PageFailure[] }>("/api/intel/pages", { urls: extraUrls, depths: extraUrls.map(() => 1), keywords: [] });
+            if (r.pages.length) assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure, r.pages);
+          } catch (error) { if (error instanceof Cancelled) throw error; }
+        }
         if (item.search) assessed.overlap.search = { shared: item.search.keywords.length, sampled: Math.max(1, item.search.keywords.length), keywords: item.search.keywords };
         verified.push(assessed);
         s.done += 1;
@@ -248,7 +257,7 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
       }
       if (run.samples.length) await addGeoCompetitors(run, post, s);
       const sampled = run.samples.length;
-      await finish(s, s.errors.length ? "partial" : "complete", run.prompts.length + " prompts in " + new Set(run.prompts.map(x => x.category)).size + " categories" + (sampled ? " · " + sampled + " AI answers sampled; brand mentioned in " + run.samples.filter(o => o.brandMentioned).length : aiOn ? "" : " · AI answers not sampled (AI assistance unavailable)"));
+      await finish(s, s.errors.length ? "partial" : "complete", run.prompts.length + " prompts in " + new Set(run.prompts.map(x => x.category)).size + " categories" + (sampled ? " · brand mentioned in " + run.samples.filter(o => o.brandMentioned).length + " of " + sampled + " sampled AI answers (indicative only)" : aiOn ? "" : " · AI answers not sampled (AI assistance unavailable)"));
     }
 
     // 7. Priority pages.
