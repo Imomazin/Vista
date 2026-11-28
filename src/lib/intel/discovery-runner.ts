@@ -12,6 +12,7 @@ import { buildProfile, evidencePack, mergeAiProfile, type AiProfile } from "./di
 import { assessCompetitor, citationSources, geoEvidence, hostOf, isPlatform, offeringVocabulary, relevantLinks, serpCompetitors, type Candidate } from "./discovery-competitors";
 import { keywordUniverse, promptRecs, promptTemplates } from "./discovery-keywords";
 import { buildLexicon } from "./lexicon";
+import { archiveIndex } from "./discovery-index";
 import { priorityPages, recommendScope } from "./discovery-scope";
 import { marketPhrase, type CompetitorKind, type CompetitorRec, type DiscoveryRun, type KeywordRec } from "./discovery-model";
 import { mentions, recommendationPosition } from "./geo";
@@ -35,7 +36,7 @@ export function resetFrom(run: DiscoveryRun, stageId: string): DiscoveryRun {
     ...(from <= 3 ? { competitors: [], citationSources: [], competitorHomes: {}, competitorPages: {}, clientRanks: [] } : {}),
     ...(from <= 4 ? { keywords: [], lexicon: undefined } : {}),
     ...(from <= 5 ? { prompts: [], samples: [] } : {}),
-    ...(from <= 6 ? { priorityPages: [] } : {}),
+    ...(from <= 6 ? { priorityPages: [], index: undefined } : {}),
     scope: null,
   };
 }
@@ -288,9 +289,17 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
 
     // 7. Priority pages.
     if (!settled("pages")) {
-      const s = await begin("pages", "Identifying priority pages…", 1);
+      const s = await begin("pages", "Identifying priority pages…", 2);
       run.priorityPages = priorityPages(run.pages, run.site, run.website);
-      await finish(s, "complete", run.priorityPages.length + " priority pages across " + new Set(run.priorityPages.map(x => x.role)).size + " roles");
+      s.done = 1;
+      await publish();
+      // VisTa Index: the domain's Common Crawl history and archived-versus-live comparisons of priority pages.
+      run.activity = "Reading the web archive (Common Crawl)…";
+      await publish();
+      run.index = await archiveIndex(run, post);
+      s.done = 2;
+      const archived = run.index.archive.crawls.find(c => c.capturedUrls);
+      await finish(s, "complete", run.priorityPages.length + " priority pages across " + new Set(run.priorityPages.map(x => x.role)).size + " roles · " + (run.index.archive.error ? "web archive unavailable" : archived ? archived.capturedUrls + " archived URLs (" + archived.crawl + "), " + run.index.comparisons.filter(c => c.similarity !== null).length + " compared with the live site" : "no archived captures in the last " + run.index.archive.crawls.length + " Common Crawl crawls"));
     }
 
     // 8. Scope.
@@ -369,6 +378,7 @@ export function discoveryGaps(run: DiscoveryRun): string[] {
   if (run.site?.homeFailure && run.pages.length) gaps.push("The home page could not be analysed; the profile is based on other sampled pages.");
   if (run.failures.length) gaps.push(run.failures.length + " sampled page" + (run.failures.length === 1 ? "" : "s") + " could not be retrieved.");
   if (!run.ai.available && run.settings.useAi) gaps.push("AI assistance was unavailable (" + run.ai.note.replace(/\.$/, "") + "); recommendations use website evidence only.");
+  if (run.index?.archive.error) gaps.push("Web archive (Common Crawl): " + run.index.archive.error.replace(/\.$/, "") + "; historical comparison was not possible.");
   if (!run.competitors.some(c => c.recommended)) {
     const alternatives = run.competitors.filter(c => /Academic institution|professional, public or membership body/.test(c.reason)).length;
     gaps.push(run.competitors.length

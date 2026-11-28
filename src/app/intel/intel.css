@@ -387,6 +387,14 @@ a.rec-value{text-decoration:none}a.rec-value:hover{text-decoration:underline}
 .coverage-none{color:var(--iv-warn);border-color:color-mix(in srgb,var(--iv-warn) 45%,transparent)}
 .kw-target{display:block;color:var(--iv-text);font-size:calc(10.5px + 2pt);overflow-wrap:anywhere;margin-top:3px}.kw-action{display:block;color:var(--iv-sub);font-size:calc(10px + 2pt);line-height:1.35;margin-top:2px;max-width:240px}
 .group-long-tail-opportunity{color:var(--iv-violet)}
+.index-h{margin:14px 0 6px;font-size:calc(12.5px + 2pt)}
+.index-compares{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px}
+.index-compare{display:flex;flex-direction:column;gap:4px;padding:12px;border:1px solid var(--iv-line);border-radius:14px;background:rgba(127,127,127,.03);min-width:0}
+.index-compare>small{color:var(--iv-sub);overflow-wrap:anywhere}.index-compare.same{border-color:color-mix(in srgb,var(--iv-emerald) 40%,transparent)}.index-same{color:var(--iv-emerald)!important}
+.index-compare ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
+.index-compare ul li{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:2px 8px;font-size:calc(10.5px + 2pt);align-items:start}
+.index-compare ul li strong{grid-column:1/-1;font-weight:600}.index-compare ul li strong.major{color:var(--iv-warn)}
+.index-compare ul li span{overflow-wrap:anywhere;color:var(--iv-sub)}.index-compare ul li span:last-child{color:var(--iv-text)}
 @media (max-width:640px){.kw-table th:nth-child(3),.kw-table td:nth-child(3),.kw-table th:nth-child(4),.kw-table td:nth-child(4),.kw-table th:nth-child(9),.kw-table td:nth-child(9){display:none}.kw-table th[scope=row]{min-width:150px}}
 .budget-slider{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;font-size:calc(12px + 2pt)}.budget-slider input{flex:1 1 200px;accent-color:var(--iv-emerald)}
 .prompt-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}

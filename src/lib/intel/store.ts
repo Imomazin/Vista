@@ -6,11 +6,15 @@
 import type { Investigation } from "./model";
 import type { PageRecord } from "./page";
 import type { DiscoveryRun } from "./discovery-model";
+import type { Observation } from "./observations";
 
 const dbName = "vista-intelligence";
 const metaStore = "investigations";
 const pageStore = "pages";
 const discoveryStore = "discoveries";
+/** VisTa Index (browser): dated page observations, keyed by page, date and source. */
+const observationStore = "observations";
+let observationMemory: Map<string, Observation> | null = null;
 let discoveryMemory: Map<string, DiscoveryRun> | null = null;
 let memory: Map<string, Investigation> | null = null;
 /** How many pages of each investigation are already persisted (and the first page, to detect reordering). */
@@ -20,12 +24,13 @@ function open(): Promise<IDBDatabase | null> {
   return new Promise(resolve => {
     try {
       if (typeof indexedDB === "undefined") return resolve(null);
-      const request = indexedDB.open(dbName, 3);
+      const request = indexedDB.open(dbName, 4);
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(metaStore)) db.createObjectStore(metaStore, { keyPath: "id" }).createIndex("projectId", "projectId");
         if (!db.objectStoreNames.contains(pageStore)) db.createObjectStore(pageStore, { keyPath: ["inv", "i"] }).createIndex("inv", "inv");
         if (!db.objectStoreNames.contains(discoveryStore)) db.createObjectStore(discoveryStore, { keyPath: "id" }).createIndex("projectId", "projectId");
+        if (!db.objectStoreNames.contains(observationStore)) db.createObjectStore(observationStore, { keyPath: ["key", "observedAt", "source"] }).createIndex("key", "key");
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => resolve(null);
@@ -136,4 +141,28 @@ export async function getDiscovery(id: string): Promise<DiscoveryRun | null> {
   const row = await result(db.transaction(discoveryStore, "readonly").objectStore(discoveryStore).get(id) as IDBRequest<DiscoveryRun | undefined>);
   db.close();
   return row ?? null;
+}
+
+/** Store page observations (deduplicated by page, date and source); at most 200 per call. */
+export async function saveObservations(observations: Observation[]): Promise<void> {
+  const list = observations.filter(o => o.key && o.observedAt).slice(0, 200);
+  if (!list.length) return;
+  const db = await open();
+  if (!db) { observationMemory ||= new Map(); for (const o of list) observationMemory.set(o.key + "|" + o.observedAt + "|" + o.source, o); return; }
+  const tx = db.transaction(observationStore, "readwrite");
+  const store = tx.objectStore(observationStore);
+  for (const o of list) store.put(JSON.parse(JSON.stringify(o)));
+  await done(tx);
+  db.close();
+}
+
+/** Earlier observations of the given pages, newest first. */
+export async function listObservations(keys: string[]): Promise<Observation[]> {
+  const wanted = [...new Set(keys)].slice(0, 100);
+  const db = await open();
+  if (!db) return [...(observationMemory?.values() || [])].filter(o => wanted.includes(o.key)).sort((a, b) => b.observedAt.localeCompare(a.observedAt));
+  const store = db.transaction(observationStore, "readonly").objectStore(observationStore).index("key");
+  const rows = (await Promise.all(wanted.map(k => result(store.getAll(IDBKeyRange.only(k)) as IDBRequest<Observation[]>)))).flat();
+  db.close();
+  return rows.sort((a, b) => b.observedAt.localeCompare(a.observedAt));
 }
