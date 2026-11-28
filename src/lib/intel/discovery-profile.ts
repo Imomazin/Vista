@@ -50,7 +50,7 @@ export const industries: IndustryDef[] = [
       { label: "Consumer electronics", cues: ["electronics", "phones", "laptops", "gadgets", "audio"] },
       { label: "Food and drink", cues: ["food", "coffee", "wine", "groceries", "snacks", "tea"] },
     ] },
-  { label: "Technology and software", schema: /^(SoftwareApplication|WebApplication|MobileApplication)$/, cues: ["software", "platform", "saas", "api", "integration", "integrations", "cloud", "dashboard", "analytics", "automation", "app", "data", "ai", "intelligence"],
+  { label: "Technology and software", schema: /^(SoftwareApplication|WebApplication|MobileApplication)$/, cues: ["software", "platform", "saas", "api", "integration", "integrations", "cloud", "dashboard", "analytics", "automation", "app", "apps", "data", "ai", "intelligence", "tool", "tools", "collaborative", "collaboration", "editor", "whiteboard", "open source", "developers"],
     subsectors: [
       { label: "Marketing and analytics technology", cues: ["analytics", "marketing", "seo", "insights", "intelligence", "dashboard"] },
       { label: "Artificial intelligence", cues: ["ai", "machine", "models", "automation", "generative"] },
@@ -94,7 +94,7 @@ const rec = (prefix: string, value: string, basis: Basis, confidence: Confidence
 
 /** Score each industry by cue words across titles, headings, navigation, entities and body terms, plus schema types. */
 export function industryScores(pages: PageRecord[]) {
-  const corpus = pages.map(p => ({ url: p.finalUrl, text: [p.title, p.title, ...p.h1, ...p.h1, ...p.headings.map(h => h.text), ...(p.business?.nav.map(n => n.text) || []), ...(p.business?.entities.map(e => e.name) || [])].join(" ").toLowerCase(), terms: new Map(p.content.terms), types: p.schema.types }));
+  const corpus = pages.map(p => ({ url: p.finalUrl, text: [p.title, p.title, p.description, p.og.description, ...p.h1, ...p.h1, ...p.headings.map(h => h.text), ...(p.business?.nav.map(n => n.text) || []), ...(p.business?.entities.map(e => e.name) || [])].join(" ").toLowerCase(), terms: new Map(p.content.terms), types: p.schema.types }));
   const score = (cues: string[]) => {
     const hits = new Map<string, { count: number; urls: Set<string> }>();
     for (const page of corpus) for (const cue of cues) {
@@ -173,8 +173,8 @@ export function offeringRecs(pages: PageRecord[], site: Discovery | null, brand:
     let name = raw.replace(/\s+/g, " ").replace(/[|•·].*$/, "").trim();
     if (/^\/|^https?:\/\//.test(name)) name = humaniseSlug(name.startsWith("/") ? "https://x.invalid" + name : name) || "";
     for (const t of brandTokens) name = name.replace(new RegExp("\\b" + t + "\\b", "ig"), "").trim();
-    name = name.replace(/^[-–—:,\s]+|[-–—:,\s]+$/g, "").replace(/^(our|the|all)\s+/i, "");
-    if (name.length < 3 || name.length > 80 || generic.has(name.toLowerCase()) || !tokens(name).length || /^\d+$/.test(name)) return null;
+    name = name.replace(/^[-–—:,\s]+|[-–—:,.\s]+$/g, "").replace(/^(our|the|all)\s+/i, "");
+    if (name.length < 3 || name.length > 80 || generic.has(name.toLowerCase()) || /^(other|all|more|our|view|see|browse)\b/i.test(name) || !tokens(name).length || /^\d+$/.test(name)) return null;
     return name.charAt(0).toUpperCase() + name.slice(1);
   };
   const add = (raw: string, points: number, ev: EvidenceRef, basis: Basis = "observed") => {
@@ -190,6 +190,8 @@ export function offeringRecs(pages: PageRecord[], site: Discovery | null, brand:
   const home = pages.find(p => p.pageType === "home") || pages[0];
   for (const n of home?.business?.nav || []) { try { const path = new URL(n.url).pathname; if (offeringPath.test(path) && path.split("/").filter(Boolean).length >= 2) add(n.text, 2, { url: n.url, detail: "Navigation item “" + n.text + "”" }); } catch { /* ignore */ } }
   for (const s of (site?.sitemapUrls || []).slice(0, 400)) { try { const path = new URL(s.loc).pathname; if (offeringPath.test(path) && path.split("/").filter(Boolean).length >= 2) { const name = humaniseSlug(s.loc); if (name) add(name, 1, { url: s.loc, detail: "Offering URL in the XML sitemap" }); } } catch { /* ignore */ } }
+  // Thin or JavaScript-rendered pages: fall back to what the title states the product is.
+  if (!list.length && home?.title) for (const part of home.title.split(/\s[|–—:-]\s/)) add(part, 2, { url: home.finalUrl, detail: "Home page title" });
   return list.sort((a, b) => b.score - a.score).slice(0, 14).map((o, i) => rec("offering", o.name, o.basis, o.score >= 6 ? "high" : o.score >= 3 ? "medium" : "low", o.evidence, undefined, i < 8));
 }
 
@@ -246,7 +248,22 @@ export function buildProfile(pages: PageRecord[], site: Discovery | null, websit
   const segmentCounts = new Map<string, number>();
   for (const n of names.filter(n => n.source === "Page title segment")) segmentCounts.set(n.value, (segmentCounts.get(n.value) || 0) + 1);
   const repeated = [...segmentCounts.entries()].filter(([, c]) => c >= Math.max(2, pages.length * 0.4)).sort((a, b) => b[1] - a[1])[0];
-  const chosen = bySource(/^Structured data name/) || bySource(/og:site_name/) || (repeated ? { value: repeated[0], source: "Title segment on " + repeated[1] + " pages", url: home?.finalUrl || website } : null);
+  // Score each candidate: the site's own name usually matches the domain and og:site_name; structured data can
+  // also describe affiliations (a university, an employer), which must not become the brand.
+  const compact = (v: string) => v.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
+  const domainKey = compact(label);
+  const candidates = [...names, ...(repeated ? [{ value: repeated[0], source: "Title segment on " + repeated[1] + " pages", url: home?.finalUrl || website }] : [])];
+  const score = (n: { value: string; source: string }) => {
+    const c = compact(n.value);
+    let v = 0;
+    if (domainKey.length >= 3 && c.length >= 3 && (c === domainKey || c.includes(domainKey) || domainKey.includes(c))) v += 6;
+    if (/og:site_name/.test(n.source)) v += 3;
+    if (/^Structured data name/.test(n.source)) v += /CollegeOrUniversity|School/.test(n.source) ? 1 : 3;
+    if (/^Title segment on/.test(n.source)) v += 2;
+    if (/application-name/.test(n.source)) v += 1;
+    return v;
+  };
+  const chosen = candidates.filter(n => !generic.has(n.value.toLowerCase()) && n.value.length <= 60).sort((a, b) => score(b) - score(a))[0] || null;
   const brandValue = chosen?.value || label.charAt(0).toUpperCase() + label.slice(1);
   const brand = rec("brand", brandValue, chosen ? "observed" : "inferred", chosen ? "high" : "low", chosen ? [{ url: chosen.url, detail: chosen.source }] : [{ url: website, detail: "Derived from the domain name" }]);
   const aliasValues = new Map<string, EvidenceRef>();
@@ -342,9 +359,12 @@ export function mergeAiProfile(profile: BusinessProfile, ai: AiProfile, pages: P
   };
   const aliases = mergeList(profile.aliases, ai.aliases.filter(a => a && all.includes(a.toLowerCase())).map(a => rec("alias", a.slice(0, 60), "model", "medium", [{ url: pages[0].finalUrl, detail: "Name appears on the website (AI-identified)" }])), 8, true);
   const subsectors = mergeList(profile.subsectors, [ai.industry, ...ai.subsectors].map(s => { const g = ground(s, pages.map(p => p.finalUrl)); return g.share >= 0.5 ? rec("subsector", s.slice(0, 80), "model", "medium", [{ url: pages[0].finalUrl, detail: "AI classification grounded in site vocabulary" }]) : null; }), 5, true);
-  const offerings = mergeList(profile.offerings, ai.offerings.filter(o => !generic.has(o.name.toLowerCase().trim())).map(o => modelRec("offering", o.name, o.evidence, undefined, 0.5)), 16, true);
+  const strong = profile.offerings.filter(o => o.confidence === "high"), weak = profile.offerings.filter(o => o.confidence !== "high");
+  const mergedOfferings = mergeList(strong, ai.offerings.filter(o => !generic.has(o.name.toLowerCase().trim()) && !/^(other|all|more)\b/i.test(o.name.trim())).map(o => modelRec("offering", o.name, o.evidence, undefined, 0.5)), 16, true);
+  const offeringsAll = mergeList(mergedOfferings, weak, 16, false);
+  const offerings = offeringsAll.map((o, i) => ({ ...o, selected: i < 8 && o.confidence !== "low" }));
   const segments = mergeList(profile.segments, ai.segments.map(s => modelRec("segment", s.name, s.evidence, s.basis)), 8, true);
-  const markets = mergeList(profile.markets, ai.markets.map(m => modelRec("market", m.name, m.evidence, m.basis)), 6, false);
+  const markets = mergeList(profile.markets, ai.markets.map(m => { const name = countryName(m.name.replace(/\s*\(.*\)$/, "")); return name ? modelRec("market", name, m.evidence, m.basis, 0) : null; }), 6, false);
   const differentiators = mergeList(profile.differentiators, ai.differentiators.map(d => modelRec("diff", d.value, d.evidence, undefined, 0.5)), 10, false);
   const vp = modelRec("vp", ai.valueProposition.value, ai.valueProposition.evidence, undefined, 0.5);
   const modelGround = modelRec("model", ai.businessModel.value, ai.businessModel.evidence);

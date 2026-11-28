@@ -62,7 +62,7 @@ export const currencyCountry: Record<string, string> = { GBP: "United Kingdom", 
 
 const audienceNouns = ["students", "graduates", "undergraduates", "learners", "trainees", "apprentices", "professionals", "practitioners", "clinicians", "doctors", "nurses", "midwives", "scientists", "technicians", "researchers", "laboratories", "hospitals", "clinics", "patients", "carers", "parents", "children", "teenagers", "families", "teachers", "schools", "universities", "colleges", "employers", "employees", "recruiters", "candidates", "job seekers", "jobseekers", "businesses", "companies", "organisations", "organizations", "enterprises", "startups", "smes", "retailers", "brands", "agencies", "consultants", "freelancers", "developers", "engineers", "designers", "marketers", "executives", "leaders", "managers", "founders", "investors", "homeowners", "landlords", "tenants", "buyers", "travellers", "travelers", "tourists", "athletes", "women", "seniors", "veterans", "charities", "councils", "manufacturers", "distributors", "suppliers", "pharmacists", "dentists", "lawyers", "accountants", "contractors", "owners", "migrants", "immigrants"];
 const audiencePattern = new RegExp("\\b((?:[a-z][a-z-]{2,} ){0,2})(" + audienceNouns.join("|") + ")\\b", "g");
-const modifierStop = new Set("the and for with our your their all any more most many some these those who are can from into that this have has been will was were not only also such than then them they you get how new top best other each every".split(" "));
+const modifierStop = new Set("the and for with our your their all any more most many some these those who are can from into that this have has been will was were not only also such than then them they you get how new top best other each every shop shops filter filters sort view buy men mens women womens kids sale search menu faq faqs work experience parents carers teachers home account login".split(" "));
 
 const ctaRules: [CtaKind, RegExp][] = [
   ["buy", /\b(add to (cart|basket|bag)|buy( now)?|shop now|checkout|order now)\b/i],
@@ -197,7 +197,7 @@ export function extractBusinessSignals($: CheerioAPI, base: URL, nodes: Record<s
     names: names.slice(0, 10), description, entities, nav, footer, ctas, prices,
     subscription: /\b(per month|\/ ?month|\/ ?mo\b|monthly plan|per user|billed annually)\b/i.test(mainText),
     places: placeMentions(mainText.slice(0, 120_000)), addresses, areaServed,
-    phoneCountries: [...phones].slice(0, 5), audiences: audiencePhrases(mainText.slice(0, 120_000)), claims,
+    phoneCountries: [...phones].slice(0, 5), audiences: audiencePhrases(blocks.filter(b => b.split(" ").length >= 6).join(" . ").slice(0, 120_000)), claims,
     hero: { heading, text: heroText },
   };
 }

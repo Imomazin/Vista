@@ -16,16 +16,22 @@ import { mentions } from "./geo";
 const platforms = /(^|\.)(facebook|instagram|linkedin|twitter|x|youtube|tiktok|pinterest|reddit|quora|wikipedia|wikimedia|google|bing|yahoo|amazon|ebay|etsy|indeed|glassdoor|reed|totaljobs|trustpilot|yelp|tripadvisor|medium|substack|github|apple|microsoft|gov|nhs|bbc|theguardian|forbes|nytimes|crunchbase|companieshouse|find-and-update|bloomberg|reuters)\.[a-z.]+$/i;
 export const isPlatform = (host: string) => platforms.test(host.replace(/^www\./, "")) || /\.(gov|gov\.uk|nhs\.uk|mil)$/i.test(host);
 
-const genericOffering = new Set(["services", "service", "solutions", "products", "product", "company", "business", "online", "uk", "london", "free", "new", "home", "page", "best", "top", "guide", "information", "about", "contact"]);
+const genericOffering = new Set(["services", "service", "solutions", "products", "product", "company", "business", "online", "uk", "london", "free", "new", "home", "page", "best", "top", "guide", "information", "about", "contact", "cart", "basket", "shop", "sale", "account", "privacy", "cookies", "policy", "terms", "menu", "search", "view", "read", "learn", "find", "help", "customer", "customers", "delivery", "returns", "nz", "us", "eu"]);
 
 /** The client's offering vocabulary: distinctive terms from accepted offerings, subsectors and industry cues. */
-export function offeringVocabulary(profile: BusinessProfile): string[] {
+export function offeringVocabulary(profile: BusinessProfile, pages: PageRecord[] = []): string[] {
   const counts = new Map<string, number>();
+  // Terms used across many sampled pages describe the category better than individual product names.
+  const spread = new Map<string, number>();
+  // Titles and headings name categories; body text often repeats boilerplate, so it is not used here.
+  for (const p of pages) for (const t of new Set(tokens([p.title, ...p.h1, ...p.headings.filter(h => h.level <= 2).map(h => h.text)].join(" ")))) spread.set(t, (spread.get(t) || 0) + 1);
   const bump = (text: string, weight: number) => { for (const t of tokens(text)) if (t.length > 2 && !genericOffering.has(t) && !/^\d+$/.test(t)) counts.set(t, (counts.get(t) || 0) + weight); };
   for (const o of profile.offerings.filter(o => o.selected)) bump(o.value, 3);
   for (const s of profile.subsectors.filter(s => s.selected)) bump(s.value, 1);
   for (const e of profile.industry.evidence) { const m = e.detail.match(/“([^”]+)”/); if (m) bump(m[1], 2); }
-  const brand = new Set(tokens(profile.brand.value));
+  // Only terms that recur across pages and also belong to the offer vocabulary are reinforced (e.g. "shoes" across product pages).
+  for (const [t, n] of spread) if (counts.has(t) && n >= Math.max(2, pages.length * 0.25) && !genericOffering.has(t)) counts.set(t, (counts.get(t) || 0) + n);
+  const brand = new Set([...tokens(profile.brand.value), ...profile.aliases.flatMap(a => tokens(a.value))]);
   return [...counts.entries()].filter(([t]) => !brand.has(t)).sort((a, b) => b[1] - a[1]).slice(0, 14).map(([t]) => t);
 }
 
@@ -61,8 +67,10 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
   evidence.unshift({ url: home.finalUrl, detail: "Home page fetched: “" + (home.title || home.finalUrl).slice(0, 90) + "”" });
   const share = vocabulary.length ? matched.length / vocabulary.length : 0;
   const marketOk = !ours.length || !theirs.length || sharedMarkets.length > 0;
-  const confidence: Confidence = share >= 0.45 && marketOk ? "high" : share >= 0.25 && marketOk ? "medium" : "low";
-  const parts = [matched.length + " of " + vocabulary.length + " offering terms appear on its home page (" + matched.slice(0, 6).join(", ") + (matched.length > 6 ? ", …" : "") + ")"];
+  // Publishers cover a market without competing in it.
+  const publisher = home.schema.types.some(t => /^(NewsMediaOrganization|NewsArticle)$/.test(t)) || /(^|\.)(news|times|herald|gazette|magazine|journal|chronicle|insider|daily)[a-z-]*\./.test(hostOf(home.finalUrl));
+  const confidence: Confidence = publisher ? "low" : share >= 0.45 && marketOk ? "high" : share >= 0.25 && marketOk ? "medium" : "low";
+  const parts = [...(publisher ? ["Appears to be a news or media publisher rather than a competitor"] : []), matched.length + " of " + vocabulary.length + " offering terms appear on its home page (" + matched.slice(0, 6).join(", ") + (matched.length > 6 ? ", …" : "") + ")"];
   if (sharedMarkets.length) parts.push("serves " + sharedMarkets.join(", "));
   else if (theirs.length && ours.length) parts.push("market signals point to " + theirs.join(", ") + " rather than " + ours.join(", "));
   if (sharedAudience.length) parts.push("addresses the same audiences (" + sharedAudience.slice(0, 4).join(", ") + ")");

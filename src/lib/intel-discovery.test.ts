@@ -218,6 +218,8 @@ test("AI competitor candidates are normalised, de-duplicated and stripped of the
   ] }, origin, [{ url: "https://biomed-skills.example/about" }]);
   assert.equal(out.length, 1);
   assert.equal(out[0].website, "https://biomed-skills.example/");
+  const grounded = sanitiseCandidates({ competitors: [{ name: "Real", website: "https://real-rival.example/", reason: "", offerings: [], markets: [], sources: [] }, { name: "Invented", website: "https://invented.example/", reason: "", offerings: [], markets: [], sources: [] }] }, origin, [], "Research notes: 1. Real — https://real-rival.example/ runs comparable courses.");
+  assert.deepEqual(grounded.map(c => c.name), ["Real"], "websites absent from the research notes are dropped");
   assert.deepEqual(out[0].sources, ["https://biomed-skills.example/about"]);
 });
 
@@ -281,4 +283,21 @@ test("search providers: DataForSEO metrics and rankings, Brave results, nothing 
   const b = await serpResults(["q"], "United Kingdom", { BRAVE_SEARCH_API_KEY: "k" }, brave);
   assert.deepEqual(b[0].results.map(r => r.position), [1, 2]);
   assert.deepEqual(await keywordMetrics(["q"], "United Kingdom", { BRAVE_SEARCH_API_KEY: "k" }, brave), [], "Brave provides no volumes");
+});
+
+test("the brand is the site's own name, not an affiliation in its structured data", async () => {
+  const { buildProfile } = await import("./intel/discovery-profile");
+  const url = "https://janedoe.example/";
+  const html = `<html><head><title>Dr Jane Doe | Strategy, Research & Executive Education</title><meta property="og:site_name" content="Dr Jane Doe"><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","name":"Jane Doe","affiliation":{"@type":"CollegeOrUniversity","name":"University of Somewhere"}},{"@type":"CollegeOrUniversity","name":"University of Somewhere"},{"@type":"Organization","name":"JD Ventures"}]}</script></head><body><h1>Ideas that move the world</h1><p>Executive education and strategy research for leaders.</p></body></html>`;
+  const profile = buildProfile([record(url, html)], null, url);
+  assert.equal(profile.brand.value, "Dr Jane Doe");
+});
+
+test("JavaScript application shells still yield an offering and industry from the title and description", async () => {
+  const { buildProfile } = await import("./intel/discovery-profile");
+  const url = "https://sketchboard.example/";
+  const html = `<html><head><title>Sketchboard Whiteboard</title><meta name="description" content="Sketchboard is a virtual collaborative whiteboard tool for sketching diagrams online."><script src="/a.js"></script><script src="/b.js"></script><script src="/c.js"></script></head><body><div id="root"></div></body></html>`;
+  const profile = buildProfile([record(url, html)], null, url);
+  assert.ok(profile.offerings.some(o => o.value === "Whiteboard" && o.evidence[0].detail === "Home page title"));
+  assert.equal(profile.industry.value, "Technology and software");
 });

@@ -24,6 +24,7 @@ function normalise(raw: string, brandTokens: Set<string>, keepBrand = false): st
   // "clinical laboratory course 12" → "clinical laboratory course": numbered variants are one search topic.
   if (words.length >= 3 && /^\d{1,3}$/.test(words[words.length - 1])) words.pop();
   const phrase = words.join(" ").replace(/\s*-\s*/g, " ").trim();
+  if (/\b(cart|basket|checkout|refunds?|returns?|exchanges?|policy|policies|gift cards?|sign in|log in|login|newsletter|cookies?|account|wishlist|shipping|subscribe|unsubscribe|added to|filters?|sort by|skip to)\b/.test(phrase)) return null;
   if (phrase.length < 3 || words.length > 7 || genericPhrase.test(phrase) || !tokens(phrase).length || /^\d+( \d+)*$/.test(phrase)) return null;
   return phrase;
 }
@@ -210,7 +211,13 @@ export function renderTemplate(id: string, slots: Record<string, string>): strin
 export function promptRecs(profile: BusinessProfile, competitors: CompetitorRec[], keywords: KeywordRec[], ai: AiProfile["prompts"] = []): PromptRec[] {
   const brand = profile.brand.value;
   const plain = (s: string) => s.replace(/[^\p{L}\p{N} &'’.,()\-\/+]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 90);
-  const offerings = profile.offerings.filter(o => o.selected).map(o => plain(o.value.toLowerCase().replace(/^\d+\s+\w+\s+/, ""))).filter(Boolean).slice(0, 4);
+  const heads = new Map<string, number>();
+  for (const o of profile.offerings) for (const t of tokens(o.value).slice(-1)) if (/^(training|course|courses|services?|consulting|software|treatment|therapy|insurance|tours?|classes)$/.test(t)) heads.set(t, (heads.get(t) || 0) + 1);
+  const noun = [...heads.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const qualify = (v: string) => (tokens(v).length === 1 && noun && !v.endsWith(noun) ? v + " " + noun : v);
+  // Multi-word offerings read better in questions; single words are qualified with the dominant category noun.
+  const chosen = [...new Set(profile.offerings.filter(o => o.selected).map(o => qualify(plain(o.value.toLowerCase().replace(/^\d+\s+\w+\s+/, "")))).filter(Boolean))].slice(0, 6);
+  const offerings = [...chosen.filter(o => tokens(o).length >= 2), ...chosen.filter(o => tokens(o).length < 2)].slice(0, 4);
   const o1 = offerings[0] || plain(profile.industry.value.toLowerCase()), o2 = offerings[1] || o1, o3 = offerings[2] || o2;
   const segments = profile.segments.filter(s => s.selected).map(s => plain(s.value.toLowerCase()));
   const s1 = segments[0] || "customers", s2 = segments[1] || s1;

@@ -117,7 +117,10 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
         try {
           run.activity = "Interpreting the business with AI (grounded in the sampled pages)…";
           await publish(false);
-          const r = await post<{ profile: AiProfile; model: string }>("/api/intel/discovery/profile", { pack: evidencePack(run.pages, run.site, run.website) });
+          const pack = evidencePack(run.pages, run.site, run.website);
+          let r: { profile: AiProfile; model: string };
+          try { r = await post<{ profile: AiProfile; model: string }>("/api/intel/discovery/profile", { pack }); }
+          catch (error) { if (error instanceof Cancelled || (error as HttpError).status === 429 || (error as HttpError).status === 503) throw error; run.activity = "Retrying the AI interpretation once…"; await publish(false); r = await post<{ profile: AiProfile; model: string }>("/api/intel/discovery/profile", { pack }); }
           run.profile = mergeAiProfile(run.profile, r.profile, run.pages);
           run.aiPrompts = r.profile.prompts;
           run.ai = { available: true, note: "AI interpretation by " + r.model + "; statements are kept only where they cite fetched pages.", calls: run.ai.calls + 1, model: r.model };
@@ -142,7 +145,7 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
     if (!settled("competitors")) {
       const p = run.profile!;
       const s = await begin("competitors", "Discovering market competitors…", null);
-      const vocabulary = offeringVocabulary(p);
+      const vocabulary = offeringVocabulary(p, run.pages);
       const candidates = new Map<string, { candidate: Candidate; kinds: CompetitorKind[]; search?: { keywords: string[] } }>();
       if (aiOn && p.offerings.some(o => o.selected)) {
         try {
@@ -173,7 +176,11 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
       for (const item of list) {
         run.activity = "Verifying " + hostOf(item.candidate.website) + "…";
         let home: PageRecord | null = null, failure: string | null = null;
-        try { const d = await post<Discovery>("/api/intel/verify", { url: item.candidate.website }); home = d.home; failure = d.homeFailure?.message || null; }
+        try {
+          const d = await post<Discovery & { redirectedTo?: string }>("/api/intel/verify", { url: item.candidate.website });
+          home = d.home; failure = d.homeFailure?.message || null;
+          if (home && d.redirectedTo) item.candidate = { ...item.candidate, website: d.redirectedTo, sources: [...item.candidate.sources, item.candidate.website] };
+        }
         catch (error) { if (error instanceof Cancelled) throw error; failure = (error as Error).message; }
         if (home) run.competitorHomes[item.candidate.website] = home;
         const assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure);
@@ -299,7 +306,7 @@ async function addGeoCompetitors(run: DiscoveryRun, post: <T>(path: string, body
     }
   }
   // Cited domains not yet assessed: verify the most-cited few; overlapping ones are GEO competitors, the rest are citation sources.
-  const vocabulary = offeringVocabulary(p);
+  const vocabulary = offeringVocabulary(p, run.pages);
   const known = new Set(run.competitors.map(c => siteKey(hostOf(c.website))));
   const fresh = [...evidence.cited.entries()].filter(([k]) => !known.has(k) && !isPlatform(k)).sort((a, b) => b[1].citations - a[1].citations).slice(0, 4);
   for (const [key, v] of fresh) {
