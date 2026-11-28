@@ -37,8 +37,9 @@ function fakeService(opts: { ai?: boolean; search?: boolean } = {}) {
   const calls: string[] = [];
   const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
-    calls.push(path);
     const body = JSON.parse(String(init?.body || "{}"));
+    // Page fetches are recorded with whose pages they were (the client's or other websites').
+    calls.push(path === "/api/intel/pages" ? path + (Array.isArray(body.urls) && String(body.urls[0]).startsWith(origin) ? "#client" : "#other") : path);
     const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
     if (path === "/api/intel/discover" || path === "/api/intel/verify") {
       const url: string = body.url;
@@ -191,10 +192,10 @@ test("cancelling keeps completed stages and resuming continues from the next sta
   const first = await runDiscovery(newDiscovery("p1", origin, settings()), { signal: controller.signal, fetcher: svc.fetcher, capabilities: { discoveryAi: "public", search: null }, onUpdate: r => { if (!cancelled && r.stages.find(s => s.id === "offerings")?.status === "complete") { cancelled = true; controller.abort(); } } });
   assert.equal(first.status, "cancelled");
   assert.equal(first.stages[0].status, "complete");
-  const before = svc.calls.filter(c => c === "/api/intel/pages").length;
+  const before = svc.calls.filter(c => c === "/api/intel/pages#client").length;
   const resumed = await runDiscovery(first, { signal: new AbortController().signal, fetcher: svc.fetcher, capabilities: { discoveryAi: "public", search: null } });
   assert.equal(resumed.status, "complete");
-  assert.equal(svc.calls.filter(c => c === "/api/intel/pages").length, before, "sampled pages are not fetched again");
+  assert.equal(svc.calls.filter(c => c === "/api/intel/pages#client").length, before, "sampled pages are not fetched again");
   const all = resetFrom(resumed, "identify");
   assert.equal(all.pages.length, 0, "regenerating everything re-reads the website");
   assert.equal(all.profile, null);
@@ -506,6 +507,14 @@ test("VisTa Index in discovery: archive history, archived-versus-live comparison
   assert.match(run.stages.find(s => s.id === "pages")!.note, /2 archived URLs \(CC-MAIN-2026-47\), 1 compared with the live site/);
   assert.ok(!run.gaps.some(g => /Web archive/.test(g)));
   assert.equal(resetFrom(run, "pages").index, undefined);
+  // VisTa Graph is computed in the same stage from the observed pages and AI citations.
+  const g = run.graph!;
+  assert.ok(g && g.coverage.clientPages === run.pages.length);
+  assert.ok(g.coverage.competitorPages >= 1 && g.coverage.citations >= 1);
+  assert.match(g.coverage.statement, /not a global backlink index/);
+  assert.ok(g.internal.some(p => p.priority), "priority pages carry internal authority");
+  assert.match(run.stages.find(s => s.id === "pages")!.note, /link graph of \d+ domains from \d+ pages/);
+  assert.equal(resetFrom(run, "pages").graph, undefined);
 });
 
 test("the web archive is not consulted for addresses that are not public domain names", async () => {

@@ -13,7 +13,7 @@ import { compareObservations, pageKey, type Comparison } from '@/lib/intel/obser
 import type { Project } from '@/lib/workspace';
 import IntelligencePulse from './intelligence-pulse';
 import VistaChart from './vista-chart';
-import { CompetitorSection, IndexSection, KeywordSection, PagesSection, ProfileSection, PromptSection, RegenerateMenu, ScopeSection } from './discovery-sections';
+import { CompetitorSection, GraphSection, IndexSection, KeywordSection, PagesSection, ProfileSection, PromptSection, RegenerateMenu, ScopeSection } from './discovery-sections';
 import type { Capabilities } from './studio';
 
 type Props = {
@@ -200,6 +200,7 @@ export default function IntelligentDiscovery(props: Props) {
       {run.prompts.length > 0 && <PromptSection run={run} onChange={prompts => update({ ...run, prompts })} budget={run.scope?.aiPromptBudget ?? auditModes.deep.aiPrompts} maxBudget={auditModes[run.scope?.mode || 'deep'].aiPrompts} onBudget={n => run.scope && update({ ...run, scope: { ...run.scope, aiPromptBudget: n } })}/>}
       {run.priorityPages.length > 0 && <PagesSection run={run} onChange={priorityPages => update({ ...run, priorityPages })}/>}
       {run.index && <IndexSection index={run.index} history={history} stored={storedObservations}/>}
+      {run.graph && run.profile && <GraphSection graph={run.graph} brand={run.profile.brand.value}/>}
       {run.scope && <ScopeSection scope={run.scope} member={props.member} recommended={recommendScope(run, run.profile.model.value).mode} onChange={scope => update({ ...run, scope })}/>}
       {charts.length > 0 && <section className="studio-section" aria-label="Discovery visual intelligence"><div className="discovery-head"><h3>Visual intelligence</h3><p className="section-note">Drawn from the evidence above; each chart has a data table and export.</p></div><div className="studio-charts">{charts.map(spec => <VistaChart key={spec.id} spec={spec} height={spec.id === 'discovery-network' ? 380 : 320}/>)}</div></section>}
       {ready && <div className="discovery-launch"><p>{summary}</p><button className="mint-button" onClick={launch} disabled={running || props.busy}><Rocket size={16}/>Launch investigation with this scope</button></div>}
