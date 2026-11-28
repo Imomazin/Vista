@@ -50,7 +50,7 @@ function fakeService(opts: { ai?: boolean; search?: boolean } = {}) {
       if (!html) return json({ error: "The hostname could not be resolved." }, 422);
       return json({ requestedUrl: url, origin: url.replace(/\/$/, ""), collectedAt: "", durationMs: 1, home: record(url, html), homeFailure: null, robots: {}, sitemaps: [], sitemapUrls: [] });
     }
-    if (path === "/api/intel/pages") return json({ pages: body.urls.map((u: string) => record(u, site[new URL(u).pathname] || site["/"])), failures: [] });
+    if (path === "/api/intel/pages") return json({ pages: body.urls.filter((u: string) => u.startsWith(origin)).map((u: string) => record(u, site[new URL(u).pathname] || site["/"])), failures: body.urls.filter((u: string) => !u.startsWith(origin)).map((u: string) => ({ url: u, depth: 1, kind: "http-error", status: 404, message: "HTTP 404", chain: [] })) });
     if (path === "/api/intel/discovery/profile") {
       if (!opts.ai) return json({ error: "AI-assisted discovery is not configured on this deployment; recommendations use website evidence only." }, 503);
       assert.ok(body.pack.pages.length >= 5, "evidence pack carries the sampled pages");
@@ -315,4 +315,26 @@ test("descriptive aliases do not strip category words from keywords or the offer
   assert.ok(keywords.some(k => k.keyword === "histology training"), keywords.slice(0, 10).map(k => k.keyword).join(" | "));
   assert.ok(!keywords.some(k => /^other /.test(k.keyword)));
   assert.ok(!profile.aliases.some(a => /^About /.test(a.value)));
+});
+
+test("competitor checks separate retrieval, identity and relevance", async () => {
+  const { assessCompetitor, offeringVocabulary } = await import("./intel/discovery-competitors");
+  const { buildProfile } = await import("./intel/discovery-profile");
+  const pages = Object.entries(site).map(([path, html]) => record(origin + path, html));
+  const profile = buildProfile(pages, null, origin);
+  const vocab = offeringVocabulary(profile, pages);
+  const cited = record("https://blocked-lab.example/courses/histology", `<html><head><title>Histology training courses | Blocked Lab Academy</title><meta property="og:site_name" content="Blocked Lab Academy"></head><body><h1>Histology and haematology training</h1><p>Laboratory training courses in the UK for biomedical science graduates and international students.</p></body></html>`);
+  const viaCited = assessCompetitor(profile, vocab, { name: "Blocked Lab Academy", website: "https://blocked-lab.example/", reason: "", offerings: [], markets: [], sources: [] }, ["commercial"], null, "The server refused access (HTTP 403).", [cited]);
+  assert.equal(viaCited.checks!.retrieval.status, "ok");
+  assert.match(viaCited.checks!.retrieval.detail, /Home page unavailable \(The server refused access/);
+  assert.equal(viaCited.checks!.identity.status, "verified");
+  assert.equal(viaCited.checks!.relevance.status, "measured");
+  assert.ok(viaCited.recommended, "a relevant organisation assessed from a permitted cited page can be recommended");
+  const impostor = record("https://other-brand.example/", `<html><head><title>Sweet Bakes | Cakes</title><meta property="og:site_name" content="Sweet Bakes"></head><body><h1>Histology training courses in the UK</h1><p>Laboratory training for graduates.</p></body></html>`);
+  const mismatch = assessCompetitor(profile, vocab, { name: "BioMed Skills", website: "https://other-brand.example/", reason: "", offerings: [], markets: [], sources: [] }, ["commercial"], impostor, null);
+  assert.equal(mismatch.checks!.identity.status, "mismatch");
+  assert.ok(!mismatch.recommended && !mismatch.selected, "a site that is not the named organisation is never recommended");
+  const failed = assessCompetitor(profile, vocab, { name: "Ghost", website: "https://ghost.example/", reason: "", offerings: [], markets: [], sources: [] }, ["commercial"], null, "The domain name could not be resolved.");
+  assert.equal(failed.checks!.retrieval.status, "failed");
+  assert.equal(failed.checks!.relevance.status, "unknown");
 });

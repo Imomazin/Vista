@@ -19,8 +19,9 @@ export const basisLabel: Record<Basis, string> = {
   provider: "Search data provider",
   user: "Added by you",
 };
-export type EvidenceRef = { url: string; detail: string };
-export type Rec = { id: string; value: string; basis: Basis; confidence: Confidence; evidence: EvidenceRef[]; note?: string; selected: boolean };
+/** Evidence: where (url), what (detail), the exact text (excerpt), when (at) and how it was extracted (method). */
+export type EvidenceRef = { url: string; detail: string; excerpt?: string; at?: string; method?: string };
+export type Rec = { id: string; value: string; basis: Basis; confidence: Confidence; evidence: EvidenceRef[]; note?: string; selected: boolean; /** Short qualifier: buyer role, service family, delivery mode. */ tag?: string };
 
 export type BusinessProfile = {
   brand: Rec;
@@ -57,6 +58,8 @@ export type CompetitorRec = {
   confidence: Confidence;
   verified: boolean;
   verification: string;
+  /** Separate verdicts: could the website be retrieved, is it the named organisation, does it compete. */
+  checks?: { retrieval: { status: "ok" | "failed"; detail: string }; identity: { status: "verified" | "unverified" | "mismatch"; detail: string }; relevance: { status: "measured" | "unknown"; detail: string } };
   reason: string;
   recommended: boolean;
   selected: boolean;

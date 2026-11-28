@@ -17,11 +17,15 @@ export function searchConfig(env: Record<string, string | undefined> = process.e
 
 const braveCountry: Record<string, string> = { "United Kingdom": "GB", "United States": "US", Ireland: "IE", Canada: "CA", Australia: "AU", "New Zealand": "NZ", Nigeria: "NG", "South Africa": "ZA", India: "IN", Germany: "DE", France: "FR", Spain: "ES", Italy: "IT", Netherlands: "NL", "United Arab Emirates": "AE", Singapore: "SG" };
 
+/** Provider-reported cost (USD) of DataForSEO requests made in this process, for the usage ledger. */
+export const usage = { dataforseoUsd: 0, requests: 0 };
 async function dataForSeo(path: string, body: unknown, env: Record<string, string | undefined>, fetcher: typeof fetch) {
   const auth = Buffer.from(env.DATAFORSEO_LOGIN + ":" + env.DATAFORSEO_PASSWORD).toString("base64");
   const response = await fetcher("https://api.dataforseo.com/v3/" + path, { method: "POST", cache: "no-store", signal: AbortSignal.timeout(40000), headers: { Authorization: "Basic " + auth, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!response.ok) throw new Error("DataForSEO returned HTTP " + response.status + ".");
-  const data = await response.json() as { status_code?: number; status_message?: string; tasks?: { status_code?: number; status_message?: string; result?: unknown[] }[] };
+  const data = await response.json() as { status_code?: number; status_message?: string; cost?: number; tasks?: { status_code?: number; status_message?: string; result?: unknown[] }[] };
+  usage.requests += 1;
+  if (typeof data.cost === "number") usage.dataforseoUsd += data.cost;
   const task = data.tasks?.[0];
   if (data.status_code !== 20000 || !task || task.status_code !== 20000) throw new Error("DataForSEO: " + (task?.status_message || data.status_message || "request failed") + ".");
   return task.result || [];

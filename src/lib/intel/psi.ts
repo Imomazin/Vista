@@ -73,9 +73,9 @@ export async function runPageSpeed(url: string, strategy: "mobile" | "desktop", 
   endpoint.searchParams.set("category", "performance");
   if (key) endpoint.searchParams.set("key", key);
   let response: Response;
-  try { response = await fetcher(endpoint, { signal: AbortSignal.timeout(55000), cache: "no-store" }); }
+  try { response = await fetcher(endpoint, { signal: AbortSignal.timeout(110000), cache: "no-store" }); }
   catch (error) {
-    if ((error as Error).name === "TimeoutError" || /timeout|aborted/i.test((error as Error).message)) throw new Error("PageSpeed Insights did not finish within 55 seconds for this page; Lighthouse tests of large pages can take longer than the request limit. Retry later or test a lighter template.");
+    if ((error as Error).name === "TimeoutError" || /timeout|aborted/i.test((error as Error).message)) throw new Error("PageSpeed Insights did not finish within 110 seconds for this page; Lighthouse tests of very large pages can take longer than the request limit. Retry later or test a lighter template.");
     throw error;
   }
   if (response.status === 429) throw new Error("PageSpeed Insights quota is exhausted. Configure PAGESPEED_API_KEY or retry later.");

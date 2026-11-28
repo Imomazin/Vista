@@ -136,15 +136,26 @@ export function keywordUniverse(input: KeywordInput): KeywordRec[] {
     if (v.emerging) groups.push("emerging");
     const priority = Math.min(100, Math.round(v.weight + (intent === "transactional" ? 18 : intent === "commercial" ? 14 : intent === "informational" ? 6 : 2) + Math.min(10, v.evidence.length * 3) + (v.metrics?.impressions ? Math.min(20, Math.log10(v.metrics.impressions + 1) * 6) : 0)));
     return { id: recId("kw", keyword), keyword, groups, intent, cluster: v.cluster, priority, sources: [...v.sources].slice(0, 4), evidence: v.evidence, basis: v.basis, metrics: v.metrics, selected: false } as KeywordRec;
-  }).sort((a, b) => b.priority - a.priority).slice(0, 160);
-  let primary = 0, secondary = 0;
+  }).sort((a, b) => b.priority - a.priority);
+  // Variants ("courses" / "course", "uk histology training" / "histology training uk") are one keyword: keep the strongest.
+  const variantKey = (k: string) => tokens(k).map(t => (t.length > 3 && t.endsWith("s") && !t.endsWith("ss") ? t.slice(0, -1) : t)).sort().join(" ");
+  const byVariant = new Map<string, KeywordRec>();
   for (const k of ranked) {
+    const key = variantKey(k.keyword);
+    const kept = byVariant.get(key);
+    if (!kept) { byVariant.set(key, k); continue; }
+    kept.sources = [...new Set([...kept.sources, ...k.sources])].slice(0, 5);
+    if (!kept.metrics && k.metrics) kept.metrics = k.metrics;
+  }
+  const deduped = [...byVariant.values()].slice(0, 160);
+  let primary = 0, secondary = 0;
+  for (const k of deduped) {
     if (k.groups.includes("branded") || k.groups.includes("emerging") || k.intent === "informational") continue;
     if (primary < 8) { k.groups.unshift("primary"); primary += 1; }
     else if (secondary < 20) { k.groups.unshift("secondary"); secondary += 1; }
   }
-  for (const k of ranked) k.selected = k.groups.includes("primary") || k.groups.includes("secondary") || (k.groups.includes("branded") && k.intent === "navigational");
-  return ranked;
+  for (const k of deduped) k.selected = k.groups.includes("primary") || k.groups.includes("secondary") || (k.groups.includes("branded") && k.intent === "navigational");
+  return deduped;
 }
 
 function headTerm(k: string): string {

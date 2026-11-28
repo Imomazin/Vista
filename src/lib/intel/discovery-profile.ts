@@ -6,7 +6,7 @@
 import type { Discovery } from "./crawl";
 import type { Confidence } from "./model";
 import type { PageRecord } from "./page";
-import { cities, countries, currencyCountry, tldCountry } from "./business";
+import { cities, countries, currencyCountry, normaliseAudience, tldCountry } from "./business";
 import { marketPhrase, recId, type Basis, type BusinessProfile, type EvidenceRef, type Rec } from "./discovery-model";
 
 type Cue = { label: string; cues: string[] };
@@ -150,19 +150,58 @@ export function marketRecs(pages: PageRecord[], website: string): Rec[] {
     rec("market", market, v.observed ? "observed" : "inferred", v.score >= 14 ? "high" : v.score >= 7 ? "medium" : "low", v.evidence, v.observed ? undefined : "Inferred from contact, currency and place signals; confirm with the client."));
 }
 
+/** Buyer roles: who uses the offer, who pays, who influences the decision and who employs the end user. */
+const roleRules: [RegExp, string][] = [
+  [/\b(employers?|hospitals?|clinics?|laborator(y|ies)|labs?|nhs|trusts?|manufacturers?|retailers?|recruiters?)\b/, "Employer"],
+  [/\b(businesses|companies|organi[sz]ations|enterprises|startups|smes|agencies|brands|charities|owners|founders|executives|leaders|managers|investors|councils|distributors|suppliers|contractors|landlords)\b/, "Purchaser"],
+  [/\b(universities|colleges?|schools?|teachers?|consultants?|advisers?|advisors?|partners?)\b/, "Influencer"],
+  [/\b(students?|graduates?|undergraduates?|learners?|trainees?|apprentices?|candidates?|job ?seekers?|jobseekers|migrants|immigrants|professionals?|practitioners?|clinicians?|doctors?|nurses?|midwives|scientists?|technicians?|researchers?|engineers?|developers?|designers?|marketers?|accountants?|lawyers?|pharmacists?|dentists?|patients?|carers?|parents?|children|teenagers|families|homeowners|tenants|buyers|travell?ers|tourists|athletes|women|seniors|veterans|freelancers)\b/, "End user"],
+];
+const roleOf = (phrase: string) => roleRules.find(([re]) => re.test(phrase))?.[1] || "End user";
+
+/** Consolidate audience mentions into meaningful buyer segments: specific phrases first, synonyms merged, role stated. */
 export function segmentRecs(pages: PageRecord[]): Rec[] {
-  const agg = new Map<string, { count: number; urls: Set<string> }>();
-  for (const p of pages) for (const a of p.business?.audiences || []) { const e = agg.get(a.phrase) || { count: 0, urls: new Set<string>() }; e.count += a.count; e.urls.add(p.finalUrl); agg.set(a.phrase, e); }
-  const ranked = [...agg.entries()].filter(([, v]) => v.count >= 2).sort((a, b) => (b[1].urls.size * 3 + b[1].count) - (a[1].urls.size * 3 + a[1].count));
-  const chosen: [string, { count: number; urls: Set<string> }][] = [];
-  for (const entry of ranked) {
-    const [phrase] = entry;
-    // Prefer the specific phrase ("international students") over its bare noun when both are frequent.
-    if (chosen.some(([c]) => c.endsWith(" " + phrase))) continue;
-    chosen.push(entry);
-    if (chosen.length >= 6) break;
+  const agg = new Map<string, { count: number; urls: Set<string>; excerpt?: { url: string; text: string; at: string } }>();
+  for (const p of pages) for (const a of p.business?.audiences || []) {
+    const phrase = normaliseAudience(a.phrase);
+    const e = agg.get(phrase) || { count: 0, urls: new Set<string>() };
+    // A bare noun is also counted alongside each qualified phrase at extraction; avoid inflating it here.
+    if (phrase !== a.phrase && !phrase.includes(" ")) continue;
+    e.count += a.count; e.urls.add(p.finalUrl);
+    if (!e.excerpt && a.excerpt) e.excerpt = { url: p.finalUrl, text: a.excerpt, at: p.fetchedAt };
+    agg.set(phrase, e);
   }
-  return chosen.map(([phrase, v]) => rec("segment", phrase.charAt(0).toUpperCase() + phrase.slice(1), "inferred", v.urls.size >= 3 && v.count >= 6 ? "high" : v.count >= 3 ? "medium" : "low", [...v.urls].slice(0, 5).map(url => ({ url, detail: "Mentions “" + phrase + "”" })), "Audience inferred from " + v.count + " mentions across " + v.urls.size + " page" + (v.urls.size === 1 ? "" : "s") + "."));
+  const byRole = new Map<string, [string, { count: number; urls: Set<string>; excerpt?: { url: string; text: string; at: string } }][]>();
+  for (const entry of agg) { const role = roleOf(entry[0]); byRole.set(role, [...(byRole.get(role) || []), entry]); }
+  const out: Rec[] = [];
+  for (const [role, entries] of [...byRole.entries()].sort((a, b) => b[1].reduce((s, e) => s + e[1].count, 0) - a[1].reduce((s, e) => s + e[1].count, 0))) {
+    const total = entries.reduce((s, e) => s + e[1].count, 0);
+    if (total < 2) continue;
+    const specific = entries.filter(([p, v]) => p.includes(" ") && v.count >= 2).sort((a, b) => b[1].count - a[1].count);
+    // Specific phrases absorb the bare nouns they extend ("biomedical science graduates" absorbs "graduates").
+    const picks: typeof entries = [];
+    for (const e of specific) if (picks.length < 2 && !picks.some(([p]) => p.endsWith(e[0]) || e[0].endsWith(p))) picks.push(e);
+    const bare = entries.filter(([p]) => !p.includes(" ")).sort((a, b) => b[1].count - a[1].count);
+    // Each bare noun is merged into one segment only, so mentions are never counted twice.
+    const used = new Set<string>();
+    const groups: { name: string; members: typeof entries }[] = picks.map(e => { const members = entries.filter(([p]) => !used.has(p) && (p === e[0] || e[0].endsWith(" " + p))); members.forEach(([p]) => used.add(p)); return { name: e[0], members }; });
+    if (!picks.length && bare.length) {
+      const names = bare.slice(0, 3).map(([p]) => p);
+      groups.push({ name: names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0], members: bare });
+    }
+    for (const g of groups) {
+      const count = g.members.reduce((s, e) => s + e[1].count, 0);
+      const urls = new Set(g.members.flatMap(([, v]) => [...v.urls]));
+      const excerpts = g.members.map(([, v]) => v.excerpt).filter((x): x is { url: string; text: string; at: string } => !!x).slice(0, 3);
+      const display = g.name.replace(/\b(nhs|uk|eu|smes|hr|b2b|b2c|saas)\b/g, w => w === "smes" ? "SMEs" : w === "saas" ? "SaaS" : w.toUpperCase());
+      out.push({ ...rec("segment", display.charAt(0).toUpperCase() + display.slice(1), "inferred", urls.size >= 3 && count >= 6 ? "high" : count >= 3 ? "medium" : "low",
+        excerpts.length ? excerpts.map(x => ({ url: x.url, detail: "Audience mention", excerpt: x.text, at: x.at, method: "Audience noun in a sentence" })) : [...urls].slice(0, 3).map(url => ({ url, detail: "Audience mention", method: "Audience noun in a sentence" })),
+        role + " · " + count + " mentions across " + urls.size + " page" + (urls.size === 1 ? "" : "s") + (g.members.length > 1 ? "; merges " + g.members.map(([p, v]) => p + " (" + v.count + ")").slice(0, 5).join(", ") : "") + "."), tag: role });
+      if (out.length >= 6) break;
+    }
+    if (out.length >= 6) break;
+  }
+  return out;
 }
 
 type Offering = { name: string; score: number; evidence: EvidenceRef[]; basis: Basis };
@@ -185,14 +224,23 @@ export function offeringRecs(pages: PageRecord[], site: Discovery | null, brand:
     list.push({ name, score: points, evidence: [ev], basis });
   };
   const offeringPages = pages.filter(p => ["service", "course", "product", "category"].includes(p.pageType) || offeringPath.test(new URL(p.finalUrl).pathname));
-  for (const p of pages) for (const e of p.business?.entities || []) if (e.type !== "Offer" && e.type !== "HowTo" && e.type !== "JobPosting") add(e.name, e.type === "ListItem" ? 2 : 4, { url: p.finalUrl, detail: e.type + " in structured data" });
-  for (const p of offeringPages) if (p.h1[0]) add(p.h1[0], 3, { url: p.finalUrl, detail: "H1 of a " + p.pageType + " page" });
+  for (const p of pages) for (const e of p.business?.entities || []) if (e.type !== "Offer" && e.type !== "HowTo" && e.type !== "JobPosting") add(e.name, e.type === "ListItem" ? 2 : 4, { url: p.finalUrl, detail: e.type + " in structured data", excerpt: e.name, method: "Structured data (" + e.type + ")", at: p.fetchedAt });
+  for (const p of offeringPages) if (p.h1[0]) add(p.h1[0], 3, { url: p.finalUrl, detail: "H1 of a " + p.pageType + " page", excerpt: p.h1[0], method: "Page heading (H1)", at: p.fetchedAt });
   const home = pages.find(p => p.pageType === "home") || pages[0];
-  for (const n of home?.business?.nav || []) { try { const path = new URL(n.url).pathname; if (offeringPath.test(path) && path.split("/").filter(Boolean).length >= 2) add(n.text, 2, { url: n.url, detail: "Navigation item “" + n.text + "”" }); } catch { /* ignore */ } }
-  for (const s of (site?.sitemapUrls || []).slice(0, 400)) { try { const path = new URL(s.loc).pathname; if (offeringPath.test(path) && path.split("/").filter(Boolean).length >= 2) { const name = humaniseSlug(s.loc); if (name) add(name, 1, { url: s.loc, detail: "Offering URL in the XML sitemap" }); } } catch { /* ignore */ } }
+  for (const n of home?.business?.nav || []) { try { const path = new URL(n.url).pathname; if (offeringPath.test(path) && path.split("/").filter(Boolean).length >= 2) add(n.text, 2, { url: n.url, detail: "Navigation item “" + n.text + "”", excerpt: n.text, method: "Main navigation", at: home.fetchedAt }); } catch { /* ignore */ } }
+  for (const s of (site?.sitemapUrls || []).slice(0, 400)) { try { const path = new URL(s.loc).pathname; if (offeringPath.test(path) && path.split("/").filter(Boolean).length >= 2) { const name = humaniseSlug(s.loc); if (name) add(name, 1, { url: s.loc, detail: "Offering URL in the XML sitemap", excerpt: path, method: "XML sitemap URL" }); } } catch { /* ignore */ } }
   // Thin or JavaScript-rendered pages: fall back to what the title states the product is.
   if (!list.length && home?.title) for (const part of home.title.split(/\s[|–—:-]\s/)) add(part, 2, { url: home.finalUrl, detail: "Home page title" });
-  return list.sort((a, b) => b.score - a.score).slice(0, 14).map((o, i) => rec("offering", o.name, o.basis, o.score >= 6 ? "high" : o.score >= 3 ? "medium" : "low", o.evidence, undefined, i < 8));
+  // Service family (head noun) and delivery mode stated on the evidence pages.
+  const corpusBy = new Map(pages.map(p => [p.finalUrl, [p.title, p.description, ...p.h1, ...p.headings.map(h => h.text), p.content.excerpt].join(" ").toLowerCase()]));
+  const tagFor = (o: Offering) => {
+    const text = o.evidence.map(e => corpusBy.get(e.url) || "").join(" ");
+    const modes = [/\b(online|virtual|remote|e-learning|self-paced|webinars?|live classes)\b/.test(text) && "online", /\b(in-person|in person|on-site|onsite|classroom|hands-on|face-to-face|laboratory-based|in our (lab|laboratory|studio|clinic|centre|center))\b/.test(text) && "in person", /\b(blended|hybrid)\b/.test(text) && "blended"].filter(Boolean);
+    const head = tokens(o.name).slice(-1)[0];
+    const family = head && /^(training|course|courses|programme|programmes|program|programs|services?|consulting|consultancy|advisory|software|treatments?|therapy|insurance|tours?|classes|workshops?|development)$/.test(head) ? head.charAt(0).toUpperCase() + head.slice(1) : "";
+    return [family, modes.length ? "Delivery: " + modes.join(", ") : ""].filter(Boolean).join(" · ") || undefined;
+  };
+  return list.sort((a, b) => b.score - a.score).slice(0, 14).map((o, i) => ({ ...rec("offering", o.name, o.basis, o.score >= 6 ? "high" : o.score >= 3 ? "medium" : "low", o.evidence, undefined, i < 8), tag: tagFor(o) }));
 }
 
 export function businessModel(pages: PageRecord[], segments: Rec[]): Rec {
@@ -265,20 +313,24 @@ export function buildProfile(pages: PageRecord[], site: Discovery | null, websit
   };
   const chosen = candidates.filter(n => !generic.has(n.value.toLowerCase()) && n.value.length <= 60).sort((a, b) => score(b) - score(a))[0] || null;
   const brandValue = chosen?.value || label.charAt(0).toUpperCase() + label.slice(1);
-  const brand = rec("brand", brandValue, chosen ? "observed" : "inferred", chosen ? "high" : "low", chosen ? [{ url: chosen.url, detail: chosen.source }] : [{ url: website, detail: "Derived from the domain name" }]);
+  const corroborating = names.filter(n => n !== chosen && n.value.toLowerCase() === brandValue.toLowerCase()).map(n => n.source);
+  const brand = rec("brand", brandValue, chosen ? "observed" : "inferred", chosen ? "high" : "low", chosen ? [{ url: chosen.url, detail: chosen.source, excerpt: chosen.value, method: chosen.source, at: pages.find(p => p.finalUrl === chosen.url)?.fetchedAt }, ...(domainKey && compact(brandValue).includes(domainKey) ? [{ url: website, detail: "Matches the domain name", method: "Domain comparison" }] : [])] : [{ url: website, detail: "Derived from the domain name", method: "Domain name" }], corroborating.length ? "Also declared in: " + [...new Set(corroborating)].slice(0, 3).join(", ") + "." : undefined);
   const aliasValues = new Map<string, EvidenceRef>();
-  for (const n of names) if (n.value.toLowerCase() !== brandValue.toLowerCase() && !generic.has(n.value.toLowerCase()) && n.value.length <= 40 && !/^(about|contact|home|welcome|blog|news|our|the|meet|join|why)\b/i.test(n.value) && (/alternateName|legalName|og:site_name|application-name/.test(n.source) || jaccard(n.value, brandValue) > 0.3 || n.value.toLowerCase().replace(/\s/g, "") === label)) aliasValues.set(n.value, { url: n.url, detail: n.source });
+  // Aliases are declared names only (alternateName, legalName, og:site_name, application name) and the domain;
+  // page headings, navigation labels and title segments are never accepted as names.
+  for (const n of names) if (n.value.toLowerCase() !== brandValue.toLowerCase() && !generic.has(n.value.toLowerCase()) && n.value.length <= 50 && !n.value.includes(",") && !/^(about|contact|home|welcome|blog|news|our|the|meet|join|why)\b/i.test(n.value) && /alternateName|legalName|og:site_name|application-name/.test(n.source)) aliasValues.set(n.value, { url: n.url, detail: n.source, excerpt: n.value, method: n.source, at: pages.find(p => p.finalUrl === n.url)?.fetchedAt });
   const ipHost = /^[\d.:]+$/.test(host.split(":")[0]);
-  if (!ipHost && label && label !== brandValue.toLowerCase().replace(/\s/g, "")) aliasValues.set(label, { url: website, detail: "Domain label" });
-  if (!ipHost) aliasValues.set(host, { url: website, detail: "Website domain" });
+  if (!ipHost && label && label !== brandValue.toLowerCase().replace(/\s/g, "")) aliasValues.set(label, { url: website, detail: "Domain label", method: "Domain name" });
+  if (!ipHost) aliasValues.set(host, { url: website, detail: "Website domain", method: "Domain name" });
   const aliases = [...aliasValues.entries()].slice(0, 6).map(([v, e]) => rec("alias", v, "observed", "medium", [e]));
 
   const scored = industryScores(pages);
   const top = scored[0];
   const second = scored[1];
   const industryEvidence = (s: typeof top) => [...s.hits.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 5).map(([cue, h]) => ({ url: [...h.urls][0], detail: "“" + cue + "” appears " + h.count + "× across " + h.urls.size + " page" + (h.urls.size === 1 ? "" : "s") }));
+  const alternatives = scored.slice(1, 3).filter(x => x.score >= 8).map(x => x.def.label + " (" + x.score + ")").join(", ");
   const industry = top && top.score >= 8
-    ? rec("industry", top.def.label, "inferred", top.schemaPages.length && top.score >= (second?.score || 0) * 1.6 ? "high" : top.score >= (second?.score || 0) * 1.25 ? "medium" : "low", [...(top.schemaPages.length ? [{ url: top.schemaPages[0], detail: "Structured data type matches " + top.def.label }] : []), ...industryEvidence(top)], second && second.score >= top.score * 0.5 ? "Also strongly associated with " + second.def.label.toLowerCase() + "." : undefined)
+    ? rec("industry", top.def.label, top.schemaPages.length ? "observed" : "inferred", top.schemaPages.length && top.score >= (second?.score || 0) * 1.6 ? "high" : top.score >= (second?.score || 0) * 1.25 ? "medium" : "low", [...(top.schemaPages.length ? [{ url: top.schemaPages[0], detail: "Structured data type matches " + top.def.label }] : []), ...industryEvidence(top)], (top.schemaPages.length ? "Declared in structured data and supported by site vocabulary (score " + top.score + ")." : "Inferred from site vocabulary (score " + top.score + ").") + (alternatives ? " Alternatives considered: " + alternatives + "." : ""))
     : rec("industry", "Not determined", "inferred", "low", [], "Too few industry signals in the sampled pages.");
   const subsectors: Rec[] = [];
   for (const s of [top, second].filter(Boolean)) {
@@ -292,7 +344,7 @@ export function buildProfile(pages: PageRecord[], site: Discovery | null, websit
   const valueProposition = vpText ? rec("vp", vpText, "observed", "high", [{ url: heroPage!.finalUrl, detail: "Home page headline and introduction" }]) : rec("vp", "Not stated on the sampled pages", "inferred", "low", []);
   const claims: { claim: string; url: string }[] = [];
   for (const p of [home, ...pages.filter(p => p !== home)]) for (const c of p?.business?.claims || []) if (claims.length < 8 && !claims.some(x => jaccard(x.claim, c) > 0.6)) claims.push({ claim: c, url: p!.finalUrl });
-  const differentiators = claims.map((c, i) => rec("diff", c.claim, "observed", "medium", [{ url: c.url, detail: "Claim stated on the page" }], "Stated by the organisation; not independently verified.", i < 5));
+  const differentiators = claims.map((c, i) => rec("diff", c.claim, "observed", "medium", [{ url: c.url, detail: "Claim stated on the page", excerpt: c.claim, method: "Claim wording on the page", at: pages.find(p => p.finalUrl === c.url)?.fetchedAt }], "Stated by the organisation; not independently verified.", i < 5));
   const model = businessModel(pages, segments);
   const offerings = offeringRecs(pages, site, brandValue);
   const markets = marketRecs(pages, website);
@@ -357,7 +409,10 @@ export function mergeAiProfile(profile: BusinessProfile, ai: AiProfile, pages: P
     for (const r of extra) if (r && !out.some(x => same(x.value, r.value)) && out.length < max) out.push({ ...r, selected: selectNew && r.confidence !== "low" });
     return out;
   };
-  const aliases = mergeList(profile.aliases, ai.aliases.filter(a => a && all.includes(a.toLowerCase()) && !/^(about|contact|home|welcome|blog|news|our|the|meet|join|why)\b/i.test(a)).map(a => rec("alias", a.slice(0, 60), "model", "medium", [{ url: pages[0].finalUrl, detail: "Name appears on the website (AI-identified)" }])), 8, true);
+  // AI-suggested aliases must use the brand, appear on the site, and must not be a heading, navigation label or title segment.
+  const labels = new Set(pages.flatMap(p => [...p.h1, ...p.headings.map(h => h.text), ...(p.business?.nav.map(n => n.text) || []), ...(p.title || "").split(/\s[|–—:-]\s/)]).map(t => t.trim().toLowerCase()));
+  const brandKey = profile.brand.value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const aliases = mergeList(profile.aliases, ai.aliases.filter(a => a && all.includes(a.toLowerCase()) && !labels.has(a.trim().toLowerCase()) && a.toLowerCase().replace(/[^a-z0-9]/g, "").includes(brandKey) && !/^(about|contact|home|welcome|blog|news|our|the|meet|join|why)\b/i.test(a)).map(a => rec("alias", a.slice(0, 60), "model", "medium", [{ url: pages[0].finalUrl, detail: "Brand usage on the website (AI-identified)", excerpt: a, method: "AI interpretation checked against page text" }])), 8, true);
   const subsectors = mergeList(profile.subsectors, [ai.industry, ...ai.subsectors].map(s => { const g = ground(s, pages.map(p => p.finalUrl)); return g.share >= 0.5 ? rec("subsector", s.slice(0, 80), "model", "medium", [{ url: pages[0].finalUrl, detail: "AI classification grounded in site vocabulary" }]) : null; }), 5, true);
   const strong = profile.offerings.filter(o => o.confidence === "high"), weak = profile.offerings.filter(o => o.confidence !== "high");
   const mergedOfferings = mergeList(strong, ai.offerings.filter(o => !generic.has(o.name.toLowerCase().trim()) && !/^(other|all|more)\b/i.test(o.name.trim())).map(o => modelRec("offering", o.name, o.evidence, undefined, 0.5)), 16, true);

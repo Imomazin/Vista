@@ -80,9 +80,14 @@ export function priorityPages(pages: PageRecord[], site: Discovery | null, websi
 
 export function recommendScope(run: Pick<DiscoveryRun, "site" | "pages" | "competitors" | "prompts" | "settings" | "search">, profileModel: string): ScopeRec {
   const site = run.site;
-  const sitemap = site?.sitemapUrls.length || 0;
-  const navUnique = new Set(run.pages.flatMap(p => p.links.internal.map(l => l.url))).size;
-  const inventory = Math.max(sitemap, navUnique, run.pages.length);
+  // Known inventory: canonical-deduplicated sitemap URLs plus internal links seen in the sample.
+  const canonical = (u: string) => { try { const x = new URL(u); return (x.hostname.replace(/^www\./, "") + decodeURIComponent(x.pathname).replace(/\/index\.(php|html?)(?=\/|$)/i, "").replace(/\/+$/, "")).toLowerCase(); } catch { return u; } };
+  const sitemapRaw = site?.sitemapUrls.length || 0;
+  const sitemapSet = new Set((site?.sitemapUrls || []).map(e => canonical(e.loc)));
+  const linkSet = new Set(run.pages.flatMap(p => [p.finalUrl, ...p.links.internal.map(l => l.url)]).filter(u => !/\.(pdf|jpe?g|png|gif|webp|zip|docx?)$/i.test(u)).map(canonical));
+  const known = new Set([...sitemapSet, ...linkSet]);
+  const sitemap = sitemapSet.size;
+  const inventory = Math.max(known.size, run.pages.length);
   const member = run.settings.member;
   const js = run.pages.filter(p => p.jsDependent).length;
   const jsShare = run.pages.length ? js / run.pages.length : 0;
@@ -95,7 +100,10 @@ export function recommendScope(run: Pick<DiscoveryRun, "site" | "pages" | "compe
   else if (inventory <= 250 || !member) { mode = "deep"; rationale.push(inventory <= 250 ? "About " + inventory + " URLs were found; Deep Intelligence covers the full inventory." : "About " + inventory.toLocaleString("en-GB") + " URLs were found. Enterprise Investigation (5,000 pages) requires signing in; Deep Intelligence covers the 250 most reachable pages."); }
   else { mode = "enterprise"; rationale.push("About " + inventory.toLocaleString("en-GB") + " URLs were found; Enterprise Investigation is needed for representative coverage."); }
   const cap = tierCap(mode, member);
-  const pageLimit = Math.max(10, Math.min(cap, Math.ceil(inventory * 1.15) + 10));
+  const raw = Math.ceil(inventory * 1.15) + 10;
+  const pageLimit = Math.max(10, Math.min(cap, raw));
+  rationale.push("Known inventory " + inventory.toLocaleString("en-GB") + " unique URLs: " + sitemap.toLocaleString("en-GB") + " from the XML sitemap" + (sitemapRaw > sitemap ? " (" + (sitemapRaw - sitemap) + " duplicate variants removed, e.g. index.php or trailing-slash forms)" : "") + " and " + Math.max(0, inventory - sitemap).toLocaleString("en-GB") + " further internal links found in the sample.");
+  rationale.push("Page budget = min(tier cap " + cap.toLocaleString("en-GB") + ", inventory × 1.15 + 10 = " + raw.toLocaleString("en-GB") + ") = " + pageLimit.toLocaleString("en-GB") + (pageLimit > inventory ? ": the known inventory plus " + (pageLimit - inventory) + " pages of additional budget for URLs discovered while crawling." : pageLimit < inventory ? ": capped below the known inventory; the most reachable pages are crawled first." : "."));
   const maxDepth = Math.max(3, Math.min(8, deepest + 1));
   rationale.push("Crawl depth " + maxDepth + ": the deepest sitemap URL is " + deepest + " level" + (deepest === 1 ? "" : "s") + " below the home page.");
   const linkCheckLimit = Math.min(auditModes[mode].linkChecks, Math.max(40, pageLimit * 2));

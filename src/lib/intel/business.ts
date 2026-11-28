@@ -20,7 +20,7 @@ export type BusinessSignals = {
   addresses: { country?: string; region?: string; locality?: string }[];
   areaServed: string[];
   phoneCountries: string[];
-  audiences: { phrase: string; count: number }[];
+  audiences: { phrase: string; count: number; excerpt?: string }[];
   claims: string[];
   hero: { heading: string | null; text: string | null };
 };
@@ -62,6 +62,7 @@ export const currencyCountry: Record<string, string> = { GBP: "United Kingdom", 
 
 const audienceNouns = ["students", "graduates", "undergraduates", "learners", "trainees", "apprentices", "professionals", "practitioners", "clinicians", "doctors", "nurses", "midwives", "scientists", "technicians", "researchers", "laboratories", "hospitals", "clinics", "patients", "carers", "parents", "children", "teenagers", "families", "teachers", "schools", "universities", "colleges", "employers", "employees", "recruiters", "candidates", "job seekers", "jobseekers", "businesses", "companies", "organisations", "organizations", "enterprises", "startups", "smes", "retailers", "brands", "agencies", "consultants", "freelancers", "developers", "engineers", "designers", "marketers", "executives", "leaders", "managers", "founders", "investors", "homeowners", "landlords", "tenants", "buyers", "travellers", "travelers", "tourists", "athletes", "women", "seniors", "veterans", "charities", "councils", "manufacturers", "distributors", "suppliers", "pharmacists", "dentists", "lawyers", "accountants", "contractors", "owners", "migrants", "immigrants"];
 const audiencePattern = new RegExp("\\b((?:[a-z][a-z-]{2,} ){0,2})(" + audienceNouns.join("|") + ")\\b", "g");
+export const qualifiers = new Set("international overseas foreign domestic local regional national global uk british eu european african nigerian indian american biomedical biomedicine science sciences scientific medical clinical healthcare health nhs private public sector independent small medium large mid-size midsize growing established enterprise corporate commercial industrial retail technology tech digital software finance financial legal education educational school university postgraduate undergraduate graduate early career senior junior aspiring qualified experienced newly mature adult young first-time existing prospective potential part-time full-time career-changing career laboratory lab research hospital pharmaceutical engineering construction manufacturing creative marketing sales hr hospitality family-owned owner-managed high-net-worth b2b b2c ecommerce online saas start-up startup charity nonprofit not-for-profit government".split(" "));
 const modifierStop = new Set("the and for with our your their all any more most many some these those who are can from into that this have has been will was were not only also such than then them they you get how new top best other each every shop shops filter filters sort view buy men mens women womens kids sale search menu faq faqs work experience parents carers teachers home account login".split(" "));
 
 const ctaRules: [CtaKind, RegExp][] = [
@@ -94,15 +95,29 @@ export function placeMentions(text: string): BusinessSignals["places"] {
   return [...out.values()].sort((a, b) => b.count - a.count).slice(0, 20);
 }
 
+/** Keep the audience noun and only the genuine qualifiers directly before it. */
+export function normaliseAudience(phrase: string): string {
+  const words = phrase.toLowerCase().split(" ").filter(Boolean);
+  const noun = words.pop() || "";
+  const kept: string[] = [];
+  for (let i = words.length - 1; i >= 0 && kept.length < 2; i -= 1) { if (qualifiers.has(words[i])) kept.unshift(words[i]); else break; }
+  return [...kept, noun].join(" ");
+}
+
 export function audiencePhrases(text: string): BusinessSignals["audiences"] {
-  const counts = new Map<string, number>();
-  for (const m of text.toLowerCase().matchAll(audiencePattern)) {
-    const modifiers = m[1].trim().split(" ").filter(w => w && !modifierStop.has(w) && !/^\d/.test(w));
-    const phrase = [...modifiers.slice(-2), m[2]].join(" ");
-    counts.set(phrase, (counts.get(phrase) || 0) + 1);
-    if (modifiers.length) counts.set(m[2], (counts.get(m[2]) || 0) + 1);
+  const counts = new Map<string, { count: number; excerpt?: string }>();
+  const bump = (phrase: string, sentence: string) => { const e = counts.get(phrase) || { count: 0 }; e.count += 1; e.excerpt ||= sentence.slice(0, 220); counts.set(phrase, e); };
+  for (const sentence of text.split(/(?<=[.!?])\s+|\s\.\s/)) {
+    for (const m of sentence.toLowerCase().matchAll(audiencePattern)) {
+      // Only genuine qualifiers ("international", "biomedical science", "public sector") form a segment name.
+      const words = m[1].trim().split(" ").filter(w => w && !modifierStop.has(w) && !/^\d/.test(w));
+      let modifiers: string[] = [];
+      for (let i = words.length - 1; i >= 0 && modifiers.length < 2; i -= 1) { if (qualifiers.has(words[i])) modifiers.unshift(words[i]); else break; }
+      bump([...modifiers.slice(-2), m[2]].join(" "), sentence.trim());
+      if (modifiers.length) bump(m[2], sentence.trim());
+    }
   }
-  return [...counts.entries()].map(([phrase, count]) => ({ phrase, count })).sort((a, b) => b.count - a.count).slice(0, 14);
+  return [...counts.entries()].map(([phrase, v]) => ({ phrase, count: v.count, excerpt: v.excerpt })).sort((a, b) => b.count - a.count).slice(0, 16);
 }
 
 export function extractBusinessSignals($: CheerioAPI, base: URL, nodes: Record<string, unknown>[], mainText: string, headings: { level: number; text: string }[]): BusinessSignals {
