@@ -184,7 +184,7 @@ export async function runInvestigation(input: Investigation, options: RunOptions
           if (!crawled.has(fk)) { inv.pages.push(page); crawled.add(fk); crawled.add(crawlKey(page.url)); }
           visited.add(fk);
           const depth = page.depth < 0 ? -1 : page.depth + 1;
-          for (const link of page.links.internal) enqueue(link.url, depth);
+          if (inv.brief.maxDepth === undefined || depth < 0 || depth <= inv.brief.maxDepth) for (const link of page.links.internal) enqueue(link.url, depth);
           if (page.canonical) enqueue(page.canonical, page.depth);
         }
         for (const f of result.failures) {
@@ -252,7 +252,7 @@ export async function runInvestigation(input: Investigation, options: RunOptions
 
     // 07 Competitors: discovery plus a small, equal page sample each.
     if (!settled("competitive")) {
-      const competitors = inv.brief.competitors.filter(Boolean).slice(0, 5);
+      const competitors = inv.brief.competitors.filter(Boolean).slice(0, 10);
       if (!competitors.length) { const s = await begin("competitive", "No competitors supplied.", 0); await finish(s, "skipped", "Add competitor websites in the brief to compare positioning."); }
       else {
         const per = inv.brief.mode === "quick" ? 2 : inv.brief.mode === "deep" ? 5 : 10;

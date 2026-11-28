@@ -4,6 +4,33 @@ This release adds a multi-stage website intelligence engine, an integrated SEO &
 
 ## Workflow
 
+Enter a website → Intelligent Discovery recommends the complete scope → review, edit and approve → launch → process evidence → findings → decisions → executive report → re-run to track improvement. The manual brief remains available as *Custom Investigation (advanced)*.
+
+## Intelligent Discovery
+
+The Brief tab opens on **Intelligent Discovery (recommended)**. The website address is the only required input; a client record is created automatically and named after the discovered brand. Eight Intelligence Pulse stages run as bounded, checkpointed requests (progress counts completed units; cancel and resume keep finished stages):
+
+| Stage | Work | Evidence |
+|---|---|---|
+| 1 Identifying the business | Home page, robots.txt, sitemaps, then a representative sample of up to 16 pages (navigation, calls to action, trust pages and one or two URLs per sitemap section) | Observed |
+| 2 Mapping products and services | Structured data entities (Product, Service, Course…), H1s of offering pages, navigation and sitemap slugs; then one optional AI interpretation of the sampled pages | Observed; AI interpretation kept only when it cites fetched pages and its wording appears there |
+| 3 Understanding target audiences | Audience nouns in context ("international students", "small businesses"), markets from structured-data addresses and areaServed, dialling codes, currencies, place names and the domain | Inferences with page evidence |
+| 4 Discovering market competitors | AI web search candidates (commercial), search-provider results (organic), then every website is fetched and compared with the client's offering vocabulary, markets and audiences | Measured overlap (matched terms / total); unreachable or non-overlapping sites are never recommended |
+| 5 Building keyword intelligence | Offerings, entities, headings, navigation, question headings, competitor gaps, AI industry vocabulary, Search Console (connected owners) and provider metrics | Volumes, difficulty, CPC and rankings only from Search Console or a provider |
+| 6 Generating GEO search prompts | 30–50 prompts in 11 categories, prioritised by commercial relevance; a configurable sample (0–8) of real AI answers | Sampled answers are stored as API observations and carried into the investigation |
+| 7 Identifying priority pages | Navigation, sitemap, page types, internal links, call-to-action targets, structured data; Search Console page traffic when connected | Measured |
+| 8 Recommending investigation scope | Tier, page budget, crawl depth, link checks, competitor pages, PageSpeed templates, AI prompt budget, JavaScript rendering, data sources, resources and cost | Transparent rules shown as rationale |
+
+Every recommendation shows its basis (*Stated*, *Inference*, *AI interpretation*, *Measured*, *First-party*, *Provider data* or *Added by you*), a confidence level and links to its evidence, and can be accepted, edited, excluded or replaced. *Accept all recommendations*, *Regenerate* (from any stage), *Edit in custom form* and *Launch investigation* are available once the scope is ready. Accepted recommendations flow into the existing pipeline: brand, aliases, industry, markets, audiences, offerings, objectives, up to ten competitors, the top 25 keywords, the approved prompt bank (which then drives AI sampling), priority pages as crawl seeds, the recommended depth and budgets. Eight discovery visuals are drawn from the same evidence: competitive positioning matrix, competitor relationship network, products and services treemap, commercial opportunity profile, keyword cluster map, search intent distribution, AI prompt category heatmap and website architecture.
+
+**VisTa BoT** recognises requests such as "Investigate example.com" and starts Intelligent Discovery for that website; "launch the investigation" launches the recommended scope.
+
+**Safeguards.** AI-assisted discovery is controlled by `VISTA_DISCOVERY_AI` (`public`, `members` or `off`), a per-connection daily allowance (10 profile and competitor calls, 48 answer samples; higher for signed-in members) and a deployment-wide daily budget (`VISTA_DISCOVERY_DAILY_AI_CALLS`, default 400). Sampled AI questions are rendered on the server from fixed templates with validated plain-text slots, so the endpoint cannot be used as a general AI proxy. Model output uses a strict JSON schema with bounded tokens and is sanitised. Competitor websites are fetched through the same SSRF-protected crawler. Without AI assistance or a search provider, discovery still profiles the business, builds keywords, prompts, priority pages and scope from website evidence, and states that competitors must be added manually.
+
+**Search data providers.** `DATAFORSEO_LOGIN`/`DATAFORSEO_PASSWORD` add search volume, CPC, competition, keyword difficulty, live Google rankings and organic competitors; `BRAVE_SEARCH_API_KEY` adds live results only. With neither configured, these fields read *Not measured*.
+
+## Investigation pipeline
+
 Create client → brief → discover pages → process evidence → SEO findings → GEO visibility → competitor benchmark → investigate → prioritise interventions → executive report → export → re-run to track improvement.
 
 - **Studio** (`#studio`, first item in the navigation). Tabs: Brief, Cockpit, Technical SEO, Content, Authority & trust, Competitors, GEO & AI search, Search & analytics, Findings, Decision Room, Executive Studio, Portfolio. Routes are shareable (`#studio/technical`).
@@ -114,6 +141,7 @@ Public intelligence endpoints require same-origin requests, bounded JSON bodies 
 
 - Google Search Console and GA4 live retrieval require a successful authorised owner test in production (credentials are configured; live access is not verified by this release).
 - OpenAI API sampling requires an authorised owner session and a funded API key; consumer ChatGPT, Google AI Overviews / AI Mode, Gemini, Perplexity, Claude and Copilot are captured manually.
+- Search volume, keyword difficulty, CPC, rankings and organic competitors require a search data provider (DataForSEO, or Brave Search for live results only); none is configured.
 - PageSpeed Insights works without a key at Google's shared quota, which is regularly exhausted in production; set `PAGESPEED_API_KEY` for reliable volume (without it, investigations end as *partially complete* with the performance gap stated).
 - JavaScript rendering requires a Browserless-compatible service (`VISTA_RENDER_ENDPOINT`, `VISTA_RENDER_TOKEN`); none is configured, so JavaScript-dependent pages are detected and flagged but not executed.
 - Keyword volumes, rankings for non-owned sites, backlinks, Google Ads, Bing Webmaster Tools, Merchant Center, CRM beyond HubSpot samples and media monitoring need provider subscriptions and credentials.
@@ -121,4 +149,4 @@ Public intelligence endpoints require same-origin requests, bounded JSON bodies 
 ## Verification
 
 - Unit and integration tests: robots and sitemap parsing, SSRF validation, redirect chains/loops, resource policy (1, 5 and 12 MB pages; gzip, deflate and Brotli; truncation above 10 MB; decompression bombs; declared oversize; corrupt and unsupported encodings; slow, flaky, reset and 503 servers), selective extraction, home-page failure with sitemap fallback, transient retry and targeted retry of failed pages, type limits, robots enforcement, page and site analysis, findings, index coverage gating, GEO metrics and intervals, interventions, roadmap and scenarios, resumable runner (cancel/resume without re-fetching, 429 recovery), connected-client and failed-provider paths, BoT evidence safety.
-- `scripts/intel-fixtures.mjs` serves ecommerce, professional services, corporate training, complex multi-page, robots-restricted and competitor fixture sites, plus a LabMedExpert-style site (6 MB compressed home page with inline state and base64 assets, a 12 MB brochure, malformed HTML, a 40-second page and a gzip bomb), a WordPress-style blog (80 MB home page and a 3,000-post sitemap index) and a JavaScript-only application shell; `scripts/intel-acceptance.mjs` drives the full UI journey, exports every file format and runs the scenarios in both themes at desktop, tablet and mobile widths.
+- `scripts/discovery-acceptance.mjs` runs Intelligent Discovery from a website address only (laboratory training, ecommerce, professional services and JavaScript application fixtures), edits, accepts, regenerates and launches into the investigation, checks the BoT entry and both themes at three widths, against a simulated OpenAI endpoint that deliberately returns an ungrounded offering (which must be rejected). `scripts/intel-fixtures.mjs` serves ecommerce, professional services, corporate training, complex multi-page, robots-restricted and competitor fixture sites, plus a LabMedExpert-style site (6 MB compressed home page with inline state and base64 assets, a 12 MB brochure, malformed HTML, a 40-second page and a gzip bomb), a WordPress-style blog (80 MB home page and a 3,000-post sitemap index) and a JavaScript-only application shell; `scripts/intel-acceptance.mjs` drives the full UI journey, exports every file format and runs the scenarios in both themes at desktop, tablet and mobile widths.

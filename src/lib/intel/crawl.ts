@@ -80,7 +80,8 @@ export async function pool<T, R>(items: T[], limit: number, task: (item: T, inde
   return results;
 }
 
-export async function discover(input: string, keywords: string[] = []): Promise<Discovery> {
+/** Home page, robots.txt and (unless `sitemaps` is false) the XML sitemap inventory of one website. */
+export async function discover(input: string, keywords: string[] = [], options: { sitemaps?: boolean } = {}): Promise<Discovery> {
   const started = Date.now();
   const collectedAt = new Date().toISOString();
   let requested: URL;
@@ -95,7 +96,7 @@ export async function discover(input: string, keywords: string[] = []): Promise<
   const candidates = declared.length ? declared : [origin + "/sitemap.xml", origin + "/sitemap_index.xml"];
   const sitemaps: SitemapSummary[] = [];
   const urls = new Map<string, { loc: string; lastmod?: string }>();
-  const queue = [...new Set(candidates)].slice(0, 6);
+  const queue = options.sitemaps === false ? [] : [...new Set(candidates)].slice(0, 6);
   const homeSite = siteKey(new URL(origin).hostname);
   while (queue.length && sitemaps.length < 8 && Date.now() - started < 22000) {
     const sitemapUrl = queue.shift()!;

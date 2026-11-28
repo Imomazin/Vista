@@ -30,7 +30,7 @@ export default function BriefForm({ project, initial, canSampleAi, canConnect, m
     let website = brief.website.trim();
     if (!/^https?:\/\//i.test(website)) website = 'https://' + website;
     try { const u = new URL(website); if (!u.hostname.includes('.')) throw new Error(); } catch { setError('Enter a valid public website address, for example https://example.com.'); return; }
-    const competitors = lines(text.competitors, 5).map(c => /^https?:\/\//i.test(c) ? c : 'https://' + c).filter(c => { try { return new URL(c).hostname.includes('.'); } catch { return false; } });
+    const competitors = lines(text.competitors, 10).map(c => /^https?:\/\//i.test(c) ? c : 'https://' + c).filter(c => { try { return new URL(c).hostname.includes('.'); } catch { return false; } });
     const seedUrls = lines(text.seeds, 200).map(u => /^https?:\/\//i.test(u) ? u : website.replace(/\/$/, '') + (u.startsWith('/') ? u : '/' + u)).filter(u => { try { return new URL(u).hostname === new URL(website).hostname; } catch { return false; } });
     onStart({ ...brief, website, seedUrls, pageLimit: Math.min(brief.pageLimit, cap), renderJs: Boolean(brief.renderJs && capabilities?.render), aliases: split(text.aliases, 8), markets: split(text.markets, 6), offerings: split(text.offerings, 8), objectives: lines(text.objectives, 6), competitors, keywords: split(text.keywords, 25), prompts: lines(text.prompts, 20).filter(p => p.length >= 12 && p.length <= 900) }, ai && canSampleAi);
   }
@@ -56,7 +56,7 @@ export default function BriefForm({ project, initial, canSampleAi, canConnect, m
     </fieldset>
     <fieldset className="brief-grid">
       <legend>Competitive and search scope</legend>
-      <label className="span-2">Competitor websites<textarea rows={3} value={text.competitors} onChange={e => setText({ ...text, competitors: e.target.value })} placeholder="One per line (up to five)"/></label>
+      <label className="span-2">Competitor websites<textarea rows={3} value={text.competitors} onChange={e => setText({ ...text, competitors: e.target.value })} placeholder="One per line (up to ten)"/></label>
       <label className="span-2">Target keywords<input value={text.keywords} onChange={e => setText({ ...text, keywords: e.target.value })} placeholder="Comma separated (up to 25)"/></label>
       <label className="span-2">AI search prompts to monitor<textarea rows={3} value={text.prompts} onChange={e => setText({ ...text, prompts: e.target.value })} placeholder="One question per line. A prompt bank is generated from the brief as well."/></label>
       <label className="span-2">Priority page URLs (optional)<textarea rows={2} value={text.seeds} onChange={e => setText({ ...text, seeds: e.target.value })} placeholder="One per line, for example /services or https://client.com/pricing. Also used if the home page cannot be analysed."/></label>

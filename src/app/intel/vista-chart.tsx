@@ -25,14 +25,14 @@ export default function VistaChart({ spec, height = 320, onDrill }: Props) {
     loadEcharts().then(echarts => {
       if (disposed || !host.current) return;
       chart = echarts.init(host.current, null, { renderer: 'svg' }) as unknown as typeof chart;
-      const apply = () => chart?.setOption({ ...spec.option(palettes[currentTheme()]), animation: !reducedMotion() }, true);
+      const apply = () => { try { chart?.setOption({ ...spec.option(palettes[currentTheme()]), animation: !reducedMotion() }, true); } catch { setError('This chart could not be drawn. The data table is available.'); } };
       apply();
       chart!.on('click', params => {
         const key = params.data?.id || params.data?.name || params.name || '';
         const target = spec.drill ? spec.drill(key) : key;
         if (target && onDrill) onDrill(target);
       });
-      resize = new ResizeObserver(() => chart?.resize());
+      resize = new ResizeObserver(() => { try { if (!disposed) chart?.resize(); } catch { /* the next resize redraws the chart */ } });
       resize.observe(host.current);
       themeWatch = new MutationObserver(apply);
       themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-appearance'] });

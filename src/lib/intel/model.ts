@@ -75,6 +75,12 @@ export type Brief = {
   seedUrls?: string[];
   /** Re-render JavaScript-dependent pages through the configured rendering service (bounded). */
   renderJs?: boolean;
+  /** Maximum click depth from the home page (recommended by Intelligent Discovery). */
+  maxDepth?: number;
+  /** Approved, prioritised AI prompt bank from Intelligent Discovery (takes precedence over the generated bank). */
+  promptBank?: { prompt: string; category: PromptCategory; market: string; priority: number }[];
+  /** The Intelligent Discovery run that recommended this scope. */
+  discoveryId?: string;
 };
 
 /** Deployment page caps per tier and entitlement (signed-in organisation members unlock Enterprise). */
@@ -108,7 +114,7 @@ export type AiObservation = {
   limitations: string;
 };
 
-export type PromptCategory = "branded" | "discovery" | "product" | "service" | "comparison" | "local" | "problem" | "purchase" | "expertise";
+export type PromptCategory = "branded" | "discovery" | "product" | "service" | "comparison" | "local" | "problem" | "purchase" | "expertise" | "trust" | "trends";
 
 export type FirstPartyData = {
   gsc?: { collectedAt: string; scope: string; rows: { query: string; clicks: number; impressions: number; ctr: number; position: number }[] };

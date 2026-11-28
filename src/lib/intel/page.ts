@@ -5,6 +5,7 @@
  */
 import { load, type CheerioAPI } from "cheerio";
 import type { Hop, Retrieval } from "./http";
+import { extractBusinessSignals, type BusinessSignals } from "./business";
 
 export type PageType = "home" | "product" | "category" | "service" | "course" | "article" | "pricing" | "contact" | "about" | "legal" | "other";
 export type Intent = "navigational" | "informational" | "commercial" | "transactional";
@@ -48,6 +49,8 @@ export type PageRecord = {
   retrieval: { transferBytes: number; decodedBytes: number; retainedBytes: number; encoding: string; truncated: boolean; inlineScriptBytes: number; attempts: number; rendered: boolean } | null;
   /** Little server-rendered content and an application shell: content likely depends on JavaScript. */
   jsDependent: boolean;
+  /** Observed business signals (identity, offerings, navigation, calls to action, places, audiences). Absent on records from older versions. */
+  business?: BusinessSignals;
 };
 
 export type PageInput = {
@@ -293,6 +296,7 @@ export function analysePage(input: PageInput): PageRecord {
     return { keyword, inTitle: (title || "").toLowerCase().includes(keyword), inH1: h1.join(" ").toLowerCase().includes(keyword), inDescription: (description || "").toLowerCase().includes(keyword), inUrl: lowerUrl.includes(keyword), bodyCount: keyword ? (pageText.match(new RegExp(escaped, "g")) || []).length : 0 };
   });
 
+  const business = extractBusinessSignals($, base, ld.nodes, mainText, headings);
   const ogType = meta('meta[property="og:type"]') || undefined;
   const pageType = classify(base, types, ogType, offers);
 
@@ -344,5 +348,6 @@ export function analysePage(input: PageInput): PageRecord {
     dates,
     retrieval: input.retrieval ? { transferBytes: input.retrieval.transferBytes, decodedBytes: input.retrieval.decodedBytes, retainedBytes: input.retrieval.retainedBytes, encoding: input.retrieval.encoding, truncated: input.retrieval.truncated, inlineScriptBytes, attempts: input.retrieval.attempts, rendered: Boolean(input.rendered) } : null,
     jsDependent: !input.rendered && words.length < 120 && ($("script[src]").length >= 3 || inlineScriptBytes > 50_000 || $("#root,#app,#__next,#__nuxt,#svelte,[data-reactroot]").filter((_, el) => clean($(el).text()).length < 40).length > 0 || /enable javascript|requires javascript/i.test($("noscript").text())),
+    business,
   };
 }
