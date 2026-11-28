@@ -17,6 +17,7 @@ import GeoPanel from './studio-geo';
 import { DecisionsPanel, FindingsPanel } from './studio-decisions';
 import ExecutiveStudio from './executive-studio';
 import PulseMonitor from './studio-pulse';
+import GoogleConnection from './studio-connections';
 import VistaChart from './vista-chart';
 import './intel.css';
 
@@ -201,7 +202,7 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
         {tab === 'authority' && <Authority inv={inv} analysis={analysis}/>}
         {tab === 'competitors' && <Competitors inv={inv} analysis={analysis}/>}
         {tab === 'geo' && <GeoPanel inv={inv} analysis={analysis} canSample={session.owner} organisationId={session.owner ? session.organisationId : null} onChange={persist}/>}
-        {tab === 'search' && <SearchAnalytics inv={inv} analysis={analysis} goMeasurements={goMeasurements}/>}
+        {tab === 'search' && <><GoogleConnection organisationId={session.authenticated ? session.organisationId : null} canManage={session.authenticated}/><SearchAnalytics inv={inv} analysis={analysis} goMeasurements={goMeasurements}/></>}
         {tab === 'findings' && <FindingsPanel inv={inv} analysis={analysis}/>}
         {tab === 'monitoring' && <PulseMonitor history={history} current={inv} scheduling={Boolean(capabilities?.spider)} organisationId={session.authenticated ? session.organisationId : null}/>}
         {tab === 'decisions' && <DecisionsPanel inv={inv} analysis={analysis} onChange={persist}/>}
