@@ -49,6 +49,8 @@ export type PageRecord = {
   retrieval: { transferBytes: number; decodedBytes: number; retainedBytes: number; encoding: string; truncated: boolean; inlineScriptBytes: number; attempts: number; rendered: boolean } | null;
   /** Little server-rendered content and an application shell: content likely depends on JavaScript. */
   jsDependent: boolean;
+  /** Why JavaScript rendering failed, when it was attempted (the server-rendered evidence is kept). */
+  renderError?: string;
   /** Observed business signals (identity, offerings, navigation, calls to action, places, audiences). Absent on records from older versions. */
   business?: BusinessSignals;
 };
@@ -159,11 +161,12 @@ function classify(url: URL, types: string[], ogType: string | undefined, offers:
 
 const intentFor: Record<PageType, Intent> = { home: "navigational", about: "navigational", legal: "navigational", contact: "transactional", pricing: "transactional", product: "transactional", category: "commercial", service: "commercial", course: "commercial", article: "informational", other: "informational" };
 
+const blockBoundary = /<br\s*\/?>|<\/(?:p|div|li|dt|dd|td|th|h[1-6]|section|article|header|footer|nav|aside|blockquote|figcaption|label|option)\s*>/gi;
+
 export function analysePage(input: PageInput): PageRecord {
-  const $ = load(input.html);
   // Line breaks and block boundaries separate words ("training<br>that comes" is "training that comes").
-  $("body br").replaceWith(" ");
-  $("body").find("p,div,li,dt,dd,td,th,h1,h2,h3,h4,h5,h6,section,article,header,footer,nav,aside,blockquote,figcaption,label,option").append(" ");
+  // A single linear pass over the markup: adding nodes to a large DOM is far slower.
+  const $ = load(input.html.replace(blockBoundary, "$& "));
   const base = new URL(input.finalUrl);
   const meta = (selector: string) => clean($(selector).first().attr("content"), 500) || null;
   const title = clean($("head title").first().text() || $("title").first().text(), 300) || null;

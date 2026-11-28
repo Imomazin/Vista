@@ -65,7 +65,12 @@ export async function crawlPage(url: string, depth: number, keywords: string[] =
         if (!(await renderAllowance())) throw new Error("Daily rendering budget reached.");
         const rendered = await renderPage(response.finalUrl, resourcePolicy().maxHtmlBytes, Math.min(25000, deadline - Date.now() - 2000));
         return { page: analysePage({ url, finalUrl: response.finalUrl, status: response.status, chain: response.chain, headers: response.headers, html: rendered.html, fetchedAt: new Date().toISOString(), durationMs: response.durationMs, depth, keywords, retrieval: { ...response.retrieval, truncated: rendered.truncated }, rendered: true }) };
-      } catch { /* The server-rendered evidence is kept; rendering is best effort. */ }
+      } catch (error) {
+        // The server-rendered evidence is kept; the reason rendering failed is recorded as evidence.
+        const reason = ((error as Error)?.message || "Rendering failed.").replace(/\s+/g, " ").slice(0, 240);
+        console.warn(JSON.stringify({ event: "vista.render", outcome: "failed", reason }));
+        return { page: { ...page, renderError: reason } };
+      }
     }
     return { page };
   } catch (error) { return { failure: failure(url, depth, error) }; }
