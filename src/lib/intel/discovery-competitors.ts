@@ -19,6 +19,9 @@ export const isPlatform = (host: string) => platforms.test(host.replace(/^www\./
 const genericOffering = new Set(["services", "service", "solutions", "products", "product", "company", "business", "online", "uk", "london", "free", "new", "home", "page", "best", "top", "guide", "information", "about", "contact", "cart", "basket", "shop", "sale", "account", "privacy", "cookies", "policy", "terms", "menu", "search", "view", "read", "learn", "find", "help", "customer", "customers", "delivery", "returns", "nz", "us", "eu"]);
 
 /** The client's offering vocabulary: distinctive terms from accepted offerings, subsectors and industry cues. */
+/** Category and audience words: they describe the market but do not distinguish one offer from another. */
+export const contextTerms = new Set(["training", "trainings", "course", "courses", "programme", "programmes", "program", "programs", "students", "student", "graduate", "graduates", "international", "professional", "professionals", "healthcare", "health", "career", "careers", "support", "placement", "learning", "education", "skills", "development", "consulting", "consultancy", "advisory", "software", "solutions", "management", "business", "digital", "technology", "clients", "workshop", "workshops", "vocational", "trainees", "laboratory", "laboratories", "clinical", "medical"]);
+
 export function offeringVocabulary(profile: BusinessProfile, pages: PageRecord[] = []): string[] {
   const counts = new Map<string, number>();
   // Terms used across many sampled pages describe the category better than individual product names.
@@ -65,7 +68,9 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
   const pagesSeen = [...(home ? [home] : []), ...extra];
   const first = pagesSeen[0] || null;
   const declared = pagesSeen.flatMap(p => p.business?.names.filter(n => /Structured data name|og:site_name|legalName|alternateName/.test(n.source)).map(n => n.value) || []);
-  const name = declared[0] || candidate.name || hostLabel(candidate.website);
+  // "KPMG International | Home" → "KPMG International".
+  const cleanOrg = (v: string) => v.split(/\s[|–—:-]\s/).map(x => x.trim()).find(x => x && !/^(home|homepage|welcome|official site|official website)$/i.test(x)) || v;
+  const name = cleanOrg(declared[0] || candidate.name || hostLabel(candidate.website));
   const evidence: EvidenceRef[] = candidate.sources.slice(0, 4).map(url => ({ url, detail: "Source consulted by AI web search", method: "AI web search citation" }));
   const base = { id: recId("competitor", siteKey(hostOf(candidate.website))), name, website: candidate.website, kinds, sources: candidate.sources };
   if (!first) {
@@ -77,8 +82,9 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
   const candidateKey = compactName(candidate.name || "");
   const domainKey = compactName(hostOf(candidate.website).split(".")[0]);
   const siteNames = [...declared, ...pagesSeen.map(p => p.title || "")].map(compactName).filter(Boolean);
-  const nameMatch = candidateKey.length >= 3 && siteNames.some(n => n.includes(candidateKey) || (n.length >= 4 && candidateKey.includes(n)));
-  const domainMatch = candidateKey.length >= 3 && (domainKey.includes(candidateKey) || candidateKey.includes(domainKey));
+  // Short names (EY, 3M) must match exactly or start the site name; longer names may be contained.
+  const nameMatch = candidateKey.length >= 2 && siteNames.some(n => n === candidateKey || n.startsWith(candidateKey) || (candidateKey.length >= 3 && n.includes(candidateKey)) || (n.length >= 4 && candidateKey.includes(n)));
+  const domainMatch = candidateKey.length >= 2 && (domainKey === candidateKey || (candidateKey.length >= 3 && (domainKey.includes(candidateKey) || candidateKey.includes(domainKey))));
   const identity: "verified" | "unverified" | "mismatch" = !candidate.name || nameMatch || domainMatch ? "verified" : siteNames.length ? "mismatch" : "unverified";
   const text = pagesSeen.map(pageCorpus).join(" \n ");
   const home_ = first;
@@ -89,13 +95,24 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
   const ourAudience = new Set(profile.segments.filter(s => s.selected).flatMap(s => tokens(s.value)));
   const sharedAudience = [...new Set(pagesSeen.flatMap(p => p.business?.audiences || []).flatMap(a => tokens(a.phrase)).filter(t => ourAudience.has(t)))];
   for (const p of pagesSeen.slice().reverse()) evidence.unshift({ url: p.finalUrl, detail: (p === home ? "Home page" : "Service page") + " fetched: “" + (p.title || p.finalUrl).slice(0, 90) + "”", excerpt: p.h1[0] || p.title || undefined, at: p.fetchedAt, method: "VisTa crawler (robots.txt respected)" });
-  const share = vocabulary.length ? matched.length / vocabulary.length : 0;
+  // Distinctive (core) terms carry the relevance decision; context terms alone cannot make a competitor.
+  const core = vocabulary.filter(t => !contextTerms.has(t));
+  const coreMatched = matched.filter(t => !contextTerms.has(t));
+  const coreShare = core.length ? coreMatched.length / core.length : matched.length / Math.max(1, vocabulary.length);
+  const share = vocabulary.length ? (matched.length / vocabulary.length + coreShare) / 2 : 0;
   const marketOk = !ours.length || !theirs.length || sharedMarkets.length > 0;
+  // Academic institutions and professional or public bodies are alternatives or authorities, not direct commercial rivals,
+  // unless the client is one of them.
+  const clientAcademic = profile.subsectors.some(x => /Higher education/i.test(x.value)) || /universit|college/i.test(profile.brand.value);
+  const types = pagesSeen.flatMap(p => p.schema.types);
+  const academic = !clientAcademic && (types.some(t => /^(CollegeOrUniversity|School)$/.test(t)) || /\.(ac\.uk|edu|ac\.[a-z]{2})$/.test(hostOf(first.finalUrl)) || /\buniversity\b/i.test(name));
+  const body = types.some(t => /^(GovernmentOrganization|NGO)$/.test(t)) || (/\b(institute|society|association|council|federation|chartered|royal college|board)\b/i.test(name) && /\.org(\.[a-z]{2})?$/.test(hostOf(first.finalUrl)));
   // Publishers cover a market without competing in it.
   const publisher = home_.schema.types.some(t => /^(NewsMediaOrganization|NewsArticle)$/.test(t)) || /(^|\.)(news|times|herald|gazette|magazine|journal|chronicle|insider|daily)[a-z-]*\./.test(hostOf(home_.finalUrl));
-  const confidence: Confidence = publisher || identity === "mismatch" ? "low" : share >= 0.45 && marketOk ? "high" : share >= 0.25 && marketOk ? "medium" : "low";
+  const level: Confidence = coreMatched.length === 0 && core.length > 0 ? "low" : share >= 0.45 && marketOk ? "high" : share >= 0.25 && marketOk ? "medium" : "low";
+  const confidence: Confidence = publisher || body || identity === "mismatch" ? "low" : academic ? (level === "high" ? "medium" : "low") : level;
   const where = pagesSeen.length > 1 ? "its home and service pages" : home ? "its home page" : "the cited page";
-  const parts = [...(publisher ? ["Appears to be a news or media publisher rather than a competitor"] : []), ...(identity === "mismatch" ? ["The website does not present itself as " + candidate.name] : []), matched.length + " of " + vocabulary.length + " offering terms appear on " + where + " (" + matched.slice(0, 6).join(", ") + (matched.length > 6 ? ", …" : "") + ")"];
+  const parts = [...(publisher ? ["Appears to be a news or media publisher rather than a competitor"] : []), ...(body ? ["Appears to be a professional, public or membership body: an authority to earn citations from rather than a competitor"] : []), ...(academic ? ["Academic institution: an alternative route for the same audience rather than a direct commercial competitor (inference)"] : []), ...(identity === "mismatch" ? ["The website does not present itself as " + candidate.name] : []), matched.length + " of " + vocabulary.length + " offering terms appear on " + where + " (" + matched.slice(0, 6).join(", ") + (matched.length > 6 ? ", …" : "") + ")"];
   if (sharedMarkets.length) parts.push("serves " + sharedMarkets.join(", "));
   else if (theirs.length && ours.length) parts.push("market signals point to " + theirs.join(", ") + " rather than " + ours.join(", "));
   if (sharedAudience.length) parts.push("addresses the same audiences (" + sharedAudience.slice(0, 4).join(", ") + ")");
@@ -107,7 +124,7 @@ export function assessCompetitor(profile: BusinessProfile, vocabulary: string[],
     checks: {
       retrieval: { status: "ok", detail: home ? "Home page retrieved (HTTP " + home.status + ")" + (extra.length ? " plus " + extra.length + " relevant page" + (extra.length === 1 ? "" : "s") : "") + "." : "Home page unavailable (" + (failure || "not retrieved") + "); assessed from " + extra.length + " cited page" + (extra.length === 1 ? "" : "s") + "." },
       identity: { status: identity, detail: identity === "verified" ? (nameMatch ? "The site names itself " + (declared[0] || candidate.name) + "." : "The domain matches the organisation name.") : identity === "mismatch" ? "The site presents itself as " + (declared[0] || first.title || "another organisation") + ", not " + candidate.name + "." : "No organisation name is declared on the retrieved pages." },
-      relevance: { status: "measured", detail: matched.length + " of " + vocabulary.length + " offering terms on " + pagesSeen.length + " page" + (pagesSeen.length === 1 ? "" : "s") + (sharedMarkets.length ? "; shared market " + sharedMarkets.join(", ") : theirs.length ? "; market signals " + theirs.join(", ") : "; market not stated") + "." },
+      relevance: { status: "measured", detail: matched.length + " of " + vocabulary.length + " offering terms (" + coreMatched.length + " of " + core.length + " distinctive) on " + pagesSeen.length + " page" + (pagesSeen.length === 1 ? "" : "s") + (sharedMarkets.length ? "; shared market " + sharedMarkets.join(", ") : theirs.length ? "; market signals " + theirs.join(", ") : "; market not stated") + "." },
     },
     reason: parts.join("; ") + ".", recommended: confidence !== "low" && identity !== "mismatch", selected: confidence !== "low" && identity !== "mismatch",
   };

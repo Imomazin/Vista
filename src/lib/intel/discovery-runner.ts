@@ -149,7 +149,7 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
       const candidates = new Map<string, { candidate: Candidate; kinds: CompetitorKind[]; search?: { keywords: string[] } }>();
       if (aiOn && p.offerings.some(o => o.selected)) {
         try {
-          const r = await post<{ candidates: Candidate[]; citations: { url: string }[] }>("/api/intel/discovery/competitors", { website: run.website, brand: p.brand.value, industry: [p.industry.value, ...p.subsectors.filter(x => x.selected).map(x => x.value)].join(", "), offerings: p.offerings.filter(o => o.selected).map(o => o.value).slice(0, 8), segments: p.segments.filter(x => x.selected).map(x => x.value).slice(0, 6), markets: p.markets.filter(x => x.selected).map(x => x.value).slice(0, 4) });
+          const r = await post<{ candidates: Candidate[]; citations: { url: string }[] }>("/api/intel/discovery/competitors", { website: run.website, brand: p.brand.value, industry: [p.industry.value, ...p.subsectors.filter(x => x.selected).map(x => x.value)].join(", "), offerings: p.offerings.filter(o => o.selected).map(o => o.value).slice(0, 8), segments: p.segments.filter(x => x.selected).map(x => x.value).slice(0, 6), markets: p.markets.filter(x => x.selected).map(x => x.value).slice(0, 4), model: p.model.value.replace(/\s·.*$/, "") });
           run.ai.calls += 1;
           for (const c of r.candidates) candidates.set(siteKey(hostOf(c.website)), { candidate: c, kinds: ["commercial"] });
         } catch (error) { if (error instanceof Cancelled) throw error; s.errors.push({ source: "AI web search", message: (error as Error).message, retryable: true }); }

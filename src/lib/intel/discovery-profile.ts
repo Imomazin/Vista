@@ -83,7 +83,9 @@ export function humaniseSlug(url: string): string | null {
   } catch { return null; }
 }
 const jaccard = (a: string, b: string) => { const x = new Set(tokens(a)), y = new Set(tokens(b)); if (!x.size || !y.size) return 0; let n = 0; for (const t of x) if (y.has(t)) n += 1; return n / (x.size + y.size - n); };
-const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase() || jaccard(a, b) >= 0.75;
+const same = (a: string, b: string) => { if (a.toLowerCase() === b.toLowerCase() || jaccard(a, b) >= 0.75) return true; const x = new Set(tokens(a)), y = new Set(tokens(b)); const [small, large] = x.size <= y.size ? [x, y] : [y, x]; return small.size >= 2 && [...small].every(t => large.has(t)); };
+/** Things a site promotes that are not products or services. */
+const notOffering = /\b(scholarships?|bursar(y|ies)|discounts?|vouchers?|gift cards?|sale|newsletter|blog|faqs?|testimonials?|reviews?|careers? at|vacancies|jobs at|privacy|cookies?)\b|^\d+%/i;
 
 export function pageCorpus(p: PageRecord): string {
   const b = p.business;
@@ -213,7 +215,7 @@ export function offeringRecs(pages: PageRecord[], site: Discovery | null, brand:
     if (/^\/|^https?:\/\//.test(name)) name = humaniseSlug(name.startsWith("/") ? "https://x.invalid" + name : name) || "";
     for (const t of brandTokens) name = name.replace(new RegExp("\\b" + t + "\\b", "ig"), "").trim();
     name = name.replace(/^[-–—:,\s]+|[-–—:,.\s]+$/g, "").replace(/^(our|the|all)\s+/i, "");
-    if (name.length < 3 || name.length > 80 || generic.has(name.toLowerCase()) || /^(other|all|more|our|view|see|browse)\b/i.test(name) || !tokens(name).length || /^\d+$/.test(name)) return null;
+    if (name.length < 3 || name.length > 80 || generic.has(name.toLowerCase()) || notOffering.test(name) || /^(other|all|more|our|view|see|browse)\b/i.test(name) || !tokens(name).length || /^\d+$/.test(name)) return null;
     return name.charAt(0).toUpperCase() + name.slice(1);
   };
   const add = (raw: string, points: number, ev: EvidenceRef, basis: Basis = "observed") => {
@@ -415,10 +417,10 @@ export function mergeAiProfile(profile: BusinessProfile, ai: AiProfile, pages: P
   const aliases = mergeList(profile.aliases, ai.aliases.filter(a => a && all.includes(a.toLowerCase()) && !labels.has(a.trim().toLowerCase()) && a.toLowerCase().replace(/[^a-z0-9]/g, "").includes(brandKey) && !/^(about|contact|home|welcome|blog|news|our|the|meet|join|why)\b/i.test(a)).map(a => rec("alias", a.slice(0, 60), "model", "medium", [{ url: pages[0].finalUrl, detail: "Brand usage on the website (AI-identified)", excerpt: a, method: "AI interpretation checked against page text" }])), 8, true);
   const subsectors = mergeList(profile.subsectors, [ai.industry, ...ai.subsectors].map(s => { const g = ground(s, pages.map(p => p.finalUrl)); return g.share >= 0.5 ? rec("subsector", s.slice(0, 80), "model", "medium", [{ url: pages[0].finalUrl, detail: "AI classification grounded in site vocabulary" }]) : null; }), 5, true);
   const strong = profile.offerings.filter(o => o.confidence === "high"), weak = profile.offerings.filter(o => o.confidence !== "high");
-  const mergedOfferings = mergeList(strong, ai.offerings.filter(o => !generic.has(o.name.toLowerCase().trim()) && !/^(other|all|more)\b/i.test(o.name.trim())).map(o => modelRec("offering", o.name, o.evidence, undefined, 0.5)), 16, true);
+  const mergedOfferings = mergeList(strong, ai.offerings.filter(o => !generic.has(o.name.toLowerCase().trim()) && !notOffering.test(o.name) && !/^(other|all|more)\b/i.test(o.name.trim())).map(o => modelRec("offering", o.name, o.evidence, undefined, 0.5)), 16, true);
   const offeringsAll = mergeList(mergedOfferings, weak, 16, false);
   const offerings = offeringsAll.map((o, i) => ({ ...o, selected: i < 8 && o.confidence !== "low" }));
-  const segments = mergeList(profile.segments, ai.segments.map(s => modelRec("segment", s.name, s.evidence, s.basis)), 8, true);
+  const segments = mergeList(profile.segments, ai.segments.map(s => { const r = modelRec("segment", s.name, s.evidence, s.basis); return r ? { ...r, tag: roleOf(s.name.toLowerCase()) } : null; }), 8, true);
   const markets = mergeList(profile.markets, ai.markets.map(m => { const name = countryName(m.name.replace(/\s*\(.*\)$/, "")); return name ? modelRec("market", name, m.evidence, m.basis, 0) : null; }), 6, false);
   const differentiators = mergeList(profile.differentiators, ai.differentiators.map(d => modelRec("diff", d.value, d.evidence, undefined, 0.5)), 10, false);
   const vp = modelRec("vp", ai.valueProposition.value, ai.valueProposition.evidence, undefined, 0.5);
