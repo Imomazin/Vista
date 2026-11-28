@@ -5,6 +5,7 @@
  *   127.0.0.14 complex multi-page · 127.0.0.15 restricted crawler access · 127.0.0.16 competitor shop
  *   127.0.0.17 heavy corporate (6–12 MB pages, gzip, decompression bomb, slow page, malformed HTML)
  *   127.0.0.18 large WordPress-style site with an 80 MB home page · 127.0.0.19 JavaScript-dependent app
+ *   127.0.0.20 simulated OpenAI Responses API (VISTA_TEST_OPENAI_URL=http://127.0.0.20:4810/v1) · 127.0.0.21 laboratory training competitor
  * Usage: node scripts/intel-fixtures.mjs   (then start VisTa with VISTA_TEST_CRAWL_ORIGINS set to these origins)
  */
 import http from "node:http";
@@ -122,7 +123,50 @@ function spa(base) {
   return { pages: { "/": shell("/"), "/pricing": shell("/pricing"), "/features": shell("/features") }, redirects: {}, sitemap: ["/", "/pricing", "/features"].map(p => base + p), robots: "User-agent: *\nDisallow:" };
 }
 
-const sites = [["127.0.0.17", heavyCorporate], ["127.0.0.18", wordpress], ["127.0.0.19", spa], ["127.0.0.11", ecommerce], ["127.0.0.12", services], ["127.0.0.13", training], ["127.0.0.14", complex], ["127.0.0.15", restricted], ["127.0.0.16", base => ecommerce(base, "Ridgeline Supply", true)]];
+function labCompetitor(base) {
+  const nav = [["/", "Home"], ["/courses", "Courses"], ["/courses/histology-training", "Histology training"], ["/contact", "Contact"]];
+  const org = ld({ "@context": "https://schema.org", "@type": "EducationalOrganization", name: "BioMed Skills", url: base, address: { "@type": "PostalAddress", addressLocality: "Manchester", addressCountry: "GB" } });
+  const pages = {
+    "/": page({ title: "BioMed Skills | Histology and haematology laboratory training in the UK", description: "Laboratory training for biomedical science graduates.", h1: "Laboratory training for biomedical science graduates", nav, head: org, body: `<p>Histology training, haematology training and clinical laboratory courses in Manchester for biomedical science graduates and international students. Placements in NHS laboratories across the UK. Fees from £1,200.</p>` }),
+    "/courses": page({ title: "Courses | BioMed Skills", h1: "Laboratory courses", nav, head: org, body: `<p>Histology, haematology and microbiology training for graduates.</p>` }),
+    "/courses/histology-training": page({ title: "Histology training | BioMed Skills", h1: "Histology training", nav, head: org, body: `<p>${words("histology", 200)}</p>` }),
+    "/contact": page({ title: "Contact | BioMed Skills", h1: "Contact", nav, head: org, body: "<p>Manchester, UK</p>" }),
+  };
+  return { pages, redirects: {}, sitemap: Object.keys(pages).map(p => base + p), robots: "User-agent: *\nDisallow:\nSitemap: " + base + "/sitemap.xml" };
+}
+
+/**
+ * Simulated OpenAI Responses API for discovery tests (never used in production). It answers from the
+ * evidence it is given, and deliberately adds one unsupported offering so grounding can be verified.
+ */
+const rivals = { "127.0.0.11": [["Ridgeline Supply", "http://127.0.0.16:4810/"], ["Harbour Advisory", "http://127.0.0.12:4810/"], ["Ghost Outdoors", "http://127.0.0.23:4810/"]], "127.0.0.17": [["BioMed Skills", "http://127.0.0.21:4810/"], ["Northstar Learning", "http://127.0.0.13:4810/"]], "127.0.0.12": [["Meridian Group", "http://127.0.0.14:4810/"]] };
+function fakeOpenAi(req, res, body) {
+  const reply = (text, annotations = []) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ model: "fixture-model", output: [{ type: "message", content: [{ type: "output_text", text, annotations }] }] })); };
+  const format = body.text?.format?.name;
+  if (format === "business_profile") {
+    const pack = JSON.parse(String(body.input).replace(/^[^\n]*\n/, ""));
+    const home = pack.pages[0];
+    const offeringPages = pack.pages.filter(p => ["product", "course", "service", "category"].includes(p.type) && p.h1[0]);
+    return reply(JSON.stringify({
+      brand: home.names[0] || home.title.split("|").pop().trim(), aliases: [], industry: "", subsectors: [],
+      offerings: [...offeringPages.slice(0, 5).map(p => ({ name: p.h1[0], evidence: [p.url] })), { name: "Quantum computing bootcamp", evidence: [home.url] }],
+      segments: pack.pages.flatMap(p => p.audiences).slice(0, 2).map(a => ({ name: a.replace(/ \(\d+\)$/, ""), evidence: [home.url], basis: "stated" })),
+      markets: [], businessModel: { value: "", evidence: [] }, valueProposition: { value: home.description || home.h1[0] || "", evidence: [home.url] },
+      differentiators: home.claims.slice(0, 2).map(c => ({ value: c, evidence: [home.url] })), objectives: [{ value: "Grow qualified demand", rationale: "Fixture objective" }],
+      industryTerms: offeringPages.slice(0, 3).map(p => (p.h1[0] || "").toLowerCase() + " guide"), prompts: [{ prompt: "Which providers are best for " + (offeringPages[0]?.h1[0] || "this service").toLowerCase() + "?", category: "discovery", rationale: "Fixture prompt" }],
+    }));
+  }
+  if (format === "competitors") {
+    const host = (String(body.input).match(/\((https?:\/\/([^/:)]+)[^)]*)\)/) || [])[2] || "";
+    return reply(JSON.stringify({ competitors: (rivals[host] || []).map(([name, website]) => ({ name, website, reason: name + " offers comparable products to similar customers.", offerings: [], markets: ["United Kingdom"], sources: [website] })) }));
+  }
+  const prompt = String(body.input);
+  if (/boot|tent|hiking|outdoor/i.test(prompt)) return reply("1. Ridgeline Supply — wide range of hiking boots and tents.\n2. Summit Outfitters — specialist outdoor equipment.\nCompare delivery terms before buying.", [{ type: "url_citation", url: "http://127.0.0.16:4810/collections/boots", title: "Ridgeline boots" }, { type: "url_citation", url: "https://outdoor-review.example/best-boots", title: "Review" }]);
+  if (/histology|haematology|laborator|biomedical|phlebotomy/i.test(prompt)) return reply("1. BioMed Skills — histology and haematology courses in Manchester.\n2. Hospital trust training schemes.\nCheck accreditation before enrolling.", [{ type: "url_citation", url: "http://127.0.0.21:4810/courses", title: "BioMed Skills courses" }, { type: "url_citation", url: "https://www.ibms.org/education/", title: "IBMS" }]);
+  return reply("Several providers offer this. Compare credentials, pricing and reviews.", [{ type: "url_citation", url: "https://guide.example/providers", title: "Guide" }]);
+}
+
+const sites = [["127.0.0.21", labCompetitor], ["127.0.0.17", heavyCorporate], ["127.0.0.18", wordpress], ["127.0.0.19", spa], ["127.0.0.11", ecommerce], ["127.0.0.12", services], ["127.0.0.13", training], ["127.0.0.14", complex], ["127.0.0.15", restricted], ["127.0.0.16", base => ecommerce(base, "Ridgeline Supply", true)]];
 for (const [host, build] of sites) {
   const base = `http://${host}:${PORT}`;
   const site = build(base);
@@ -148,3 +192,9 @@ for (const [host, build] of sites) {
     res.end(html);
   }).listen(PORT, host, () => console.log("fixture", base));
 }
+http.createServer((req, res) => {
+  if (req.method !== "POST" || !req.url.endsWith("/responses")) { res.writeHead(404); return res.end(); }
+  let raw = "";
+  req.on("data", c => { raw += c; });
+  req.on("end", () => { try { fakeOpenAi(req, res, JSON.parse(raw)); } catch (e) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: { message: String(e) } })); } });
+}).listen(PORT, "127.0.0.20", () => console.log("fixture openai http://127.0.0.20:" + PORT + "/v1"));

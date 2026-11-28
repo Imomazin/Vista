@@ -33,6 +33,9 @@ async function createClient(name, website) {
 }
 
 async function fillBrief(o) {
+  // The Brief tab opens on Intelligent Discovery; the manual brief is the Custom Investigation mode.
+  const custom = page.getByRole("tab", { name: /Custom Investigation/ });
+  if (await custom.count()) await custom.click();
   await page.getByLabel("Client website").fill(o.website);
   await page.getByLabel("Brand name").fill(o.brand);
   if (o.industry) await page.getByLabel("Industry").fill(o.industry);
@@ -118,7 +121,7 @@ log("Findings filter and dossier", await page.locator(".filter-bar > span").text
 // GEO: two verified manual observations.
 await page.getByRole("navigation", { name: "Studio sections" }).getByRole("button", { name: "GEO & AI search", exact: true }).click();
 for (const [provider, response] of [["Perplexity", "For hiking boots in the UK, popular choices include:\n1. Ridgeline Supply — wide range of trail boots\n2. Mountain Warehouse\n3. Cotswold Outdoor"], ["Google AI Overviews", "Summit Outfitters is a UK retailer of hiking boots and tents. Customers mention fast delivery."]]) {
-  await page.getByLabel("Provider").selectOption(provider);
+  await page.locator("label", { hasText: /^Provider/ }).locator("select").selectOption(provider);
   await page.getByLabel("Full response (pasted)").fill(response);
   await page.getByLabel("Cited source URLs").fill(provider === "Perplexity" ? "https://www.ridgeline.example/boots\nhttps://www.which.co.uk/reviews/walking-boots" : "http://127.0.0.11:4810/");
   await page.getByRole("button", { name: "Save observation" }).click();

@@ -5,10 +5,13 @@
  */
 import type { Investigation } from "./model";
 import type { PageRecord } from "./page";
+import type { DiscoveryRun } from "./discovery-model";
 
 const dbName = "vista-intelligence";
 const metaStore = "investigations";
 const pageStore = "pages";
+const discoveryStore = "discoveries";
+let discoveryMemory: Map<string, DiscoveryRun> | null = null;
 let memory: Map<string, Investigation> | null = null;
 /** How many pages of each investigation are already persisted (and the first page, to detect reordering). */
 const persisted = new Map<string, { count: number; first: string }>();
@@ -17,11 +20,12 @@ function open(): Promise<IDBDatabase | null> {
   return new Promise(resolve => {
     try {
       if (typeof indexedDB === "undefined") return resolve(null);
-      const request = indexedDB.open(dbName, 2);
+      const request = indexedDB.open(dbName, 3);
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(metaStore)) db.createObjectStore(metaStore, { keyPath: "id" }).createIndex("projectId", "projectId");
         if (!db.objectStoreNames.contains(pageStore)) db.createObjectStore(pageStore, { keyPath: ["inv", "i"] }).createIndex("inv", "inv");
+        if (!db.objectStoreNames.contains(discoveryStore)) db.createObjectStore(discoveryStore, { keyPath: "id" }).createIndex("projectId", "projectId");
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => resolve(null);
@@ -105,4 +109,31 @@ export async function latestPerProject(projectIds?: string[]): Promise<Investiga
   const seen = new Set<string>();
   const picks = summaries.filter(s => (s.pageCount ?? s.pages.length) > 0 && (!projectIds || projectIds.includes(s.projectId)) && !seen.has(s.projectId) && seen.add(s.projectId));
   return (await Promise.all(picks.map(p => getInvestigation(p.id)))).filter((i): i is Investigation => !!i);
+}
+
+/** Intelligent Discovery runs (small: a page sample and recommendations), one record each. */
+export async function saveDiscovery(run: DiscoveryRun): Promise<void> {
+  const db = await open();
+  const record = { ...run, updatedAt: new Date().toISOString() };
+  if (!db) { discoveryMemory ||= new Map(); discoveryMemory.set(run.id, record); return; }
+  const tx = db.transaction(discoveryStore, "readwrite");
+  tx.objectStore(discoveryStore).put(JSON.parse(JSON.stringify(record)));
+  await done(tx);
+  db.close();
+}
+
+export async function listDiscoveries(projectId: string): Promise<DiscoveryRun[]> {
+  const db = await open();
+  if (!db) return [...(discoveryMemory?.values() || [])].filter(d => d.projectId === projectId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const rows = await result(db.transaction(discoveryStore, "readonly").objectStore(discoveryStore).index("projectId").getAll(IDBKeyRange.only(projectId)) as IDBRequest<DiscoveryRun[]>);
+  db.close();
+  return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getDiscovery(id: string): Promise<DiscoveryRun | null> {
+  const db = await open();
+  if (!db) return discoveryMemory?.get(id) ?? null;
+  const row = await result(db.transaction(discoveryStore, "readonly").objectStore(discoveryStore).get(id) as IDBRequest<DiscoveryRun | undefined>);
+  db.close();
+  return row ?? null;
 }

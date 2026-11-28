@@ -2,21 +2,29 @@
 import type { AiObservation, Brief, PromptCategory } from "./model";
 
 export const promptCategories: { id: PromptCategory; label: string; recommendation: boolean }[] = [
-  { id: "branded", label: "Branded", recommendation: false },
+  { id: "branded", label: "Brand awareness", recommendation: false },
   { id: "discovery", label: "Unbranded discovery", recommendation: true },
   { id: "product", label: "Product recommendations", recommendation: true },
   { id: "service", label: "Service recommendations", recommendation: true },
-  { id: "comparison", label: "Comparisons", recommendation: true },
-  { id: "local", label: "Local market", recommendation: true },
-  { id: "problem", label: "Problem solving", recommendation: false },
+  { id: "comparison", label: "Provider comparisons", recommendation: true },
+  { id: "local", label: "Geographic searches", recommendation: true },
+  { id: "problem", label: "Customer problems", recommendation: false },
   { id: "purchase", label: "Commercial purchase decisions", recommendation: true },
   { id: "expertise", label: "Industry expertise", recommendation: false },
+  { id: "trust", label: "Trust and authority", recommendation: true },
+  { id: "trends", label: "Emerging industry trends", recommendation: false },
 ];
 
 export type BankPrompt = { prompt: string; category: PromptCategory; market: string };
 
 /** Build a configurable prompt bank from the brief. Users can edit, remove or add prompts. */
 export function promptBank(brief: Brief, crawled: { website: string; name: string }[] = []): BankPrompt[] {
+  // An approved bank from Intelligent Discovery is used as-is, in priority order, plus any manual prompts.
+  if (brief.promptBank?.length) {
+    const approved = [...brief.promptBank].sort((a, b) => b.priority - a.priority).map(p => ({ prompt: p.prompt, category: p.category, market: p.market }));
+    for (const prompt of brief.prompts) if (!approved.some(a => a.prompt === prompt)) approved.push({ prompt, category: guessCategory(prompt, brief.brand), market: brief.markets[0] || "" });
+    return approved;
+  }
   const brand = brief.brand || hostLabel(brief.website);
   const industry = brief.industry || "this industry";
   const markets = brief.markets.length ? brief.markets : [""];
@@ -149,6 +157,8 @@ const interventionFor: Record<PromptCategory, string> = {
   problem: "Answer the problem directly in guides with steps, data and expert attribution.",
   purchase: "Publish buyer guides with selection criteria, pricing transparency and proof points.",
   expertise: "Publish original research and expert commentary; earn citations from industry publications.",
+  trust: "Publish verifiable credentials, accreditations, reviews and named experts; keep third-party profiles consistent.",
+  trends: "Publish timely, data-led commentary on emerging developments so AI answers can cite you as a current source.",
 };
 
 /** Prompts where competitors are mentioned and the client is not, with the corresponding intervention. */

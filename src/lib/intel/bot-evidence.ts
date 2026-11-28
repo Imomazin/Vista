@@ -9,7 +9,17 @@ import { signalProfile } from "./scoring";
 
 const clean = (s: unknown, max = 220) => String(s ?? "").replace(/[\u0000-\u001F\u007F<>`]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 
-export type BotAction = { label: string; hash: string };
+export type BotAction = { label: string; hash: string; discover?: string; launch?: boolean };
+
+/** "Investigate example.com", "audit https://…", "research competitors for …": a website to run Intelligent Discovery on. */
+export function discoveryRequest(question: string): { website: string; host: string } | null {
+  const intent = /\b(investigat\w*|audit\w*|analy[sz]\w*|discover\w*|research\w*|assess\w*|scan\w*|review\w*|profil\w*|benchmark\w*|look (at|into)|check out|evaluate\w*|study)\b/i;
+  const match = question.match(/\b((?:https?:\/\/)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24})(?:\/[^\s]*)?/i);
+  if (!match || !intent.test(question)) return null;
+  const host = match[1].replace(/^https?:\/\//i, "").toLowerCase();
+  if (/^(vista\.ambidexters\.com|localhost)$/.test(host) || !/\.[a-z]{2,}$/.test(host)) return null;
+  return { website: "https://" + host + "/", host };
+}
 export type EvidenceContext = ReturnType<typeof evidenceContext>;
 
 export function evidenceContext(inv: Investigation, a: Analysis, clientName: string) {

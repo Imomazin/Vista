@@ -31,7 +31,7 @@ export type ChartSpec = {
   drill?: (name: string) => string | null;
 };
 
-const base = (p: Palette) => ({
+export const base = (p: Palette) => ({
   backgroundColor: "transparent",
   textStyle: { color: p.text, fontFamily: "inherit" },
   aria: { enabled: true, decal: { show: false } },
@@ -39,7 +39,7 @@ const base = (p: Palette) => ({
   animationDuration: 900,
   animationEasing: "cubicOut",
 });
-const axis = (p: Palette) => ({ axisLine: { lineStyle: { color: p.line } }, axisLabel: { color: p.sub }, splitLine: { lineStyle: { color: p.line } }, nameTextStyle: { color: p.sub } });
+export const axis = (p: Palette) => ({ axisLine: { lineStyle: { color: p.line } }, axisLabel: { color: p.sub }, splitLine: { lineStyle: { color: p.line } }, nameTextStyle: { color: p.sub } });
 const pct = (v: number) => Math.round(v * 100) + "%";
 
 export function capabilityRadar(index: IndexResult): ChartSpec | null {
@@ -100,7 +100,7 @@ export function linkNetwork(site: SiteAnalysis): ChartSpec | null {
   const label = (id: string) => { try { return new URL(id).pathname || "/"; } catch { return id; } };
   return {
     id: "link-network", kind: "Network graph", title: "Internal link network", question: "Which pages receive internal authority and which are weakly connected?",
-    option: p => ({ ...base(p), legend: { data: types, textStyle: { color: p.sub }, bottom: 0 }, tooltip: { ...base(p).tooltip, formatter: (x: { dataType: string; data: { name: string; value: number } }) => x.dataType === "node" ? label(x.data.name) + "<br/>" + x.data.value + " internal inlinks" : "" }, series: [{ type: "graph", layout: "force", roam: true, draggable: true, force: { repulsion: 260, edgeLength: [60, 170], gravity: 0.05 }, categories: types.map((t, i) => ({ name: t, itemStyle: { color: p.series[i % p.series.length] } })), data: site.graph.nodes.map(n => ({ name: n.id, value: n.inlinks, category: types.indexOf(n.type), symbolSize: 6 + Math.sqrt(n.inlinks) * 4, label: { show: n.inlinks >= Math.max(3, site.crawled / 6), formatter: label(n.id).slice(0, 24), color: p.sub, fontSize: 9 } })), edges: site.graph.edges.map(([source, target]) => ({ source, target })), lineStyle: { color: p.line, opacity: 0.5, curveness: 0.1 }, emphasis: { focus: "adjacency", lineStyle: { width: 2 } } }] }),
+    option: p => ({ ...base(p), legend: { data: types, textStyle: { color: p.sub }, bottom: 0 }, tooltip: { ...base(p).tooltip, formatter: (x: { dataType: string; data: { name: string; value: number } }) => x.dataType === "node" ? label(x.data.name) + "<br/>" + x.data.value + " internal inlinks" : "" }, series: [{ type: "graph", layout: "force", roam: true, draggable: true, force: { repulsion: 260, edgeLength: [60, 170], gravity: 0.05, layoutAnimation: false }, categories: types.map((t, i) => ({ name: t, itemStyle: { color: p.series[i % p.series.length] } })), data: site.graph.nodes.map(n => ({ name: n.id, value: n.inlinks, category: types.indexOf(n.type), symbolSize: 6 + Math.sqrt(n.inlinks) * 4, label: { show: n.inlinks >= Math.max(3, site.crawled / 6), formatter: label(n.id).slice(0, 24), color: p.sub, fontSize: 9 } })), edges: site.graph.edges.map(([source, target]) => ({ source, target })), lineStyle: { color: p.line, opacity: 0.5, curveness: 0.1 }, emphasis: { focus: "adjacency", lineStyle: { width: 2 } } }] }),
     table: { columns: ["Page", "Inlinks", "Outlinks", "Depth", "Type"], rows: [...site.graph.nodes].sort((a, b) => b.inlinks - a.inlinks).map(n => [n.id, n.inlinks, n.outlinks, n.depth < 0 ? "sitemap" : n.depth, n.type]) },
     drill: name => name,
   };
@@ -385,7 +385,7 @@ export function entityNetwork(inv: Investigation): ChartSpec | null {
   const cats = ["Brand", "Declared profiles (sameAs)", "Structured data types", "Authors", "Cited external sources"];
   return {
     id: "entity-network", kind: "Network graph", title: "Entity and citation network", question: "How clearly does the website connect its brand to verifiable profiles, authors and sources?",
-    option: p => ({ ...base(p), legend: { data: cats, textStyle: { color: p.sub }, bottom: 0 }, series: [{ type: "graph", layout: "force", roam: true, force: { repulsion: 160, edgeLength: 90 }, categories: cats.map((c, i) => ({ name: c, itemStyle: { color: p.series[i] } })), data: unique.map(n => ({ ...n, symbolSize: 8 + Math.sqrt(n.value) * 5, label: { show: true, color: p.sub, fontSize: 9 } })), edges: unique.slice(1).map(n => ({ source: brand, target: n.name })), lineStyle: { color: p.line, opacity: 0.6 } }] }),
+    option: p => ({ ...base(p), legend: { data: cats, textStyle: { color: p.sub }, bottom: 0 }, series: [{ type: "graph", layout: "force", roam: true, force: { repulsion: 160, edgeLength: 90, layoutAnimation: false }, categories: cats.map((c, i) => ({ name: c, itemStyle: { color: p.series[i] } })), data: unique.map(n => ({ ...n, symbolSize: 8 + Math.sqrt(n.value) * 5, label: { show: true, color: p.sub, fontSize: 9 } })), edges: unique.slice(1).map(n => ({ source: brand, target: n.name })), lineStyle: { color: p.line, opacity: 0.6 } }] }),
     table: { columns: ["Node", "Type", "Weight"], rows: unique.map(n => [n.name, cats[n.category], n.value]) },
   };
 }
