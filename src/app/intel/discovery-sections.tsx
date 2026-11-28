@@ -6,6 +6,7 @@ import { promptCategories } from '@/lib/intel/geo';
 import { lexiconDiff, type Coverage, type FactorBasis, type Lexicon } from '@/lib/intel/lexicon';
 import type { DiscoveryIndex } from '@/lib/intel/discovery-index';
 import type { Comparison } from '@/lib/intel/observations';
+import type { VistaGraph } from '@/lib/intel/graph';
 import { auditModes, tierCap, type AuditMode, type PromptCategory } from '@/lib/intel/model';
 
 const shortBasis: Record<Basis, string> = { observed: 'Stated', inferred: 'Inference', model: 'AI interpretation', measured: 'Measured', 'first-party': 'First-party', provider: 'Provider data', user: 'Added by you' };
@@ -199,6 +200,28 @@ export function IndexSection({ index, history, stored }: { index: DiscoveryIndex
     {!a.skipped && !a.error && !index.comparisons.length && <p className="rec-note">None of the priority pages has an archived HTML capture in these crawls, so no archived-versus-live comparison was possible.</p>}
     {history.length > 0 && <><h4 className="index-h">Since VisTa last observed these pages</h4><ul className="index-compares">{history.map(c => <ComparisonCard key={'h' + c.url} c={c} beforeLabel="VisTa"/>)}</ul></>}
     <p className="lex-coverage">{a.limitation || 'Common Crawl is a sample of the public web.'} {stored ? stored + ' page observations are kept in this browser for future comparisons.' : ''} <a href={a.terms} target="_blank" rel="noopener noreferrer">Common Crawl terms of use</a>.</p>
+  </section>;
+}
+
+const kindLabel: Record<string, string> = { client: 'Client', competitor: 'Competitor', source: 'Cited source', linked: 'Linked' };
+export function GraphSection({ graph, brand }: { graph: VistaGraph; brand: string }) {
+  const sector = graph.domains.filter(d => !d.platform && d.kind !== 'client').slice(0, 12);
+  const platforms = graph.domains.filter(d => d.platform).slice(0, 8);
+  const internal = graph.internal.filter(p => p.sampled || p.priority).slice(0, 10);
+  const c = graph.coverage;
+  return <section className="studio-section" aria-label="Authority and relationships"><div className="discovery-head"><h3>Authority and relationships <small className="lex-badge">VisTa Graph</small></h3><p className="section-note">Links VisTa observed on the client's pages, the verified competitors' pages and pages cited in sampled AI answers, with organisations and profiles from structured data. Authority values are VisTa estimates relative to this graph, not third-party metrics.</p>
+    <p className="lex-coverage" role="note"><strong>{c.statement}</strong>{c.observedFrom ? ' Observed ' + fmtDate(c.observedFrom) + (c.observedTo.slice(0, 10) !== c.observedFrom.slice(0, 10) ? ' to ' + fmtDate(c.observedTo) : '') + '.' : ''}</p></div>
+    <div className="graph-grid">
+      <div><h4 className="index-h">Internal link authority</h4><div className="table-scroll"><table className="studio-table"><thead><tr><th scope="col">Page</th><th scope="col">Authority <small>(estimate)</small></th><th scope="col">Linked from</th></tr></thead><tbody>{internal.map(p => <tr key={p.url}><th scope="row"><a href={p.url} target="_blank" rel="noopener noreferrer nofollow">{shortUrl(p.url)}</a>{p.priority && <span className="group-chip group-primary">Priority</span>}</th><td><span className="priority-bar"><i style={{ width: p.authority + '%' }}/></span>{p.authority}</td><td>{p.inlinks} page{p.inlinks === 1 ? '' : 's'}</td></tr>)}</tbody></table></div>
+        {graph.weakPriority.length > 0 ? <p className="rec-note">No internal links were observed to {graph.weakPriority.length} priority page{graph.weakPriority.length === 1 ? '' : 's'} from the sampled pages: {graph.weakPriority.slice(0, 4).map(shortUrl).join(', ')}.</p> : <p className="rec-note">Every priority page is linked from at least one sampled page.</p>}</div>
+      <div><h4 className="index-h">Observed links to {brand}</h4>{graph.referringToClient.length ? <ul className="graph-list">{graph.referringToClient.map(r => <li key={r.domain}><strong>{r.domain}</strong> <small>{kindLabel[r.kind]} · {r.pages.length} page{r.pages.length === 1 ? '' : 's'}</small><small>{r.pages.slice(0, 2).map(shortUrl).join(', ')}</small></li>)}</ul> : <p className="rec-note">None of the {c.pages - c.clientPages} other pages VisTa crawled links to {brand}. This covers only those pages, not the wider web.</p>}
+        <h4 className="index-h">Sector authorities (co-citation)</h4>{graph.coCitation.length ? <ul className="graph-list">{graph.coCitation.slice(0, 10).map(x => <li key={x.domain}><strong>{x.domain}</strong><small>{x.linkedBy.length ? 'Linked by ' + x.linkedBy.map(n => n === 'client' ? brand : n).join(', ') : ''}{x.linkedBy.length && x.citations ? ' · ' : ''}{x.citations ? 'cited ' + x.citations + ' time' + (x.citations === 1 ? '' : 's') + ' in sampled AI answers' : ''}</small></li>)}</ul> : <p className="rec-note">No domain is linked or cited by two or more of the client, its competitors and the sampled AI answers.</p>}</div>
+    </div>
+    <h4 className="index-h">Domains in the observed graph</h4>
+    <div className="table-scroll"><table className="studio-table"><thead><tr><th scope="col">Domain</th><th scope="col">Role</th><th scope="col">Linked from</th><th scope="col">Observed-graph authority <small>(estimate)</small></th></tr></thead><tbody>{sector.map(d => <tr key={d.domain}><th scope="row">{d.domain}</th><td>{kindLabel[d.kind]}</td><td title={d.referringDomains.join(', ')}>{d.referringDomains.length} website{d.referringDomains.length === 1 ? '' : 's'} · {d.linkingPages} page{d.linkingPages === 1 ? '' : 's'}</td><td><span className="priority-bar"><i style={{ width: d.authority + '%' }}/></span>{d.authority}</td></tr>)}</tbody></table></div>
+    {platforms.length > 0 && <p className="rec-note">Social and community platforms linked: {platforms.map(d => d.domain + ' (' + d.referringDomains.length + ')').join(', ')}.</p>}
+    {(graph.entities.organisations.length > 0 || graph.entities.authors.length > 0) && <details className="rec-evidence"><summary>Organisations, authors and profiles in structured data</summary><ul>{graph.entities.organisations.map(o => <li key={o.name}><span><strong>{o.name}</strong> · {o.site}</span>{o.sameAs.length > 0 && <span>{o.sameAs.map(shortUrl).join(', ')}</span>}</li>)}{graph.entities.authors.length > 0 && <li><span><strong>Authors on the client's pages</strong></span><span>{graph.entities.authors.join(', ')}</span></li>}</ul></details>}
+    <p className="lex-method"><small>{graph.method}</small></p>
   </section>;
 }
 

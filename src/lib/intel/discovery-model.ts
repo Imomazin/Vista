@@ -9,6 +9,7 @@ import type { AiObservation, AuditMode, Confidence, PromptCategory, StageState }
 import type { PageRecord } from "./page";
 import type { Lexicon } from "./lexicon";
 import type { DiscoveryIndex } from "./discovery-index";
+import type { VistaGraph } from "./graph";
 
 /** observed: stated on the website · inferred: VisTa rule applied to observed signals · model: AI interpretation grounded in cited pages · measured: computed from collected data · first-party: connected Search Console/GA4 · provider: licensed search data provider. */
 export type Basis = "observed" | "inferred" | "model" | "measured" | "first-party" | "provider" | "user";
@@ -143,6 +144,8 @@ export type DiscoveryRun = {
   lexicon?: Lexicon;
   /** VisTa Index: archive history and archived-versus-live comparisons. */
   index?: DiscoveryIndex;
+  /** VisTa Graph: observed links, authority and relationships. */
+  graph?: VistaGraph;
 };
 
 export const discoveryStageDefs: { id: string; label: string }[] = [

@@ -13,6 +13,7 @@ import { assessCompetitor, citationSources, geoEvidence, hostOf, isPlatform, off
 import { keywordUniverse, promptRecs, promptTemplates } from "./discovery-keywords";
 import { buildLexicon } from "./lexicon";
 import { archiveIndex } from "./discovery-index";
+import { buildGraph, socialPlatform } from "./graph";
 import { priorityPages, recommendScope } from "./discovery-scope";
 import { marketPhrase, type CompetitorKind, type CompetitorRec, type DiscoveryRun, type KeywordRec } from "./discovery-model";
 import { mentions, recommendationPosition } from "./geo";
@@ -36,7 +37,7 @@ export function resetFrom(run: DiscoveryRun, stageId: string): DiscoveryRun {
     ...(from <= 3 ? { competitors: [], citationSources: [], competitorHomes: {}, competitorPages: {}, clientRanks: [] } : {}),
     ...(from <= 4 ? { keywords: [], lexicon: undefined } : {}),
     ...(from <= 5 ? { prompts: [], samples: [] } : {}),
-    ...(from <= 6 ? { priorityPages: [], index: undefined } : {}),
+    ...(from <= 6 ? { priorityPages: [], index: undefined, graph: undefined } : {}),
     scope: null,
   };
 }
@@ -289,7 +290,7 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
 
     // 7. Priority pages.
     if (!settled("pages")) {
-      const s = await begin("pages", "Identifying priority pages…", 2);
+      const s = await begin("pages", "Identifying priority pages…", 3);
       run.priorityPages = priorityPages(run.pages, run.site, run.website);
       s.done = 1;
       await publish();
@@ -298,8 +299,18 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
       await publish();
       run.index = await archiveIndex(run, post);
       s.done = 2;
+      await publish();
+      // VisTa Graph: observed links among client, competitor and AI-cited pages (cited pages fetched, robots.txt respected).
+      run.activity = "Mapping links and authority (VisTa Graph)…";
+      await publish();
+      const own = siteKey(hostOf(run.website)), rivals = new Set(run.competitors.map(c => siteKey(hostOf(c.website))));
+      const cited = [...new Set(run.samples.flatMap(o => o.citations.map(c => c.url.split("#")[0])))].filter(u => { const h = hostOf(u); return h && siteKey(h) !== own && !rivals.has(siteKey(h)) && !socialPlatform.test(h); }).slice(0, 6);
+      let sourcePages: PageRecord[] = [];
+      if (cited.length) { try { sourcePages = (await post<{ pages: PageRecord[] }>("/api/intel/pages", { urls: cited, depths: cited.map(() => 1), keywords: [] })).pages; } catch (error) { if (error instanceof Cancelled) throw error; } }
+      run.graph = buildGraph({ website: run.website, pages: run.pages, competitorPages: run.competitorPages || {}, competitors: run.competitors.filter(c => c.verified && (c.recommended || c.selected)), sourcePages, citations: run.samples.flatMap(o => o.citations.map(c => ({ url: c.url, at: o.collectedAt }))), priority: run.priorityPages.filter(p => p.selected).map(p => p.url) });
+      s.done = 3;
       const archived = run.index.archive.crawls.find(c => c.capturedUrls);
-      await finish(s, "complete", run.priorityPages.length + " priority pages across " + new Set(run.priorityPages.map(x => x.role)).size + " roles · " + (run.index.archive.error ? "web archive unavailable" : archived ? archived.capturedUrls + " archived URLs (" + archived.crawl + "), " + run.index.comparisons.filter(c => c.similarity !== null).length + " compared with the live site" : "no archived captures in the last " + run.index.archive.crawls.length + " Common Crawl crawls"));
+      await finish(s, "complete", run.priorityPages.length + " priority pages across " + new Set(run.priorityPages.map(x => x.role)).size + " roles · " + (run.index.archive.error ? "web archive unavailable" : archived ? archived.capturedUrls + " archived URLs (" + archived.crawl + "), " + run.index.comparisons.filter(c => c.similarity !== null).length + " compared with the live site" : "no archived captures in the last " + run.index.archive.crawls.length + " Common Crawl crawls") + " · link graph of " + run.graph.coverage.domains + " domains from " + run.graph.coverage.pages + " pages");
     }
 
     // 8. Scope.

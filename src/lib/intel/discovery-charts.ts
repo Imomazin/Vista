@@ -10,6 +10,25 @@ import { keywordGroupLabel, type DiscoveryRun, type KeywordGroup } from "./disco
 
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
 
+/** VisTa Graph: who links to whom among the client, competitors, cited sources and sector authorities. */
+export function linkNetwork(run: DiscoveryRun): ChartSpec | null {
+  const g = run.graph;
+  if (!g || !run.profile) return null;
+  const top = g.domains.filter(d => !d.platform && (d.kind !== "linked" || d.referringDomains.length >= 1)).slice(0, 18);
+  if (top.length < 3) return null;
+  const names = new Set(top.map(d => d.domain));
+  const kinds = ["client", "competitor", "source", "linked"], labels = ["Client", "Competitors", "Cited sources", "Linked domains"];
+  const edges = top.flatMap(d => d.referringDomains.filter(r => names.has(r)).map(r => ({ source: r, target: d.domain })));
+  return {
+    id: "discovery-graph", kind: "Observed link network", title: "Observed link network (VisTa Graph)", question: "Which organisations do the client and its competitors link to, and who links to the client?",
+    option: p => ({ ...base(p), legend: { data: labels, textStyle: { color: p.sub }, bottom: 0 }, series: [{ type: "graph", layout: "force", roam: true, force: { repulsion: 200, edgeLength: [60, 130], layoutAnimation: false }, edgeSymbol: ["none", "arrow"], edgeSymbolSize: 6,
+      categories: labels.map((name, i) => ({ name, itemStyle: { color: [p.violet, p.emerald, p.blue, p.sub][i] } })),
+      data: top.map(d => ({ name: d.domain, category: kinds.indexOf(d.kind), value: d.authority, symbolSize: d.kind === "client" ? 30 : 10 + Math.sqrt(d.authority) * 1.6, label: { show: true, color: p.sub, fontSize: 9 } })),
+      links: edges.map(e => ({ ...e, lineStyle: { color: p.line, opacity: 0.7, curveness: 0.1 } })), emphasis: { focus: "adjacency" } }] }),
+    table: { columns: ["Domain", "Role", "Linked from (observed websites)", "Observed-graph authority (estimate)"], rows: top.map(d => [d.domain, labels[kinds.indexOf(d.kind)], d.referringDomains.join(", ") || "—", d.authority]) },
+  };
+}
+
 export function positioningMatrix(run: DiscoveryRun): ChartSpec | null {
   const verified = run.competitors.filter(c => c.verified && c.overlap.offerings);
   if (verified.length < 2 || !run.profile) return null;
@@ -142,7 +161,7 @@ export function opportunityProfile(run: DiscoveryRun): ChartSpec | null {
 }
 
 export function discoveryCharts(run: DiscoveryRun): ChartSpec[] {
-  return [positioningMatrix(run), competitorNetwork(run), offeringTreemap(run), opportunityProfile(run), keywordClusterMap(run), intentDistribution(run), promptHeatmap(run), architectureDiagram(run)].filter((s): s is ChartSpec => !!s);
+  return [positioningMatrix(run), competitorNetwork(run), offeringTreemap(run), opportunityProfile(run), keywordClusterMap(run), intentDistribution(run), promptHeatmap(run), architectureDiagram(run), linkNetwork(run)].filter((s): s is ChartSpec => !!s);
 }
 
 
