@@ -79,7 +79,7 @@ if (!["complete", "partial"].includes(job.status)) report.problems.push({ step: 
 await page.locator(".ipulse").screenshot({ path: join(out, "04-pulse-complete.png") });
 await shot("05-cockpit");
 
-const tabs = ["Technical SEO", "Content", "Authority & trust", "Competitors", "GEO & AI search", "Search & analytics", "Findings", "Decision Room", "Executive Studio", "Portfolio"];
+const tabs = ["Technical SEO", "Content", "Authority & trust", "Competitors", "GEO & AI search", "Search & analytics", "Findings", "Monitoring", "Decision Room", "Executive Studio", "Portfolio"];
 for (const [i, tab] of tabs.entries()) {
   await page.getByRole("navigation", { name: "Studio sections" }).getByRole("button", { name: tab, exact: true }).click();
   await page.waitForTimeout(1500);
