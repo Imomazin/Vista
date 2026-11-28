@@ -11,6 +11,7 @@ import { siteKey } from "./page";
 import { buildProfile, evidencePack, mergeAiProfile, type AiProfile } from "./discovery-profile";
 import { assessCompetitor, citationSources, geoEvidence, hostOf, isPlatform, offeringVocabulary, relevantLinks, serpCompetitors, type Candidate } from "./discovery-competitors";
 import { keywordUniverse, promptRecs, promptTemplates } from "./discovery-keywords";
+import { buildLexicon } from "./lexicon";
 import { priorityPages, recommendScope } from "./discovery-scope";
 import { marketPhrase, type CompetitorKind, type CompetitorRec, type DiscoveryRun, type KeywordRec } from "./discovery-model";
 import { mentions, recommendationPosition } from "./geo";
@@ -31,8 +32,8 @@ export function resetFrom(run: DiscoveryRun, stageId: string): DiscoveryRun {
     ...run, stages, status: "idle", gaps: [],
     ...(from <= 0 ? { site: null, pages: [], failures: [] } : {}),
     ...(from <= 1 ? { profile: null, aiPrompts: undefined } : {}),
-    ...(from <= 3 ? { competitors: [], citationSources: [], competitorHomes: {}, clientRanks: [] } : {}),
-    ...(from <= 4 ? { keywords: [] } : {}),
+    ...(from <= 3 ? { competitors: [], citationSources: [], competitorHomes: {}, competitorPages: {}, clientRanks: [] } : {}),
+    ...(from <= 4 ? { keywords: [], lexicon: undefined } : {}),
     ...(from <= 5 ? { prompts: [], samples: [] } : {}),
     ...(from <= 6 ? { priorityPages: [] } : {}),
     scope: null,
@@ -192,7 +193,7 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
             if (home && d.redirectedTo) item.candidate = { ...item.candidate, website: d.redirectedTo, sources: [...item.candidate.sources, item.candidate.website] };
           }
           catch (error) { if (error instanceof Cancelled) throw error; failure = (error as Error).message; }
-          if (home) run.competitorHomes[item.candidate.website] = home;
+          if (home) { run.competitorHomes[item.candidate.website] = home; (run.competitorPages ||= {})[item.candidate.website] = [home]; }
           let assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure);
           // Look beyond the home page: relevant service pages when the home page is inconclusive, cited pages when it is blocked.
           const key = siteKey(hostOf(item.candidate.website));
@@ -200,7 +201,7 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
           if (extraUrls.length) {
             try {
               const r = await post<{ pages: PageRecord[]; failures: PageFailure[] }>("/api/intel/pages", { urls: extraUrls, depths: extraUrls.map(() => 1), keywords: [] });
-              if (r.pages.length) assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure, r.pages);
+              if (r.pages.length) { assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure, r.pages); (run.competitorPages ||= {})[item.candidate.website] = [...(home ? [home] : []), ...r.pages]; }
             } catch (error) { if (error instanceof Cancelled) throw error; }
           }
           if (item.search) assessed.overlap.search = { shared: item.search.keywords.length, sampled: Math.max(1, item.search.keywords.length), keywords: item.search.keywords };
@@ -239,7 +240,7 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
           if (property && siteKey(hostOf(property.includes("//") ? property : "https://" + property)) === siteKey(hostOf(run.website))) { gsc = r.result.rows; gscAt = r.result.observedAt; }
         } catch (error) { if (error instanceof Cancelled) throw error; s.errors.push({ source: "Search Console", message: (error as Error).message, retryable: true }); }
       }
-      run.keywords = keywordUniverse({ profile: p, pages: run.pages, competitorHomes: Object.values(run.competitorHomes), competitors: run.competitors, website: run.website, gsc, gscCollectedAt: gscAt });
+      run.keywords = keywordUniverse({ profile: p, pages: run.pages, competitorHomes: Object.values(run.competitorPages && Object.keys(run.competitorPages).length ? run.competitorPages : run.competitorHomes).flat(), competitors: run.competitors, website: run.website, gsc, gscCollectedAt: gscAt });
       for (const r of run.clientRanks || []) { const k = run.keywords.find(x => x.keyword === r.keyword); if (k) k.metrics = { ...(k.metrics || { source: run.search.provider + " (live results)", collectedAt: new Date().toISOString() }), position: r.position }; }
       s.done = 1;
       await publish();
@@ -252,7 +253,10 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
         } catch (error) { if (error instanceof Cancelled) throw error; s.errors.push({ source: "Search data provider", message: (error as Error).message, retryable: true }); }
       }
       const measured = run.keywords.filter(k => k.metrics?.volume !== undefined || k.metrics?.impressions !== undefined).length;
-      await finish(s, s.errors.length ? "partial" : "complete", run.keywords.length + " keywords in " + new Set(run.keywords.map(k => k.cluster)).size + " clusters · " + (measured ? measured + " with measured demand" : "demand not measured (no provider or Search Console)"));
+      // VisTa Lexicon: deterministic opportunity scores, topics and page mapping from the observed evidence.
+      run.lexicon = buildLexicon({ keywords: run.keywords, profile: p, pages: run.pages, competitorPages: run.competitorPages || {}, competitors: run.competitors });
+      const gaps = run.lexicon.entries.filter(e => e.coverage === "none" && e.action.kind === "create").length;
+      await finish(s, s.errors.length ? "partial" : "complete", run.keywords.length + " keywords in " + run.lexicon.topics.length + " topics · " + gaps + " content gaps · " + (measured ? measured + " with measured demand" : "demand not measured (Search Console not connected)"));
     }
 
     // 6. GEO prompts: bank, then a small sample of real AI answers (GEO competitors and cited sources).

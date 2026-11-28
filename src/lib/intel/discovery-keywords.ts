@@ -27,7 +27,20 @@ function normalise(raw: string, brandTokens: Set<string>, keepBrand = false): st
   if (/^(other|all|more|view|see|browse|explore)\b/.test(phrase)) return null;
   if (/\b(cart|basket|checkout|refunds?|returns?|exchanges?|policy|policies|gift cards?|sign in|log in|login|newsletter|cookies?|account|wishlist|shipping|subscribe|unsubscribe|added to|filters?|sort by|skip to)\b/.test(phrase)) return null;
   if (phrase.length < 3 || words.length > 7 || genericPhrase.test(phrase) || !tokens(phrase).length || /^\d+( \d+)*$/.test(phrase)) return null;
+  if (!question && !searchable(phrase)) return null;
   return phrase;
+}
+
+/**
+ * Marketing headings and sentences ("tell us about your laboratory", "scientists behind the training",
+ * "why choose us") are not search phrases: pronouns, calls to action and narrative words reject them.
+ */
+const narrative = /\b(you|your|yours|we|our|ours|us|i|my|me|they|their|it's|that|this|these|those|here|there|behind|comes|future|journey|story|mission|vision|passion|together|everything|anything|something|need help|look no further)\b/;
+const callToAction = /^(tell|meet|discover|explore|join|let|lets|let's|get in|get started|start|find out|learn|read|see|watch|contact|call|email|book|apply|enrol|enroll|register|sign|download|subscribe|follow|share|welcome|introducing|supporting|empowering|transforming|unlock|unleash|why choose|choose|trusted|leading|complete|ultimate|your|our)\b/;
+export function searchable(phrase: string): boolean {
+  if (narrative.test(phrase) && !/\bnear me\b/.test(phrase)) return false;
+  if (callToAction.test(phrase)) return false;
+  return true;
 }
 
 export type KeywordInput = { profile: BusinessProfile; pages: PageRecord[]; competitorHomes: PageRecord[]; competitors: CompetitorRec[]; website: string; gsc?: { query: string; clicks: number; impressions: number; position: number }[]; gscCollectedAt?: string };
@@ -44,6 +57,7 @@ export function keywordUniverse(input: KeywordInput): KeywordRec[] {
   const marketTerms = markets.map(m => shortMarket[m] || m.toLowerCase());
   const cityTerms = [...new Set(pages.flatMap(p => (p.business?.places || []).filter(x => x.kind === "city" && x.count >= 2).map(x => x.name.toLowerCase())))].slice(0, 3);
   const corpus = pages.map(pageCorpus).join(" \n ");
+  const corpusTokens = new Set(tokens(corpus));
   const map = new Map<string, { sources: Set<string>; evidence: EvidenceRef[]; weight: number; cluster: string; basis: Basis; metrics: KeywordMetrics | null; emerging: boolean }>();
   const add = (raw: string, source: string, weight: number, ev: EvidenceRef | null, basis: Basis, cluster?: string, opts: { keepBrand?: boolean; emerging?: boolean; metrics?: KeywordMetrics } = {}) => {
     const k = normalise(raw, brandTokens, opts.keepBrand);
@@ -88,23 +102,39 @@ export function keywordUniverse(input: KeywordInput): KeywordRec[] {
     }
   }
   const vocab = new Set(profile.offerings.filter(o => o.selected).flatMap(o => tokens(o.value)));
+  // Questions competitors answer on their pages: long-tail informational opportunities.
+  for (const home of input.competitorHomes.filter(h => [...selectedCompetitors].some(w => h.finalUrl.startsWith(w) || w.startsWith(new URL(h.finalUrl).origin)))) {
+    for (const h of home.headings.filter(h => /\?$/.test(h.text.trim())).slice(0, 8)) {
+      const raw = h.text.trim().replace(/\?$/, "");
+      if (!tokens(raw).some(t => vocab.has(t)) || corpus.includes(raw.toLowerCase())) continue;
+      add(raw, "Competitor question", 14, { url: home.finalUrl, detail: "Question heading on a competitor page; absent from the sampled client pages" }, "measured", undefined, { emerging: true });
+    }
+  }
   for (const [k, sites] of compPhrases) {
     const toks = tokens(k);
     if (!toks.some(t => vocab.has(t))) continue;
+    // A competitor phrase must be about the client's subject: at least half its words appear on the client's pages.
+    if (toks.filter(t => corpusTokens.has(t)).length / toks.length < 0.5) continue;
     if (corpus.includes(k)) continue;
     add(k, "Competitor page" + (sites.size > 1 ? "s (" + sites.size + ")" : ""), 12 + sites.size * 4, { url: [...sites][0], detail: "Used by " + sites.size + " competitor" + (sites.size > 1 ? "s" : "") + "; absent from the sampled client pages" }, "measured", undefined, { emerging: true });
   }
   for (const row of (input.gsc || []).slice(0, 200)) add(row.query, "Search Console query", 50, null, "first-party", undefined, { keepBrand: true, metrics: { clicks: row.clicks, impressions: row.impressions, position: Math.round(row.position * 10) / 10, source: "Google Search Console (authorised)", collectedAt: input.gscCollectedAt || "" } });
 
   // Expansions of the strongest non-branded seeds.
-  const seeds = [...map.entries()].filter(([k, v]) => !isBranded(k) && !v.emerging && v.weight >= 28 && tokens(k).length <= 4).sort((a, b) => b[1].weight - a[1].weight).slice(0, 8).map(([k]) => k);
+  // Expansions (market, cost, "best", "near me") apply only to things the business sells: offerings and
+  // product, service or course entities, never to page headings ("strategy in motion cost").
+  const sellable = (v: { sources: Set<string> }) => [...v.sources].some(x => /^Offering: |^(Product|Service|Course|ProductGroup|EducationalOccupationalProgram|LocalBusiness|MedicalProcedure|Event)\b.*structured data$/.test(x));
+  const seeds = [...map.entries()].filter(([k, v]) => !isBranded(k) && !v.emerging && v.weight >= 28 && tokens(k).length <= 4 && sellable(v)).sort((a, b) => b[1].weight - a[1].weight).slice(0, 8).map(([k]) => k);
   const model = profile.model.value;
   const costWord = /Course/.test(model) ? "fees" : /ecommerce/.test(model) ? "price" : "cost";
   const online = (corpus.match(/\bonline\b/g) || []).length >= 3;
   const local = pages.some(p => p.schema.types.some(t => /LocalBusiness|Store|Restaurant|MedicalClinic/.test(t)) && p.trust.address);
+  // Commercial expansions need evidence that the site sells something (a determined commercial business model).
+  const sells = /ecommerce|Course and training|Subscription|Service provider/.test(model);
   for (const seed of seeds) {
     const s = seed;
     const base = "Expansion of “" + seed + "”";
+    if (!sells) { if (tokens(s).length <= 2) add("what is " + s, base + " (informational)", 14, null, "inferred", seed); continue; }
     if (marketTerms[0]) add(s + " " + marketTerms[0], base + " with market", 30, null, "inferred", seed);
     add("best " + s + (marketTerms[0] ? " " + marketTerms[0] : ""), base + " (commercial investigation)", 26, null, "inferred", seed);
     add(s + " " + costWord, base + " (transactional)", 24, null, "inferred", seed);
@@ -121,7 +151,10 @@ export function keywordUniverse(input: KeywordInput): KeywordRec[] {
   add(brand, "Brand name", 30, profile.brand.evidence[0] || null, "observed", brand, { keepBrand: true });
   add(brand + " reviews", "Brand reputation search", 22, null, "inferred", brand, { keepBrand: true });
   for (const o of profile.offerings.filter(o => o.selected).slice(0, 2)) add(brand + " " + o.value, "Brand + offering", 20, o.evidence[0] || null, "inferred", brand, { keepBrand: true });
-  for (const c of input.competitors.filter(c => c.selected).slice(0, 3)) add(brand + " vs " + c.name, "Brand comparison with " + c.name, 18, { url: c.website, detail: "Recommended competitor" }, "inferred", brand, { keepBrand: true });
+  for (const c of input.competitors.filter(c => c.selected).slice(0, 3)) {
+    const name = /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(c.name.trim()) ? c.name.trim().replace(/^www\./i, "").split(".")[0] : c.name;
+    add(brand + " vs " + name, "Brand comparison with " + name, 18, { url: c.website, detail: "Recommended competitor" }, "inferred", brand, { keepBrand: true });
+  }
 
   const ranked = [...map.entries()].map(([keyword, v]) => {
     const groups: KeywordGroup[] = [];
