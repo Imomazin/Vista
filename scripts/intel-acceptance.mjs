@@ -50,8 +50,8 @@ async function fillBrief(o) {
 }
 
 async function waitForJob(timeout = 300000) {
-  await page.waitForFunction(() => document.querySelector(".ipulse-complete, .ipulse-failed, .ipulse-cancelled, .ipulse-paused"), null, { timeout });
-  return page.evaluate(() => ({ status: document.querySelector(".ipulse")?.className.match(/ipulse-(complete|failed|cancelled|paused)/)?.[1], stages: [...document.querySelectorAll(".ipulse-stage")].map(s => s.className.replace("ipulse-stage stage-", "") + ": " + s.querySelector("strong")?.textContent), activity: document.querySelector(".ipulse-readout p")?.textContent, readout: document.querySelector(".ipulse-readout strong")?.textContent }));
+  await page.waitForFunction(() => document.querySelector(".ipulse-complete, .ipulse-partial, .ipulse-failed, .ipulse-cancelled, .ipulse-paused"), null, { timeout });
+  return page.evaluate(() => ({ status: document.querySelector(".ipulse")?.className.match(/ipulse-(complete|partial|failed|cancelled|paused)/)?.[1], stages: [...document.querySelectorAll(".ipulse-stage")].map(s => s.className.replace("ipulse-stage stage-", "") + ": " + s.querySelector("strong")?.textContent), activity: document.querySelector(".ipulse-readout p")?.textContent, readout: document.querySelector(".ipulse-readout strong")?.textContent }));
 }
 
 // 1. Prospect journey: ecommerce client with a competitor.
@@ -62,6 +62,8 @@ await createClient("Summit Outfitters", "https://summit-outfitters.example");
 log("Client created");
 await fillBrief({ website: "http://127.0.0.11:4810", brand: "Summit Outfitters", industry: "outdoor equipment", audience: "UK hikers", offerings: "hiking boots, tents", objectives: "Grow online sales by 20%", competitors: "http://127.0.0.16:4810", keywords: "hiking boots, tents, waterproof jackets", prompts: "Which UK shop is best for hiking boots?", mode: "Deep Intelligence" });
 await shot("02-brief");
+// Enterprise crawls (5,000 pages) are reserved for signed-in members; anonymous visitors see it locked.
+if (!(await page.getByRole("radio", { name: /Enterprise Investigation/ }).isDisabled())) report.problems.push({ step: "enterprise tier", detail: "Enterprise mode is selectable without a member session" });
 await page.getByRole("button", { name: "Start intelligence investigation" }).click();
 await page.waitForSelector(".ipulse-running", { timeout: 20000 });
 await page.waitForTimeout(1200);
@@ -70,7 +72,7 @@ const percents = [];
 for (let i = 0; i < 6; i++) { percents.push(await page.locator(".ipulse-readout strong").textContent()); await page.waitForTimeout(400); }
 const job = await waitForJob();
 log("Ecommerce investigation finished", JSON.stringify({ status: job.status, readings: percents }));
-if (job.status !== "complete") report.problems.push({ step: "ecommerce job", job });
+if (!["complete", "partial"].includes(job.status)) report.problems.push({ step: "ecommerce job", job });
 await page.locator(".ipulse").screenshot({ path: join(out, "04-pulse-complete.png") });
 await shot("05-cockpit");
 
@@ -150,7 +152,7 @@ for (const which of ["CSV Findings", "CSV Page inventory"]) {
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: which, exact: true }).click()]);
   await download.saveAs(join(out, download.suggestedFilename())); report.downloads.push(download.suggestedFilename());
 }
-await page.locator(".ipulse").screenshot({ path: join(out, "26-export-pulse.png") });
+await page.locator(".ipulse-compact").first().screenshot({ path: join(out, "26-export-pulse.png") });
 
 // Track improvement: re-run with the same brief.
 await page.getByRole("navigation", { name: "Studio sections" }).getByRole("button", { name: "Cockpit", exact: true }).click();
@@ -206,17 +208,35 @@ async function scenario(name, website, mode, extra = {}) {
     log("Scenario " + name, cancelled.status + " → reload → resume → " + resumed.status);
     return;
   }
-  const result = await waitForJob();
-  await page.waitForTimeout(1000);
-  const summary = await page.evaluate(() => ({ metrics: [...document.querySelectorAll(".cockpit-metrics .ismetric")].map(m => m.textContent), errors: [...document.querySelectorAll(".ipulse-errors li")].map(l => l.textContent).slice(0, 4) }));
+  const result = await waitForJob(extra.timeout || 300000);
+  await page.waitForTimeout(1200);
+  const summary = await page.evaluate(() => ({ metrics: [...document.querySelectorAll(".cockpit-metrics .ismetric")].map(m => m.textContent), errors: [...document.querySelectorAll(".ipulse-errors li")].map(l => l.textContent).slice(0, 6), gaps: [...document.querySelectorAll(".partial-banner li")].map(l => l.textContent), pulseGaps: document.querySelector(".ipulse-gaps span")?.textContent, counts: [...document.querySelectorAll(".ipulse-stats span")].map(x => x.textContent), banner: !!document.querySelector(".partial-banner") }));
   await shot("31-" + name.toLowerCase().replace(/[^a-z]+/g, "-"));
-  report.scenarios.push({ name, ...result, ...summary });
+  let findings = [];
+  if (result.status === "complete" || result.status === "partial") {
+    await page.getByRole("navigation", { name: "Studio sections" }).getByRole("button", { name: "Findings", exact: true }).click(); await page.waitForTimeout(800);
+    findings = await page.locator(".finding-title strong").allTextContents();
+    if (extra.retryFailed) {
+      await page.getByRole("navigation", { name: "Studio sections" }).getByRole("button", { name: "Cockpit", exact: true }).click(); await page.waitForTimeout(600);
+      const retry = page.getByRole("button", { name: /^Retry \d+ failed page/ });
+      summary.retryOffered = await retry.count() > 0;
+      if (summary.retryOffered) { await retry.click(); const again = await waitForJob(extra.timeout || 300000); summary.afterRetry = again.status; }
+    }
+    if (extra.technicalShot) { await page.getByRole("navigation", { name: "Studio sections" }).getByRole("button", { name: "Technical SEO", exact: true }).click(); await page.waitForTimeout(2500); await shot("31-" + name.toLowerCase().replace(/[^a-z]+/g, "-") + "-technical"); }
+  }
+  report.scenarios.push({ name, ...result, ...summary, findings });
+  for (const expected of extra.expectFindings || []) if (!findings.some(f => f.includes(expected))) report.problems.push({ scenario: name, missingFinding: expected, findings });
+  if (extra.expectStatus && result.status !== extra.expectStatus) report.problems.push({ scenario: name, status: result.status, expected: extra.expectStatus, activity: result.activity });
+  if (extra.expectBanner && !summary.banner) report.problems.push({ scenario: name, banner: "partial banner missing" });
   log("Scenario " + name, result.status + " · " + result.activity);
 }
 await scenario("Harbour Advisory", "http://127.0.0.12:4810", "Quick Scan", { keywords: "strategy consulting, risk advisory", industry: "professional services" });
 await scenario("Northstar Learning", "http://127.0.0.13:4810", "Quick Scan", { keywords: "leadership training, project management course", industry: "corporate training" });
 await scenario("Members Club", "http://127.0.0.15:4810", "Quick Scan");
-await scenario("Meridian Group", "http://127.0.0.14:4810", "Enterprise Investigation", { cancelAfter: 12 });
+await scenario("LabMed Academy", "http://127.0.0.17:4810", "Deep Intelligence", { keywords: "clinical laboratory training", expectStatus: "partial", expectBanner: true, expectFindings: ["deliver more than 1 MB of HTML"], retryFailed: true, technicalShot: true, timeout: 420000 });
+await scenario("Big Blog", "http://127.0.0.18:4810", "Quick Scan", { expectStatus: "partial", expectBanner: true, timeout: 300000 });
+await scenario("Single Page Co", "http://127.0.0.19:4810", "Quick Scan", { expectFindings: ["depend on JavaScript"] });
+await scenario("Meridian Group", "http://127.0.0.14:4810", "Deep Intelligence", { cancelAfter: 12 });
 
 // Portfolio after scenarios.
 await page.goto(base + "/#studio/portfolio", { waitUntil: "networkidle" }); await page.waitForTimeout(2000);

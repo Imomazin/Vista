@@ -8,7 +8,8 @@ Create client → brief → discover pages → process evidence → SEO findings
 
 - **Studio** (`#studio`, first item in the navigation). Tabs: Brief, Cockpit, Technical SEO, Content, Authority & trust, Competitors, GEO & AI search, Search & analytics, Findings, Decision Room, Executive Studio, Portfolio. Routes are shareable (`#studio/technical`).
 - **Assessment types.** *Prospect intelligence* uses public data only. *Connected client intelligence* additionally retrieves authorised Search Console and GA4 data through the existing owner-only provider integration.
-- **Audit modes.** Quick Scan (12 pages, 40 link checks, 1 PageSpeed page, 2 competitor pages each), Deep Intelligence (50, 150, 3, 5), Enterprise Investigation (150, 400, 6, 10). Page, link, PageSpeed and AI prompt budgets are configurable in the brief.
+- **Audit modes.** Quick Scan (25 pages, 60 link checks, 3 competitor pages each), Deep Intelligence (250 pages, 400 links, 6 competitor pages), Enterprise Investigation (5,000 pages, 2,000 links, 12 competitor pages; signed-in members only — anonymous visitors are capped at the Deep limit). Page, link, PageSpeed and AI prompt budgets are configurable in the brief, and the tier ceilings can be changed with `NEXT_PUBLIC_VISTA_MAX_PAGES_QUICK`, `NEXT_PUBLIC_VISTA_MAX_PAGES_DEEP` and `NEXT_PUBLIC_VISTA_MAX_PAGES_ENTERPRISE`.
+- **Priority page URLs** (optional, same site) seed the crawl alongside the home page, sitemaps and navigation; they are used when the home page itself cannot be retrieved.
 - **Command Centre** shows the integrated cockpit for the active client. **Engine pages** (`#engines/1…9`) show engine-specific dashboards from the latest investigation.
 
 ## Processing architecture (Intelligence Pulse)
@@ -17,9 +18,9 @@ Investigations are orchestrated in the browser and persisted to IndexedDB after 
 
 | Stage | Work | Progress unit |
 |---|---|---|
-| 01 Connectivity | `POST /api/intel/discover` fetches the home page | indeterminate → 1 |
-| 02 Architecture | robots.txt (RFC 9309) and XML sitemaps / indexes | sitemaps |
-| 03 Crawl | breadth-first batches via `POST /api/intel/pages` (robots enforced server-side) | pages of the budget |
+| 01 Connectivity | `POST /api/intel/discover` fetches the home page, robots.txt and declared sitemaps | indeterminate → 1 |
+| 02 Architecture | robots.txt (RFC 9309), XML sitemaps / sitemap indexes, priority URLs and (connected clients) the Search Console page inventory | sitemaps |
+| 03 Crawl | breadth-first batches of up to six URLs via `POST /api/intel/pages` (robots and Crawl-delay enforced server-side, three concurrent fetches, 45-second request deadline) | pages of the budget |
 | 04 Technical | link destinations (`/api/intel/links`) and PageSpeed Insights (`/api/intel/performance`) | links + tests |
 | 05–06 Content, authority | computed from crawled evidence | pages |
 | 07 Competitors | discovery + equal page samples | competitor pages |
@@ -27,7 +28,33 @@ Investigations are orchestrated in the browser and persisted to IndexedDB after 
 | 09 Commercial | Search Console + GA4 for connected clients | sources |
 | 10–12 Recommendations, dashboards, report content | computed | 1 each |
 
-Percentages are derived only from completed units; stages whose totals are unknown show an indeterminate stream. Rate-limit responses pause and resume automatically. Source failures are explained in plain language and marked retryable where appropriate. Cancel, resume and retry-from-failed-stage are supported. The Executive Studio uses the same Pulse for file generation (charts rendered, pages composed).
+The Pulse reports discovered, queued, processed, successful, failed and robots-restricted page counts alongside the stage and elapsed time. Percentages are derived only from completed units; stages whose totals are unknown show an indeterminate stream. Rate-limit responses pause and resume automatically. Source failures are explained in plain language and marked retryable where appropriate. Cancel, resume and retry-from-failed-stage are supported. The Executive Studio uses the same Pulse for file generation (charts rendered, pages composed).
+
+### Resilience and partial investigations
+
+- **A failed home page does not end the investigation.** If the home page is oversized, times out or errors, Connectivity is marked *partial* with the exact reason and the crawl continues from robots.txt sitemap declarations, `/sitemap.xml`, sitemap indexes, priority URLs and the Search Console page inventory. The investigation fails only when no alternative entry point exists or robots.txt refuses access.
+- **Frontier.** URLs are normalised and de-duplicated in a keyed queue (cap 20,000), canonical targets are enqueued, depth is tracked, and each request is a bounded unit, so an Enterprise crawl is many small checkpointed requests, never one long serverless call.
+- **Retries.** Timeouts, connection resets, HTTP 429 and 5xx are retried once inside the request (honouring `Retry-After` up to five seconds) and re-queued once by the runner. Permanent failures (robots exclusions, invalid or private addresses, unsupported types, resource-policy limits, 4xx) are recorded with their category and not retried.
+- **Partial status.** When any evidence is missing — home page not analysed, failed pages, robots exclusions, discovered URLs left unvisited by the page budget, truncated documents or unavailable sources such as PageSpeed — the job ends as **Partially complete**, counts the gaps in the Pulse, lists them in a Cockpit banner (other Studio tabs carry a *Partially complete* notice), and states the limitation on report covers and summaries and in the Excel workbook summary. A partial investigation is never presented as a complete audit. **Retry N failed pages** re-queues only the retryable failures and recomputes the dependent stages.
+- **Storage.** IndexedDB v2 keeps investigation summaries and pages in separate stores and writes pages incrementally, so large crawls checkpoint without rewriting the whole record. Investigations stored by earlier versions remain readable.
+
+### Crawler resource policy
+
+Every fetch is streamed with separate limits for bytes on the wire and bytes after decompression, so large pages are processed instead of rejected and compressed payloads cannot expand without bound.
+
+| Setting | Default | Variable |
+|---|---|---|
+| Retained HTML per page | 10 MB | `VISTA_CRAWL_MAX_HTML_MB` |
+| Transfer (compressed) limit | 15 MB | `VISTA_CRAWL_MAX_TRANSFER_MB` |
+| Decompressed limit | 60 MB | `VISTA_CRAWL_MAX_DECODED_MB` |
+| Decompression ratio guard (above 8 MB decoded) | 120× | `VISTA_CRAWL_MAX_COMPRESSION_RATIO` |
+| Request timeout | 15 s | `VISTA_CRAWL_TIMEOUT_MS` |
+| Transient retries | 1 | `VISTA_CRAWL_RETRIES` |
+
+- gzip, deflate and Brotli are decoded in a stream; unsupported encodings (for example zstd) are reported as a decode failure. Declared `Content-Length` above the transfer limit is refused before download.
+- **Selective extraction:** while streaming, inline script, style, SVG and template bodies, comments and long `data:` URIs are discarded; JSON-LD structured data (up to 1 MB per block), headings, links, metadata and visible text are kept. Documents larger than the retained limit are analysed from their first 10 MB and marked *truncated*. The original decoded size and inline-script weight are still measured, and pages over 1 MB of HTML raise an *HTML weight* finding.
+- **JavaScript-dependent pages** (thin text with an empty application root, heavy script payloads or a "enable JavaScript" fallback) are flagged. When `VISTA_RENDER_ENDPOINT` (and optionally `VISTA_RENDER_TOKEN`) point at a Browserless-compatible `/content` service, up to two such pages per request and twenty per investigation can be rendered; the option appears in the brief only when the service is configured (`GET /api/intel/capabilities`).
+- The single-page audit (`/api/audit`) uses the same policy, so the former 1 MB limit no longer applies there either.
 
 The existing Supabase job queue (`database/jobs.sql`) remains for single-page scheduled audits; it is not configured in production (`/api/cloud/jobs` reports `configured:false`), so multi-stage investigations persist on the user's device rather than in the queue.
 
@@ -67,7 +94,7 @@ The BoT loads the latest investigation for the active client and answers strateg
 
 ## Security controls
 
-Public intelligence endpoints require same-origin requests, bounded JSON bodies and per-IP rate limits (durable when Upstash is configured). The crawler validates every hop: public hostnames only, default ports, no credentials, DNS answers checked against private/reserved ranges and pinned, size and time limits, redirect limits and loop detection. robots.txt is honoured (5xx robots.txt pauses crawling). AI sampling requires an authenticated organisation owner of the authorised organisation. `VISTA_TEST_CRAWL_ORIGINS` exists only for local fixture testing and is ignored on Vercel.
+Public intelligence endpoints require same-origin requests, bounded JSON bodies and per-IP rate limits (durable when Upstash is configured). The crawler validates every hop: public hostnames only, default ports, no credentials, DNS answers checked against private/reserved ranges and pinned, transfer, decompressed and ratio limits, time limits, redirect limits and loop detection. robots.txt and Crawl-delay are honoured (5xx robots.txt pauses crawling). Signed-in members receive a higher page-request allowance (3,000 per ten minutes, versus 600 anonymously); the rendering service, when configured, is only given URLs that have passed the same validation. AI sampling requires an authenticated organisation owner of the authorised organisation. `VISTA_TEST_CRAWL_ORIGINS` exists only for local fixture testing and is ignored on Vercel.
 
 ## Engine availability
 
@@ -75,7 +102,7 @@ Public intelligence endpoints require same-origin requests, bounded JSON bodies 
 |---|---|---|---|
 | 1 Search Visibility | Partial | Keyword focus, gaps, cannibalisation risk; GSC analysis when connected or imported | Authorised Search Console |
 | 2 Impact Intelligence | Connection required | Upside scenarios and channel outcomes when data is connected | GA4, CRM or advertising data |
-| 3 Site Intelligence | Live | Multi-page crawl and technical diagnostics | JavaScript rendering not executed |
+| 3 Site Intelligence | Live | Multi-page crawl to 5,000 pages, large-page resource policy, discovery fallback, technical diagnostics | JavaScript execution needs a configured rendering service |
 | 4 Content Studio | Live | Inventory, clusters, intent, GEO readiness, gaps, briefs, calendar | GA4 for engagement |
 | 5 Authority Graph | Partial | Entity, sameAs, authors, citation network, trust | Licensed backlink provider |
 | 6 Reputation Intelligence | Connection required | Self-declared ratings only | Media/review monitoring provider |
@@ -87,10 +114,11 @@ Public intelligence endpoints require same-origin requests, bounded JSON bodies 
 
 - Google Search Console and GA4 live retrieval require a successful authorised owner test in production (credentials are configured; live access is not verified by this release).
 - OpenAI API sampling requires an authorised owner session and a funded API key; consumer ChatGPT, Google AI Overviews / AI Mode, Gemini, Perplexity, Claude and Copilot are captured manually.
-- PageSpeed Insights works without a key at Google's shared quota; set `PAGESPEED_API_KEY` for reliable volume.
+- PageSpeed Insights works without a key at Google's shared quota, which is regularly exhausted in production; set `PAGESPEED_API_KEY` for reliable volume (without it, investigations end as *partially complete* with the performance gap stated).
+- JavaScript rendering requires a Browserless-compatible service (`VISTA_RENDER_ENDPOINT`, `VISTA_RENDER_TOKEN`); none is configured, so JavaScript-dependent pages are detected and flagged but not executed.
 - Keyword volumes, rankings for non-owned sites, backlinks, Google Ads, Bing Webmaster Tools, Merchant Center, CRM beyond HubSpot samples and media monitoring need provider subscriptions and credentials.
 
 ## Verification
 
-- Unit and integration tests: robots and sitemap parsing, SSRF validation, redirect chains/loops, size and type limits, robots enforcement, page and site analysis, findings, index coverage gating, GEO metrics and intervals, interventions, roadmap and scenarios, resumable runner (cancel/resume without re-fetching, 429 recovery), connected-client and failed-provider paths, BoT evidence safety.
-- `scripts/intel-fixtures.mjs` serves ecommerce, professional services, corporate training, complex multi-page, robots-restricted and competitor fixture sites; `scripts/intel-acceptance.mjs` drives the full UI journey, exports every file format and runs the scenarios in both themes at desktop, tablet and mobile widths.
+- Unit and integration tests: robots and sitemap parsing, SSRF validation, redirect chains/loops, resource policy (1, 5 and 12 MB pages; gzip, deflate and Brotli; truncation above 10 MB; decompression bombs; declared oversize; corrupt and unsupported encodings; slow, flaky, reset and 503 servers), selective extraction, home-page failure with sitemap fallback, transient retry and targeted retry of failed pages, type limits, robots enforcement, page and site analysis, findings, index coverage gating, GEO metrics and intervals, interventions, roadmap and scenarios, resumable runner (cancel/resume without re-fetching, 429 recovery), connected-client and failed-provider paths, BoT evidence safety.
+- `scripts/intel-fixtures.mjs` serves ecommerce, professional services, corporate training, complex multi-page, robots-restricted and competitor fixture sites, plus a LabMedExpert-style site (6 MB compressed home page with inline state and base64 assets, a 12 MB brochure, malformed HTML, a 40-second page and a gzip bomb), a WordPress-style blog (80 MB home page and a 3,000-post sitemap index) and a JavaScript-only application shell; `scripts/intel-acceptance.mjs` drives the full UI journey, exports every file format and runs the scenarios in both themes at desktop, tablet and mobile widths.

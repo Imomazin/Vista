@@ -13,7 +13,7 @@ const jsonLd = '<script type="application/ld+json">{"@context":"https://schema.o
 function heavyPage(targetMb: number) {
   // Pseudo-random filler compresses like a real minified bundle (a few times, not a thousand).
   let seed = 7; const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$";
-  const chars: string[] = []; for (let i = 0; i < targetMb * MB; i += 1) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; chars.push(alphabet[seed % 64]); }
+  const chars: string[] = []; for (let i = 0; i < targetMb * MB; i += 1) { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; chars.push(alphabet[(seed >>> 16) % 64]); }
   const filler = "var x='" + chars.join("") + "';";
   return `<!doctype html><html lang="en"><head><title>Heavy Co laboratory medicine training courses</title><meta name="description" content="Courses."><link rel="canonical" href="/">${jsonLd}<style>${"body{color:red}".repeat(5000)}</style><script>${filler}</script></head><body><main><h1>Laboratory medicine training</h1><p>${"Real course content about clinical laboratory practice. ".repeat(60)}</p><img src="data:image/png;base64,${"A".repeat(200000)}" alt="Lab"><svg>${"<path d='M0 0L1 1'/>".repeat(20000)}</svg><a href="/courses">Courses</a><a href="/about-us">About</a></main></body></html>`;
 }

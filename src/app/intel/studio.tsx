@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { History, Plus, RefreshCcw, Trash2 } from 'lucide-react';
+import { AlertTriangle, History, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 import { computeAnalysis } from '@/lib/intel/analysis';
 import * as charts from '@/lib/intel/charts';
 import { jobProgress, newJob, type Brief, type Investigation } from '@/lib/intel/model';
@@ -125,13 +125,14 @@ export default function Studio({ data, tab, onTab, goMeasurements }: { data: Wor
       <label><History size={14}/> Investigation<select value={inv?.id || ''} onChange={e => { getInvestigation(e.target.value).then(setInv); }} disabled={running}>{!history.length && <option value="">None yet</option>}{history.map(h => <option key={h.id} value={h.id}>{h.createdAt.slice(0, 16).replace('T', ' ')} · {h.brief.mode} · {h.job.status} · {h.pageCount ?? h.pages.length} pages</option>)}</select></label>
       <div className="studio-bar-actions">
         <button className="ghost-button" onClick={() => { setNewBrief(true); onTab('brief'); }} disabled={running}><Plus size={15}/>New investigation</button>
-        {inv && inv.job.status === 'complete' && <button className="ghost-button" onClick={() => start({ ...inv.brief }, inv.job.stages.find(s => s.id === 'ai')?.status === 'complete')} disabled={running} title="Re-run with the same brief to track improvement"><RefreshCcw size={15}/>Re-run to track improvement</button>}
+        {inv && ['complete', 'partial'].includes(inv.job.status) && <button className="ghost-button" onClick={() => start({ ...inv.brief }, inv.job.stages.find(s => s.id === 'ai')?.status === 'complete')} disabled={running} title="Re-run with the same brief to track improvement"><RefreshCcw size={15}/>Re-run to track improvement</button>}
         {inv && <button className="ghost-button danger" onClick={remove} disabled={running}><Trash2 size={15}/>Delete</button>}
       </div>
     </div>
     {storageMode() === 'memory' && <p className="dependency-note">This browser blocks IndexedDB, so investigations are kept only until the page is closed.</p>}
     <nav className="studio-tabs" aria-label="Studio sections">{studioTabs.map(([id, label]) => <button key={id} className={tab === id || (id === 'brief' && showBrief && tab === 'brief') ? 'active' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => onTab(id)} disabled={id !== 'brief' && id !== 'portfolio' && !analysis}>{label}</button>)}</nav>
-    {inv && (running || ['paused', 'cancelled', 'failed', 'partial'].includes(inv.job.status) || tab === 'cockpit') && pulse}
+    {inv && (running || ['paused', 'cancelled', 'failed'].includes(inv.job.status) || tab === 'cockpit') && pulse}
+    {inv && !running && inv.job.status === 'partial' && tab !== 'cockpit' && tab !== 'portfolio' && !showBrief && <p className="partial-note" role="note"><AlertTriangle size={15}/><span><strong>Partially complete</strong> · {(inv.job.gaps || []).length} evidence {(inv.job.gaps || []).length === 1 ? 'gap' : 'gaps'}. This view covers the evidence collected; it is not a complete website audit.</span><button className="link-button" onClick={() => onTab('cockpit')}>Review gaps</button></p>}
     {tab === 'portfolio' ? Portfolio() : showBrief ? <BriefForm key={(project?.id || '') + (inv?.id || 'new') + String(newBrief)} project={project} initial={defaultBrief(project, newBrief || !inv ? undefined : inv.brief)} canSampleAi={session.owner} canConnect={session.owner} member={session.authenticated} capabilities={capabilities} busy={running} onStart={start}/> :
       inv && analysis ? <>
         {tab === 'cockpit' && <><Cockpit inv={inv} analysis={analysis} goTo={t => onTab(t as StudioTab)}/>{previous && charts.changeWaterfall(previous.index, analysis.index) && <section className="studio-section"><h3>Improvement since the previous investigation</h3><p className="section-note">Resolved findings: {previous.findings.filter(f => !analysis.findings.some(x => x.rule === f.rule)).length} · new findings: {analysis.findings.filter(f => !previous.findings.some(x => x.rule === f.rule)).length}</p><VistaChart spec={charts.changeWaterfall(previous.index, analysis.index)!} height={320}/></section>}</>}

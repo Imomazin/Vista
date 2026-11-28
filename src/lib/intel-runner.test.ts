@@ -47,8 +47,10 @@ test("runner completes all twelve stages with measured progress, robots filterin
   const service = fakeService({ failOnceWith429: true });
   const updates: number[] = [];
   const result = await runInvestigation(fresh(), { signal: new AbortController().signal, fetcher: service.fetcher, onUpdate: inv => updates.push(jobProgress(inv.job).percent ?? -1), save: async () => {} });
-  assert.equal(result.job.status, "complete");
+  assert.equal(result.job.status, "partial", "a PageSpeed failure means the evidence is incomplete");
+  assert.ok(result.job.gaps!.some(g => /technical seo is incomplete: PageSpeed Insights unavailable/i.test(g)), JSON.stringify(result.job.gaps));
   assert.equal(result.pages.length, 8, "page budget respected");
+  assert.ok(result.job.frontier.length > 0 && result.job.gaps!.some(g => g.startsWith("Page budget reached: 8 pages analysed and " + result.job.frontier.length)), "unvisited URLs are reported as a coverage gap");
   assert.ok(result.failures.some(f => f.kind === "robots" && f.url.endsWith("/private/a")) || !service.fetched.some(u => u.includes("/private/")));
   assert.ok(!service.fetched.some(u => u.includes("/private/")), "robots-disallowed URLs are never requested");
   assert.equal(result.job.stages.find(s => s.id === "technical")?.status, "partial", "PageSpeed failure is reported, not hidden");
@@ -70,7 +72,7 @@ test("cancellation saves state and resuming continues without refetching complet
   const before = service.fetched.length;
   const crawledBefore = new Set(partial.pages.map(p => p.url));
   const resumed = await runInvestigation(partial, { signal: new AbortController().signal, fetcher: service.fetcher, save: async () => {}, onUpdate: () => {} });
-  assert.equal(resumed.job.status, "complete");
+  assert.equal(resumed.job.status, "partial");
   assert.equal(resumed.pages.length, 8);
   const refetched = service.fetched.slice(before).filter(u => crawledBefore.has(u));
   assert.deepEqual(refetched, [], "completed pages are not fetched again");
@@ -115,7 +117,7 @@ test("failed provider connections are reported with explanations, never substitu
   assert.equal(stage.errors.length, 2);
   assert.ok(stage.errors[0].message.includes("credentials"));
   assert.equal(result.firstParty.gsc, undefined);
-  assert.equal(result.job.status, "complete");
+  assert.equal(result.job.status, "partial");
 });
 
 test("competitor brand names come from crawled evidence before domain labels", async () => {
@@ -126,4 +128,54 @@ test("competitor brand names come from crawled evidence before domain labels", a
   assert.equal(brandName({ ...home, title: "Hiking boots | Ridgeline" }, "https://ridgeline.example"), "Ridgeline");
   const names = competitorNames({ ...brief, competitors: ["http://127.0.0.16:4810"] }, [{ website: "http://127.0.0.16:4810", name: "Ridgeline Supply" }]);
   assert.deepEqual(analyseResponse("1. Ridgeline Supply\n2. Another", { ...brief, competitors: ["http://127.0.0.16:4810"] }, [], names).competitorMentions, ["Ridgeline Supply"]);
+});
+
+test("an oversized home page falls back to sitemap and supplied URLs, and transient failures are retried once", async () => {
+  const calls: string[][] = [];
+  let flaky = 0;
+  const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const path = String(input);
+    const body = JSON.parse(String(init?.body || "{}"));
+    const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
+    if (path === "/api/intel/discover") return json({ requestedUrl: origin + "/", origin, collectedAt: new Date().toISOString(), durationMs: 10, home: null, homeFailure: { url: origin + "/", depth: 0, kind: "too-large", message: "The response exceeds the transfer limit of the resource policy and was not analysed.", chain: [] }, robots: { state: "found", groups: [], sitemaps: [origin + "/sitemap.xml"], bytes: 10, url: origin + "/robots.txt", status: 200, blocksVista: false, blocksAll: false }, sitemaps: [{ url: origin + "/sitemap.xml", status: 200, kind: "urlset", entries: 3, truncated: false }], sitemapUrls: ["/a", "/b", "/flaky"].map(p => ({ loc: origin + p })) });
+    if (path === "/api/intel/pages") {
+      calls.push(body.urls);
+      const failures = body.urls.filter((u: string) => u.endsWith("/flaky") && flaky++ === 0).map((u: string) => ({ url: u, depth: 1, kind: "timeout", message: "The server did not respond in time.", chain: [] }));
+      const pages = body.urls.filter((u: string) => !failures.some((f: { url: string }) => f.url === u)).map((u: string, i: number) => record(new URL(u).pathname, body.depths[i]));
+      return json({ pages, failures, deferred: [] });
+    }
+    if (path === "/api/intel/links") return json({ links: [] });
+    return json({ error: "PageSpeed Insights quota is exhausted." }, 502);
+  }) as typeof fetch;
+  const inv = fresh();
+  inv.brief = { ...brief, pageLimit: 20, seedUrls: [origin + "/courses/c3"] };
+  const result = await runInvestigation(inv, { signal: new AbortController().signal, fetcher, save: async () => {}, onUpdate: () => {} });
+  assert.equal(result.job.stages[0].status, "partial", "home failure is recorded, not fatal");
+  assert.ok(result.job.stages[0].note.includes("alternative discovery"));
+  assert.ok(result.pages.some(p => p.url.endsWith("/flaky")), "transient failure retried and recovered");
+  assert.ok(result.pages.some(p => p.url.endsWith("/courses/c3")), "supplied URL inspected");
+  assert.ok(result.failures.some(f => f.depth === 0 && f.kind === "too-large"), "home failure kept as evidence");
+  assert.equal(result.job.status, "partial");
+  assert.ok(result.job.gaps!.includes("The home page could not be analysed."));
+});
+
+test("targeted retry re-queues only retryable failures and re-runs dependent stages", async () => {
+  const { prepareRetry, isRetryable } = await import("./intel/runner");
+  const inv = fresh();
+  inv.failures = [
+    { url: origin + "/timeout", depth: 1, kind: "timeout", message: "t", chain: [] },
+    { url: origin + "/gone", depth: 1, kind: "http-error", status: 404, message: "404", chain: [] },
+    { url: origin + "/busy", depth: 1, kind: "http-error", status: 503, message: "503", chain: [] },
+    { url: origin + "/private", depth: 1, kind: "robots", message: "robots", chain: [] },
+  ];
+  inv.job.stages.forEach(s => { s.status = "complete"; });
+  assert.deepEqual(inv.failures.map(isRetryable), [true, false, true, false]);
+  for (const kind of ["redirect-loop", "too-many-redirects", "too-large", "decompression-limit", "decode", "unsupported-type", "off-site-redirect", "invalid-url", "blocked-address"] as const)
+    assert.equal(isRetryable({ url: origin + "/x", depth: 1, kind, message: "", chain: [] }), false, kind + " is permanent");
+  assert.equal(isRetryable({ url: origin + "/x", depth: 1, kind: "http-error", status: 429, message: "", chain: [] }), true);
+  const next = prepareRetry(inv);
+  assert.deepEqual(next.job.frontier.map(f => f.url), [origin + "/timeout", origin + "/busy"]);
+  assert.equal(next.failures.length, 2);
+  assert.equal(next.job.stages.find(s => s.id === "crawl")?.status, "pending");
+  assert.equal(next.job.stages.find(s => s.id === "ai")?.status, "complete", "independent stages are not repeated");
 });

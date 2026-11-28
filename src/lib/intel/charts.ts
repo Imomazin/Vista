@@ -216,6 +216,21 @@ export function readinessScatter(inv: Investigation, site: SiteAnalysis): ChartS
   };
 }
 
+/** Page health treemap: sections sized by pages, each page coloured by its health score. */
+export function pageHealthTreemap(inv: Investigation): ChartSpec | null {
+  if (inv.pages.length < 4) return null;
+  const health = (p: Investigation["pages"][number]) => Math.max(0, 100 - 10 * (p.headingIssues.length + (p.indexable ? 0 : 3) + (p.title ? 0 : 2) + (p.description ? 0 : 1) + (p.images.missingAlt ? 1 : 0) + (p.schema.types.length ? 0 : 1) + (p.content.words < 250 ? 1 : 0) + (p.jsDependent ? 2 : 0) + ((p.retrieval?.decodedBytes ?? 0) > 1048576 ? 2 : 0)));
+  const sections = new Map<string, Investigation["pages"]>();
+  for (const p of inv.pages) { const s = "/" + (new URL(p.finalUrl).pathname.split("/").filter(Boolean)[0] || ""); sections.set(s, [...(sections.get(s) || []), p]); }
+  const data = [...sections.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 30).map(([name, pages]) => ({ name, value: pages.length, children: pages.slice(0, 200).map(p => ({ name: new URL(p.finalUrl).pathname || "/", id: p.finalUrl, value: 1, health: health(p) })) }));
+  return {
+    id: "page-health", kind: "Treemap", title: "Page health across the website", question: "Which sections and pages carry the weakest technical health?",
+    option: p => ({ ...base(p), tooltip: { ...base(p).tooltip, formatter: (x: { data: { name: string; health?: number; value: number } }) => x.data.name + (x.data.health !== undefined ? "<br/>Health " + x.data.health + "/100" : "<br/>" + x.data.value + " pages") }, visualMap: { show: true, orient: "horizontal", left: "center", bottom: 0, min: 0, max: 100, dimension: 1, text: ["Healthy", "Weak"], textStyle: { color: p.sub }, inRange: { color: [p.red, p.amber, p.emerald] }, seriesIndex: 0 }, series: [{ type: "treemap", top: 10, bottom: 50, roam: false, breadcrumb: { show: false }, leafDepth: 2, visualDimension: 1, label: { show: true, fontSize: 10, color: p.dark ? "#071712" : "#fff" }, upperLabel: { show: true, height: 20, color: p.text }, itemStyle: { borderColor: p.surface, borderWidth: 1, gapWidth: 1 }, levels: [{ itemStyle: { borderWidth: 3, borderColor: p.surface, gapWidth: 3 } }, { colorSaturation: [0.35, 0.6] }], data: data.map(d => ({ ...d, children: d.children.map(c => ({ ...c, value: [1, c.health] })) })) }] }),
+    table: { columns: ["Page", "Section", "Health"], rows: [...sections.entries()].flatMap(([s, pages]) => pages.map(p => [p.finalUrl, s, health(p)] as (string | number)[])).sort((a, b) => (a[2] as number) - (b[2] as number)) },
+    drill: name => name.startsWith("http") ? name : null,
+  };
+}
+
 export function kpiBullets(inv: Investigation, site: SiteAnalysis, targets: Record<string, number> = {}): ChartSpec | null {
   const pages = inv.pages;
   if (!pages.length) return null;

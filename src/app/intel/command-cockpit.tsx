@@ -52,7 +52,7 @@ export function EngineDashboard({ engine, data, openStudio, openMeasurements }: 
   const specs = !latest || !analysis ? [] : ({
     1: [charts.gscOpportunity(latest), charts.kpiBullets(latest, analysis.site)],
     2: [charts.ga4Channels(latest)],
-    3: [charts.crawlFunnel(latest, analysis.site), charts.issueHeatmap(latest), charts.responseSankey(latest)],
+    3: [charts.crawlFunnel(latest, analysis.site), charts.issueHeatmap(latest), charts.pageHealthTreemap(latest), charts.depthBars(analysis.site)],
     4: [charts.contentTreemap(analysis.site), charts.readinessScatter(latest, analysis.site)],
     5: [charts.entityNetwork(latest)],
     6: [],

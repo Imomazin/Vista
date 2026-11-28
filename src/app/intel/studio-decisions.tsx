@@ -26,6 +26,7 @@ export function FindingsPanel({ inv, analysis }: Omit<Props, 'onChange'>) {
     </div>
     {list.map(f => <FindingCard key={f.id} finding={f} competitors={inv.competitors} intervention={analysis.interventions.find(i => i.findingId === f.id)}/>)}
     {!list.length && <p className="empty-copy">No findings match these filters.</p>}
+    <AffectedRegister findings={analysis.findings}/>
   </div>;
 }
 
@@ -66,4 +67,23 @@ export function DecisionsPanel({ inv, analysis, onChange }: Props) {
       <p className="dependency-note"><Clock3 size={14}/> Causality is never inferred from correlation; each hypothesis lists the evidence needed to confirm it. <CircleSlash size={14}/> Steps marked unavailable need connected sources.</p>
     </section>
   </div>;
+}
+
+/** Affected-page register: every page with the findings that reference it. */
+function AffectedRegister({ findings }: { findings: Analysis['findings'] }) {
+  const map = new Map<string, { severity: string; titles: string[]; ids: string[] }>();
+  const rank = ['critical', 'high', 'medium', 'low', 'info'];
+  for (const f of findings) for (const a of f.affected) {
+    if (!/^https?:/.test(a.url)) continue;
+    const entry = map.get(a.url) || { severity: 'info', titles: [], ids: [] };
+    if (rank.indexOf(f.severity) < rank.indexOf(entry.severity)) entry.severity = f.severity;
+    if (!entry.ids.includes(f.evidenceId)) { entry.ids.push(f.evidenceId); entry.titles.push(f.title); }
+    map.set(a.url, entry);
+  }
+  const rows = [...map.entries()].sort((a, b) => rank.indexOf(a[1].severity) - rank.indexOf(b[1].severity) || b[1].ids.length - a[1].ids.length);
+  if (!rows.length) return null;
+  return <section className="studio-section"><h3>Affected-page register ({rows.length} pages)</h3><p className="section-note">Every affected location with the findings that reference it, most severe first. The full register is in the Excel evidence workbook.</p>
+    <div className="table-scroll"><table className="studio-table"><thead><tr><th>Page</th><th>Highest severity</th><th>Findings</th><th>Evidence</th></tr></thead><tbody>
+      {rows.slice(0, 300).map(([url, e]) => <tr key={url}><th scope="row"><a href={url} target="_blank" rel="noopener noreferrer nofollow">{url.replace(/^https?:\/\//, '').slice(0, 70)}</a></th><td><span className={'sev sev-' + e.severity}>{e.severity}</span></td><td>{e.titles.slice(0, 4).join('; ')}{e.titles.length > 4 ? ' …' : ''}</td><td>{e.ids.slice(0, 4).map(id => <a key={id} href={'#finding-' + id}>{id} </a>)}</td></tr>)}
+    </tbody></table></div></section>;
 }

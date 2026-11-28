@@ -3,9 +3,12 @@
  * loopback address on port 4810 so sites stay separate:
  *   127.0.0.11 ecommerce · 127.0.0.12 professional services · 127.0.0.13 corporate training
  *   127.0.0.14 complex multi-page · 127.0.0.15 restricted crawler access · 127.0.0.16 competitor shop
+ *   127.0.0.17 heavy corporate (6–12 MB pages, gzip, decompression bomb, slow page, malformed HTML)
+ *   127.0.0.18 large WordPress-style site with an 80 MB home page · 127.0.0.19 JavaScript-dependent app
  * Usage: node scripts/intel-fixtures.mjs   (then start VisTa with VISTA_TEST_CRAWL_ORIGINS set to these origins)
  */
 import http from "node:http";
+import zlib from "node:zlib";
 
 const PORT = 4810;
 const words = (topic, n) => Array.from({ length: n }, (_, i) => ["Our", topic, "guidance", "helps", "teams", "choose", "reliable", "options", "with", "clear", "evidence", "and", "practical", "steps."][i % 14]).join(" ");
@@ -89,19 +92,58 @@ function restricted(base) {
   return { pages, redirects: {}, sitemap: [base + "/"], robots: "User-agent: VistaSiteIntelligence\nDisallow: /\n\nUser-agent: *\nDisallow: /members", forbidden: ["/members"] };
 }
 
-const sites = [["127.0.0.11", ecommerce], ["127.0.0.12", services], ["127.0.0.13", training], ["127.0.0.14", complex], ["127.0.0.15", restricted], ["127.0.0.16", base => ecommerce(base, "Ridgeline Supply", true)]];
+// Heavy corporate site modelled on the LabMedExpert failure: multi-megabyte pages from inline bundles.
+function randomText(n, seed = 7) { const a = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let out = ""; for (let i = 0; i < n; i++) { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; out += a[(seed >>> 16) % 62]; } return out; }
+const bundle6 = randomText(6 * 1024 * 1024), bundle12 = randomText(12 * 1024 * 1024, 11);
+function heavyCorporate(base) {
+  const nav = [["/", "Home"], ["/courses", "Courses"], ["/about-us", "About us"], ["/brochure", "Brochure"], ["/broken", "Notes"], ["/slow-report", "Annual report"], ["/archive-bomb", "Archive"]];
+  const courses = Array.from({ length: 30 }, (_, i) => "/courses/clinical-laboratory-course-" + i);
+  const org = ld({ "@context": "https://schema.org", "@type": "EducationalOrganization", name: "LabMed Academy", url: base, sameAs: ["https://www.linkedin.com/company/labmed"] });
+  const heavy = (title, h1, extra, size) => page({ title, description: "Clinical laboratory training.", h1, nav, head: org + "<script>window.__STATE__='" + (size === 12 ? bundle12 : bundle6) + "';</script><style>" + ".x{color:red}".repeat(20000) + "</style>", body: `<p>${words("laboratory", 420)}</p><img src="data:image/png;base64,${"A".repeat(300000)}" alt="Laboratory">${extra}` });
+  const pages = {
+    "/": heavy("LabMed Academy | Clinical laboratory medicine training", "Clinical laboratory medicine training", courses.map(c => `<a href="${c}">${c}</a>`).join(" "), 6),
+    "/brochure": heavy("Course brochure | LabMed Academy", "Course brochure", "", 12),
+    "/broken": `<html><head><title>Notes with broken markup | LabMed Academy</title><body><h1>Notes<h2>Unclosed <p>Paragraph <b>bold <i>italic</div></span><a href="/courses">Courses<table><tr><td>cell`,
+    "/courses": page({ title: "Courses | LabMed Academy", description: "All courses.", h1: "Courses", nav, body: courses.map(c => `<a href="${c}">${c}</a>`).join(" ") }),
+    "/about-us": page({ title: "About LabMed Academy", description: "About.", h1: "About us", nav, head: org, body: `<p>${words("about", 220)}</p>` }),
+  };
+  for (const c of courses) pages[c] = page({ title: c.split("/").pop().replace(/-/g, " ") + " | LabMed Academy", description: "Course.", h1: "Course", nav, head: ld({ "@type": "Course", name: c }), body: `<p>${words("course", 320)}</p>` });
+  return { pages, redirects: {}, sitemap: [...Object.keys(pages), "/slow-report"].map(p => base + p), robots: "User-agent: *\nDisallow:\nSitemap: " + base + "/sitemap.xml", gzip: true, slow: ["/slow-report"], bomb: ["/archive-bomb"] };
+}
+// Large WordPress-style site whose 80 MB home page exceeds every limit; discovery must continue via the sitemap index.
+function wordpress(base) {
+  const posts = Array.from({ length: 3000 }, (_, i) => "/" + 2020 + "/post-" + i + "/");
+  const pages = { "/about/": page({ title: "About | Big Blog", description: "About.", h1: "About", body: `<p>${words("about", 200)}</p>` }) };
+  return { pages, posts, redirects: {}, sitemapIndex: true, robots: "User-agent: *\nDisallow: /wp-admin/\nSitemap: " + base + "/sitemap_index.xml", hugeHome: true };
+}
+// JavaScript-dependent single-page application.
+function spa(base) {
+  const shell = route => `<!doctype html><html lang="en"><head><title>App ${route} | Single Page Co</title><meta name="viewport" content="width=device-width"><script src="/static/vendor.js"></script><script src="/static/runtime.js"></script><script src="/static/app.js"></script></head><body><div id="root"></div><noscript>You need to enable JavaScript to run this app.</noscript><a href="/pricing">Pricing</a><a href="/features">Features</a></body></html>`;
+  return { pages: { "/": shell("/"), "/pricing": shell("/pricing"), "/features": shell("/features") }, redirects: {}, sitemap: ["/", "/pricing", "/features"].map(p => base + p), robots: "User-agent: *\nDisallow:" };
+}
+
+const sites = [["127.0.0.17", heavyCorporate], ["127.0.0.18", wordpress], ["127.0.0.19", spa], ["127.0.0.11", ecommerce], ["127.0.0.12", services], ["127.0.0.13", training], ["127.0.0.14", complex], ["127.0.0.15", restricted], ["127.0.0.16", base => ecommerce(base, "Ridgeline Supply", true)]];
 for (const [host, build] of sites) {
   const base = `http://${host}:${PORT}`;
   const site = build(base);
+  const bomb = site.bomb ? zlib.gzipSync(Buffer.alloc(120 * 1024 * 1024, 0x20)) : null;
   http.createServer((req, res) => {
     const url = new URL(req.url, base);
     const path = url.pathname;
     if (path === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(site.robots); }
-    if (path === "/sitemap.xml") { res.writeHead(200, { "Content-Type": "application/xml" }); return res.end(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${site.sitemap.map(u => `<url><loc>${u}</loc><lastmod>2026-10-01</lastmod></url>`).join("")}</urlset>`); }
+    if (site.slow?.includes(path)) { setTimeout(() => { res.writeHead(200, { "Content-Type": "text/html" }); res.end("<html><title>Late</title></html>"); }, 40000); return; }
+    if (site.bomb?.includes(path)) { res.writeHead(200, { "Content-Type": "text/html", "Content-Encoding": "gzip" }); return res.end(bomb); }
+    if (site.hugeHome && path === "/") { res.writeHead(200, { "Content-Type": "text/html" }); res.write("<html><head><title>Big Blog</title></head><body>"); let sent = 0; const chunk = "<p>" + "x".repeat(65536) + "</p>"; const pump = () => { while (sent < 80 * 1024 * 1024) { sent += chunk.length; if (!res.write(chunk)) return res.once("drain", pump); } res.end("</body></html>"); }; res.on("error", () => {}); return pump(); }
+    if (site.sitemapIndex && path === "/sitemap_index.xml") { res.writeHead(200, { "Content-Type": "application/xml" }); return res.end(`<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>${base}/post-sitemap.xml</loc></sitemap><sitemap><loc>${base}/page-sitemap.xml</loc></sitemap></sitemapindex>`); }
+    if (site.sitemapIndex && path === "/post-sitemap.xml") { res.writeHead(200, { "Content-Type": "application/xml" }); return res.end(`<urlset>${site.posts.map(p => `<url><loc>${base}${p}</loc><lastmod>2024-01-01</lastmod></url>`).join("")}</urlset>`); }
+    if (site.sitemapIndex && path === "/page-sitemap.xml") { res.writeHead(200, { "Content-Type": "application/xml" }); return res.end(`<urlset><url><loc>${base}/about/</loc></url></urlset>`); }
+    if (site.posts && /^\/2020\/post-\d+\/$/.test(path)) { res.writeHead(200, { "Content-Type": "text/html" }); return res.end(page({ title: "Post " + path + " | Big Blog", description: "A post.", h1: "Post", body: `<p>${words("post", 260)}</p><a href="/about/">About</a>` })); }
+    if (path === "/sitemap.xml" && site.sitemap) { res.writeHead(200, { "Content-Type": "application/xml" }); return res.end(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${site.sitemap.map(u => `<url><loc>${u}</loc><lastmod>2026-10-01</lastmod></url>`).join("")}</urlset>`); }
     if (site.forbidden?.includes(path)) { res.writeHead(403, { "Content-Type": "text/html" }); return res.end("<h1>Forbidden</h1>"); }
     if (site.redirects[path]) { res.writeHead(301, { Location: site.redirects[path] }); return res.end(); }
     const html = site.pages[path];
     if (!html) { res.writeHead(404, { "Content-Type": "text/html" }); return res.end("<h1>Not found</h1>"); }
+    if (site.gzip) { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Content-Encoding": "gzip" }); return res.end(zlib.gzipSync(html)); }
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", ...(site.headers || {}) });
     res.end(html);
   }).listen(PORT, host, () => console.log("fixture", base));

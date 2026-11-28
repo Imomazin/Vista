@@ -344,7 +344,7 @@ export async function runInvestigation(input: Investigation, options: RunOptions
     }
     job.gaps = evidenceGaps(inv);
     job.status = job.gaps.length ? "partial" : "complete";
-    job.activity = job.gaps.length ? "Investigation completed with gaps — evidence is incomplete: " + job.gaps.join(" ") : "Investigation complete.";
+    job.activity = job.gaps.length ? "Partially complete — " + job.gaps.length + " evidence " + (job.gaps.length === 1 ? "gap" : "gaps") + ". " + job.gaps[0] : "Investigation complete.";
     await publish();
     return inv;
   } catch (error) {
@@ -389,9 +389,10 @@ export function brandName(home: PageRecord | null, website: string): string {
   return hostLabel(website);
 }
 
-const nonRetryableKinds = new Set(["robots", "invalid-url", "blocked-address", "unsupported-type", "off-site-redirect", "too-large", "decompression-limit", "decode"]);
+/** Only transient conditions are worth retrying: timeouts, dropped connections, DNS hiccups, HTTP 429 and 5xx. */
 export function isRetryable(f: PageFailure): boolean {
-  return !nonRetryableKinds.has(f.kind) && !(f.status !== undefined && f.status < 500 && f.status !== 429);
+  if (f.kind === "http-error") return f.status === 429 || (f.status !== undefined && f.status >= 500);
+  return f.kind === "timeout" || f.kind === "connection" || f.kind === "dns";
 }
 
 /** What is missing from an investigation; a non-empty list means the audit is partial, never complete. */
@@ -402,10 +403,14 @@ export function evidenceGaps(inv: Investigation): string[] {
   if (!inv.discovery?.home) gaps.push("The home page could not be analysed.");
   if (failed.length) gaps.push(failed.length + " page" + (failed.length === 1 ? "" : "s") + " failed (" + [...new Set(failed.map(f => f.kind === "http-error" ? "HTTP " + f.status : f.kind))].slice(0, 4).join(", ") + ").");
   if (restricted) gaps.push(restricted + " URL" + (restricted === 1 ? " was" : "s were") + " excluded by robots.txt.");
-  const partialStages = inv.job.stages.filter(s => s.status === "partial" && s.id !== "crawl" && s.id !== "connectivity").map(s => s.label.toLowerCase());
-  if (partialStages.length) gaps.push("Completed with source gaps: " + partialStages.join(", ") + ".");
-  const truncated = inv.pages.filter(p => p.retrieval?.truncated).length;
-  if (truncated) gaps.push(truncated + " page" + (truncated === 1 ? " was" : "s were") + " larger than the 10 MB analysis window; only the first 10 MB was analysed.");
+  const unvisited = inv.job.frontier.length;
+  if (unvisited) gaps.push("Page budget reached: " + inv.pages.length.toLocaleString("en-GB") + " pages analysed and " + unvisited.toLocaleString("en-GB") + " further discovered URL" + (unvisited === 1 ? " was" : "s were") + " not visited. Raise the page budget or use a deeper audit mode for full coverage.");
+  for (const stage of inv.job.stages.filter(s => s.status === "partial" && s.id !== "crawl" && s.id !== "connectivity")) {
+    const sources = [...new Set(stage.errors.map(e => e.source.replace(/\s*\((mobile|desktop)\)$/, "")))];
+    gaps.push(stage.label + " is incomplete" + (sources.length ? ": " + sources.slice(0, 3).join(", ") + " unavailable" : "") + ".");
+  }
+  const truncated = inv.pages.filter(p => p.retrieval?.truncated);
+  if (truncated.length) gaps.push(truncated.length + " page" + (truncated.length === 1 ? " was" : "s were") + " larger than the " + Math.max(1, Math.round(Math.max(...truncated.map(p => p.retrieval!.retainedBytes)) / 1048576)) + " MB analysis window; only the retained portion was analysed.");
   return gaps;
 }
 

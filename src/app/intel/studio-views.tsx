@@ -25,6 +25,7 @@ export function Cockpit({ inv, analysis, goTo }: Panel & { goTo: (tab: string) =
   const counts = (['critical', 'high', 'medium', 'low'] as const).map(s => analysis.findings.filter(f => f.severity === s).length);
   const classes = index.dimensions.reduce((acc, d) => ({ ...acc, [d.evidenceClass]: (acc[d.evidenceClass] || 0) + 1 }), {} as Partial<Record<EvidenceClass, number>>);
   return <div className="studio-panel">
+    {inv.job.status === 'partial' && <section className="partial-banner" role="note"><AlertTriangle size={18}/><div><strong>Partial investigation — this is not a complete website audit.</strong><ul>{(inv.job.gaps || []).map(g => <li key={g}>{g}</li>)}</ul><small>Findings and scores cover the evidence that was collected. Retry failed pages from the Intelligence Pulse to complete the evidence.</small></div></section>}
     <section className="cockpit-hero">
       <div className="cockpit-index">
         <span className="eyebrow">VisTa INTELLIGENCE INDEX</span>
@@ -80,6 +81,7 @@ export function Technical({ inv, analysis }: Panel) {
       {show(charts.responseSankey(inv), s => <VistaChart spec={s} height={300}/>)}
       {show(charts.architectureSunburst(analysis.site), s => <VistaChart spec={s} height={360}/>)}
       {show(charts.issueHeatmap(inv), s => <VistaChart spec={s} height={360} onDrill={drill}/>)}
+      {show(charts.pageHealthTreemap(inv), s => <VistaChart spec={s} height={380} onDrill={drill}/>)}
       {show(charts.linkNetwork(analysis.site), s => <VistaChart spec={s} height={400} onDrill={drill}/>)}
       {show(charts.severityMatrix(analysis.findings), s => <VistaChart spec={s} height={300}/>)}
       {show(charts.depthBars(analysis.site), s => <VistaChart spec={s} height={260}/>)}

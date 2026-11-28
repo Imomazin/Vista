@@ -69,7 +69,7 @@ export default function IntelligencePulse(props: PulseProps) {
         </div>
       </li>)}
     </ol>
-    {status === 'partial' && props.gaps?.length ? <div className="ipulse-gaps" role="note"><strong>Partial investigation — evidence is incomplete</strong><ul>{props.gaps.map(g => <li key={g}>{g}</li>)}</ul></div> : null}
+    {status === 'partial' && props.gaps?.length ? <div className="ipulse-gaps" role="note"><strong>Partial investigation — evidence is incomplete</strong><span>{props.gaps.length} evidence {props.gaps.length === 1 ? 'gap' : 'gaps'} · {props.gaps[0]}{props.gaps.length > 1 ? ' The full list is in the Cockpit.' : ''}</span></div> : null}
     {errors.length > 0 && <details className="ipulse-errors" open={status === 'failed'}>
       <summary><AlertTriangle size={14}/>{errors.length} source {errors.length === 1 ? 'issue' : 'issues'} explained</summary>
       <ul>{errors.slice(0, 12).map((e, i) => <li key={i}><strong>{e.stage} — {e.source.slice(0, 90)}</strong><span>{e.message}</span>{e.retryable && <em>Retryable</em>}</li>)}</ul>
