@@ -147,13 +147,23 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
       const s = await begin("competitors", "Discovering market competitors…", null);
       const vocabulary = offeringVocabulary(p, run.pages);
       const candidates = new Map<string, { candidate: Candidate; kinds: CompetitorKind[]; search?: { keywords: string[] } }>();
-      if (aiOn && p.offerings.some(o => o.selected)) {
+      const query = { website: run.website, brand: p.brand.value, industry: [p.industry.value, ...p.subsectors.filter(x => x.selected).map(x => x.value)].join(", "), offerings: p.offerings.filter(o => o.selected).map(o => o.value).slice(0, 8), segments: p.segments.filter(x => x.selected).map(x => x.value).slice(0, 6), markets: p.markets.filter(x => x.selected).map(x => x.value).slice(0, 4), model: p.model.value.replace(/\s·.*$/, "") };
+      let rounds = 0;
+      const research = async (extra: Record<string, unknown>, optional = false) => {
         try {
-          const r = await post<{ candidates: Candidate[]; citations: { url: string }[] }>("/api/intel/discovery/competitors", { website: run.website, brand: p.brand.value, industry: [p.industry.value, ...p.subsectors.filter(x => x.selected).map(x => x.value)].join(", "), offerings: p.offerings.filter(o => o.selected).map(o => o.value).slice(0, 8), segments: p.segments.filter(x => x.selected).map(x => x.value).slice(0, 6), markets: p.markets.filter(x => x.selected).map(x => x.value).slice(0, 4), model: p.model.value.replace(/\s·.*$/, "") });
-          run.ai.calls += 1;
-          for (const c of r.candidates) candidates.set(siteKey(hostOf(c.website)), { candidate: c, kinds: ["commercial"] });
-        } catch (error) { if (error instanceof Cancelled) throw error; s.errors.push({ source: "AI web search", message: (error as Error).message, retryable: true }); }
-      }
+          const r = await post<{ candidates: Candidate[]; citations: { url: string }[] }>("/api/intel/discovery/competitors", { ...query, ...extra });
+          run.ai.calls += 1; rounds += 1;
+          const fresh: { candidate: Candidate; kinds: CompetitorKind[] }[] = [];
+          for (const c of r.candidates) { const key = siteKey(hostOf(c.website)); if (!candidates.has(key)) { const item = { candidate: c, kinds: ["commercial"] as CompetitorKind[] }; candidates.set(key, item); fresh.push(item); } }
+          return fresh;
+        } catch (error) {
+          if (error instanceof Cancelled) throw error;
+          // The follow-up round is an improvement, not a requirement: its failure does not make the stage partial.
+          if (!optional) s.errors.push({ source: "AI web search", message: (error as Error).message, retryable: true });
+          return [];
+        }
+      };
+      if (aiOn && p.offerings.some(o => o.selected)) await research({});
       if (options.capabilities.search) {
         try {
           const market = p.markets.find(m => m.selected)?.value || "";
@@ -169,40 +179,52 @@ export async function runDiscovery(input: DiscoveryRun, options: DiscoveryOption
           }
         } catch (error) { if (error instanceof Cancelled) throw error; s.errors.push({ source: "Search data provider", message: (error as Error).message, retryable: true }); }
       } else run.search = { configured: false, provider: null, note: "No search data provider is configured: organic competitors, search volumes, difficulty and rankings are not measured." };
-      const list = [...candidates.values()].slice(0, 12);
-      s.total = list.length; s.done = 0;
-      await publish();
       const verified: CompetitorRec[] = [];
-      for (const item of list) {
-        run.activity = "Verifying " + hostOf(item.candidate.website) + "…";
-        let home: PageRecord | null = null, failure: string | null = null;
-        try {
-          const d = await post<Discovery & { redirectedTo?: string }>("/api/intel/verify", { url: item.candidate.website });
-          home = d.home; failure = d.homeFailure?.message || null;
-          if (home && d.redirectedTo) item.candidate = { ...item.candidate, website: d.redirectedTo, sources: [...item.candidate.sources, item.candidate.website] };
-        }
-        catch (error) { if (error instanceof Cancelled) throw error; failure = (error as Error).message; }
-        if (home) run.competitorHomes[item.candidate.website] = home;
-        let assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure);
-        // Look beyond the home page: relevant service pages when the home page is inconclusive, cited pages when it is blocked.
-        const key = siteKey(hostOf(item.candidate.website));
-        const extraUrls = home ? (assessed.confidence !== "high" ? relevantLinks(home, vocabulary) : []) : item.candidate.sources.filter(u => siteKey(hostOf(u)) === key && u.replace(/\/$/, "") !== item.candidate.website.replace(/\/$/, "")).slice(0, 2);
-        if (extraUrls.length) {
-          try {
-            const r = await post<{ pages: PageRecord[]; failures: PageFailure[] }>("/api/intel/pages", { urls: extraUrls, depths: extraUrls.map(() => 1), keywords: [] });
-            if (r.pages.length) assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure, r.pages);
-          } catch (error) { if (error instanceof Cancelled) throw error; }
-        }
-        if (item.search) assessed.overlap.search = { shared: item.search.keywords.length, sampled: Math.max(1, item.search.keywords.length), keywords: item.search.keywords };
-        verified.push(assessed);
-        s.done += 1;
-        run.competitors = rankCompetitors(verified);
+      const verifyAll = async (list: { candidate: Candidate; kinds: CompetitorKind[]; search?: { keywords: string[] } }[]) => {
+        s.total = (s.total || 0) + list.length;
         await publish();
+        for (const item of list) {
+          run.activity = "Verifying " + hostOf(item.candidate.website) + "…";
+          let home: PageRecord | null = null, failure: string | null = null;
+          try {
+            const d = await post<Discovery & { redirectedTo?: string }>("/api/intel/verify", { url: item.candidate.website });
+            home = d.home; failure = d.homeFailure?.message || null;
+            if (home && d.redirectedTo) item.candidate = { ...item.candidate, website: d.redirectedTo, sources: [...item.candidate.sources, item.candidate.website] };
+          }
+          catch (error) { if (error instanceof Cancelled) throw error; failure = (error as Error).message; }
+          if (home) run.competitorHomes[item.candidate.website] = home;
+          let assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure);
+          // Look beyond the home page: relevant service pages when the home page is inconclusive, cited pages when it is blocked.
+          const key = siteKey(hostOf(item.candidate.website));
+          const extraUrls = home ? (assessed.confidence !== "high" ? relevantLinks(home, vocabulary) : []) : item.candidate.sources.filter(u => siteKey(hostOf(u)) === key && u.replace(/\/$/, "") !== item.candidate.website.replace(/\/$/, "")).slice(0, 2);
+          if (extraUrls.length) {
+            try {
+              const r = await post<{ pages: PageRecord[]; failures: PageFailure[] }>("/api/intel/pages", { urls: extraUrls, depths: extraUrls.map(() => 1), keywords: [] });
+              if (r.pages.length) assessed = assessCompetitor(p, vocabulary, item.candidate, item.kinds, home, failure, r.pages);
+            } catch (error) { if (error instanceof Cancelled) throw error; }
+          }
+          if (item.search) assessed.overlap.search = { shared: item.search.keywords.length, sampled: Math.max(1, item.search.keywords.length), keywords: item.search.keywords };
+          verified.push(assessed);
+          s.done += 1;
+          run.competitors = rankCompetitors(verified);
+          await publish();
+        }
+      };
+      s.total = 0; s.done = 0;
+      await verifyAll([...candidates.values()].slice(0, 12));
+      // Too few direct competitors (for example only universities or professional bodies): one more research round
+      // asking for commercial providers, excluding every website already reviewed.
+      if (aiOn && rounds === 1 && run.competitors.filter(c => c.recommended).length < 3) {
+        run.activity = "Searching again for direct commercial competitors…";
+        await publish();
+        const fresh = await research({ round: 2, exclude: [...candidates.keys()].slice(0, 20) }, true);
+        await verifyAll(fresh.slice(0, 8));
       }
+      const list = verified;
       const recommended = run.competitors.filter(c => c.recommended).length;
       const why = !aiOn && !options.capabilities.search ? "Competitor discovery needs AI web search or a search data provider; neither is available on this deployment, so add competitors manually." : "";
       if (why) s.errors.push({ source: "Competitor discovery", message: why, retryable: false });
-      await finish(s, !list.length ? (why ? "partial" : "complete") : s.errors.length ? "partial" : "complete", list.length ? recommended + " recommended of " + list.length + " candidates verified" : why || "No competitor candidates were found.");
+      await finish(s, !list.length ? (why ? "partial" : "complete") : s.errors.length ? "partial" : "complete", list.length ? recommended + " recommended of " + list.length + " candidates verified" + (rounds > 1 ? " (2 research rounds)" : "") : why || "No competitor candidates were found.");
     }
 
     // 5. Keywords: site, offerings, competitor pages, Search Console (connected) and provider metrics.
@@ -343,7 +365,12 @@ export function discoveryGaps(run: DiscoveryRun): string[] {
   if (run.site?.homeFailure && run.pages.length) gaps.push("The home page could not be analysed; the profile is based on other sampled pages.");
   if (run.failures.length) gaps.push(run.failures.length + " sampled page" + (run.failures.length === 1 ? "" : "s") + " could not be retrieved.");
   if (!run.ai.available && run.settings.useAi) gaps.push("AI assistance was unavailable (" + run.ai.note.replace(/\.$/, "") + "); recommendations use website evidence only.");
-  if (!run.competitors.some(c => c.recommended)) gaps.push("No competitor could be verified from the available evidence; add competitors manually or connect a search data provider.");
+  if (!run.competitors.some(c => c.recommended)) {
+    const alternatives = run.competitors.filter(c => /Academic institution|professional, public or membership body/.test(c.reason)).length;
+    gaps.push(run.competitors.length
+      ? "None of the " + run.competitors.length + " candidate" + (run.competitors.length === 1 ? "" : "s") + " was confirmed as a direct commercial competitor" + (alternatives ? " (" + alternatives + " " + (alternatives === 1 ? "is an academic institution or professional body" : "are academic institutions or professional bodies") + ")" : "") + "; add direct competitors manually or connect a search data provider."
+      : "No competitor could be verified from the available evidence; add competitors manually or connect a search data provider.");
+  }
   for (const s of run.stages) for (const e of s.errors) if (!gaps.some(g => g.includes(e.message)) && !/AI interpretation|Competitor discovery/.test(e.source)) gaps.push(s.label + ": " + e.message);
   return gaps.slice(0, 8);
 }

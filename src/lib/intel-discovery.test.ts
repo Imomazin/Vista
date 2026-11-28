@@ -353,3 +353,56 @@ test("identity checks accept short organisation names and clean page-title suffi
   assert.equal(k.name, "KPMG International");
   assert.equal(k.checks!.identity.status, "verified");
 });
+
+test("when research returns only academic institutions, a second round asks for direct commercial competitors", async () => {
+  const svc = fakeService({ ai: true });
+  const uni = `<html><head><title>University of Exampleton | Biomedical science degrees</title><script type="application/ld+json">{"@type":"CollegeOrUniversity","name":"University of Exampleton","address":{"@type":"PostalAddress","addressCountry":"GB"}}</script></head><body><h1>Study biomedical science</h1><p>Undergraduate and postgraduate courses for international students and graduates in the UK.</p></body></html>`;
+  const rounds: Record<string, unknown>[] = [];
+  const json = (data: unknown) => new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
+  const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const path = String(input);
+    const body = JSON.parse(String(init?.body || "{}"));
+    if (path === "/api/intel/discovery/competitors") {
+      rounds.push(body);
+      return json(body.round === 2
+        ? { candidates: [{ name: "BioMed Skills", website: "https://biomed-skills.example/", reason: "Histology and haematology training in the UK.", offerings: [], markets: [], sources: [] }], citations: [] }
+        : { candidates: [{ name: "University of Exampleton", website: "https://www.exampleton.ac.uk/", reason: "Biomedical science degrees.", offerings: [], markets: [], sources: [] }], citations: [] });
+    }
+    if (path === "/api/intel/verify" && body.url.includes("exampleton")) return json({ requestedUrl: body.url, origin: body.url.replace(/\/$/, ""), collectedAt: "", durationMs: 1, home: record(body.url, uni), homeFailure: null, robots: {}, sitemaps: [], sitemapUrls: [] });
+    return svc.fetcher(input, init);
+  }) as typeof fetch;
+  const run = await runDiscovery(newDiscovery("p1", origin, settings()), { signal: new AbortController().signal, fetcher, capabilities: { discoveryAi: "public", search: null } });
+  assert.equal(rounds.length, 2, "one follow-up round only");
+  assert.equal(rounds[1].round, 2);
+  assert.ok((rounds[1].exclude as string[]).some(x => x.includes("exampleton")), "websites already reviewed are excluded");
+  const uniRec = run.competitors.find(c => c.website.includes("exampleton"))!;
+  assert.ok(!uniRec.recommended && /Academic institution/.test(uniRec.reason));
+  assert.ok(run.competitors.find(c => c.website === "https://biomed-skills.example/")?.recommended, "the direct competitor from the second round is recommended");
+  assert.match(run.stages.find(s => s.id === "competitors")!.note, /2 research rounds/);
+});
+
+test("a professional body cited only by its domain is recognised from its page title", async () => {
+  const { assessCompetitor, offeringVocabulary } = await import("./intel/discovery-competitors");
+  const { buildProfile } = await import("./intel/discovery-profile");
+  const pages = Object.entries(site).map(([path, html]) => record(origin + path, html));
+  const profile = buildProfile(pages, null, origin);
+  const vocab = offeringVocabulary(profile, pages);
+  const home = record("https://www.rcpath.example.org/", `<html><head><title>Home | The Royal College of Pathologists</title></head><body><h1>Histology, haematology and laboratory training</h1><p>Training, examinations and careers in pathology for biomedical science graduates and NHS laboratories in the UK.</p></body></html>`);
+  const a = assessCompetitor(profile, vocab, { name: "rcpath.example.org", website: "https://www.rcpath.example.org/", reason: "", offerings: [], markets: [], sources: [] }, ["geo"], home, null);
+  assert.equal(a.name, "The Royal College of Pathologists");
+  assert.equal(a.confidence, "low");
+  assert.ok(!a.recommended);
+  assert.match(a.reason, /professional, public or membership body/);
+});
+
+test("AI labels are trimmed at word boundaries and overlapping segments merge", async () => {
+  const { label } = await import("./intel/discovery-ai");
+  const { sameSegment } = await import("./intel/discovery-profile");
+  assert.equal(label("Financial services firms (banking, insurance, capital markets, investment managers and wealth managers)", 80), "Financial services firms");
+  const cut = label("Independent and international schools, colleges and further education providers across the United Kingdom", 60);
+  assert.ok(cut.length <= 60 && !/\s\S{0,2}$/.test(cut) && "Independent and international schools, colleges and further education providers across the United Kingdom".startsWith(cut), cut);
+  assert.ok(sameSegment("Businesses", "Businesses and organizations"));
+  assert.ok(sameSegment("Organisations", "Businesses and organizations"));
+  assert.ok(!sameSegment("NHS laboratories", "NHS and private laboratory professionals"), "employers and their staff are different buyers");
+  assert.ok(!sameSegment("Developers", "Businesses and organizations"));
+});
